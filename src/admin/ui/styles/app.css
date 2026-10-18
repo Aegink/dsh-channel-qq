@@ -273,6 +273,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);margin:0;
 @media (min-width:1000px){.editorpane{grid-template-columns:260px minmax(0,1fr)}}
 .filepane{max-height:60vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--sp-2);background:var(--panel-2)}
 .filetree{display:flex;flex-direction:column;gap:1px}
+.filetree svg{width:15px;height:15px;flex:0 0 auto}
 .tnode{display:flex;align-items:center;gap:var(--sp-1);min-height:30px;padding:0 var(--sp-2);border-radius:var(--r-xs);color:var(--fg-dim);font-size:var(--fs-xs);cursor:pointer;border:0;background:transparent;font-family:inherit;text-align:left;width:100%}
 .tnode:hover{background:var(--panel-3);color:var(--fg)}
 .tnode.on{background:var(--accent-soft);color:var(--fg)}

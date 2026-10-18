@@ -78,7 +78,12 @@ export function icon(name, size) {
     path.setAttribute('d', d)
     svg.appendChild(path)
   }
-  if (size) { svg.setAttribute('width', String(size)); svg.setAttribute('height', String(size)) }
+  // **永远给显式尺寸**：SVG 只有 viewBox 时没有内在尺寸，放进 flex 行会被当成
+  // 可拉伸的替换元素——2026-10-19 人格页的文件树里，一个没给 size 的文件夹图标
+  // 撑满了整块面板。CSS 里写死的尺寸（如 `.empty svg`）仍然会覆盖属性。
+  const px = size ?? 16
+  svg.setAttribute('width', String(px))
+  svg.setAttribute('height', String(px))
   return svg
 }
 
