@@ -1,6 +1,6 @@
 /** HTTP 端口：一次"带闸门的取回"。
  *
- * **只有类型**（[06 §P2.5](../docs/internal/refactor-plan/06-迁移路线.md)）。实现在
+ * **只有类型**（06 §P2.5）。实现在
  * `adapters/http/client.ts`，SSRF 规则在 `adapters/http/ssrf-guard.ts`。
  *
  * 为什么需要它：全仓 32 处 `fetch(` 各自决定超时、体积上限、是否跟随重定向。

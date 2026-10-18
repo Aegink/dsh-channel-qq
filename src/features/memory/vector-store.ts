@@ -1,5 +1,5 @@
 /** 分片向量存储（P6e·e2）：`knowledge/vec.bin` + `knowledge/vec-index.json`
- * （[09 §4.3](../docs/internal/refactor-plan/09-记忆系统设计.md)；"JSONL + 二进制向量 + 暴力余弦、
+ * （09 §4.3；"JSONL + 二进制向量 + 暴力余弦、
  * 不引原生依赖"见 D11 与 §10）。
  *
  * 文件格式（全部小端；支持的平台 x86/arm 均为小端）：

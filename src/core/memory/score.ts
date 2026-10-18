@@ -1,4 +1,4 @@
-/** 记忆检索的打分（[09 §5.2](../docs/internal/refactor-plan/09-记忆系统设计.md)）。
+/** 记忆检索的打分（09 §5.2）。
  *
  * 公式来自 Generative Agents 的三因子加权，但**去掉了论文里的 min-max 归一化**，
  * 理由是本项目实测出来的一个问题（写第一版时踩的）：
@@ -222,7 +222,7 @@ export function queryTerms(text: string): string[] {
 }
 
 /**
- * 余弦相似度（[09 §5.2](../docs/internal/refactor-plan/09-记忆系统设计.md) 的 a 项）。
+ * 余弦相似度（09 §5.2 的 a 项）。
  *
  * 两个向量都**已经 L2 归一化**（bge-small-zh-v1.5 的输出就是这个形式，写在
  * `EmbedPort` 的实现契约里），所以点积即余弦，**别再做一次归一化**。负数

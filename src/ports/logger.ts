@@ -12,7 +12,7 @@
  * `scope='quotes'` + `msg='loaded 3'`。这个仓里每一行日志本来就写成
  * `作用域: 内容`，所以拆出来的是真作用域，不是为了结构化而新编的字段。
  *
- * **只有类型**（[06 §P2.2](../docs/internal/refactor-plan/06-迁移路线.md)）。
+ * **只有类型**（06 §P2.2）。
  */
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'

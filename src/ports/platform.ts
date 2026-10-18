@@ -1,6 +1,6 @@
 /** 平台端口：QQ 动作门面与连接状态。
  *
- * **这个文件只有类型，没有实现**（[06 §P2.1](../docs/internal/refactor-plan/06-迁移路线.md)）。
+ * **这个文件只有类型，没有实现**（06 §P2.1）。
  * 实现有两处，都在 `adapters/onebot/`：
  *   - `qq-api.ts` 的 `createQQApi()` —— 把字符串动作名与松散参数收敛成方法；
  *   - `platform.ts` 的 `platformOf()` —— 把一个 `OneBotClient` 包成 `ChatPlatform`。

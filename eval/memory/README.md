@@ -1,8 +1,7 @@
 # 记忆评测（60 题基准）· P6e·e4
 
 用**服务器上的真实日记**构建的 60 题基准，考记忆系统的检索侧：召回、延迟、注入预算。
-规格见 [09 §9](../../docs/internal/refactor-plan/09-记忆系统设计.md)；跑分结果与诊断见
-[阶段完成记录 §11](../../docs/internal/refactor-plan/11-阶段完成记录.md)。
+设计取向与结论见 [docs/memory.md](../../docs/memory.md)（内部设计文档与阶段记录不随仓库公开）。
 
 ## 怎么跑
 
@@ -23,7 +22,7 @@ node eval/memory/run.mjs --enforce    # 把 09 §9.2 的门槛当 FAIL（退出�
 node eval/run.mjs --suite memory
 ```
 
-**需要编译产物**：`run.mjs` / `corpus.mjs` import 的是 `lib/`（`npm run build`）——
+**需要编译产物**：`run.mjs` / `corpus.mjs` import 的是 `build/lib/`（`npm run build`）——
 这是 `eval/` 里唯一的例外（其它套件刻意在无构建产物的机器上也能跑）。理由：
 这里要测的正是**系统里那一份检索逻辑**，抄一份到 eval 就会与产品漂移。
 

@@ -1,6 +1,6 @@
 /** 宿主 agent 的接线面：消息投递、状态查询、事件订阅。
  *
- * **这里是 `as never` / `as unknown as` 唯一的落点**（[06 §P2.9](../docs/internal/refactor-plan/06-迁移路线.md)）。
+ * **这里是 `as never` / `as unknown as` 唯一的落点**（06 §P2.9）。
  *
  * 为什么要把转型集中到一处：宿主类型是**运行时形状的知识**——`agent.status`
  * 有没有、`steer`/`inject` 在不在、`ctx.on('agent/pre-step')` 的监听器收几个

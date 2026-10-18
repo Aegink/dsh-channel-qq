@@ -1,6 +1,6 @@
 /** 宿主会话的接缝：开一个会话、往里面递东西、听它的回合事件。
  *
- * 为什么要有这条缝（[04 §2](../../docs/internal/refactor-plan/04-目标架构.md)）：`bridge.ts` 原来
+ * 为什么要有这条缝（04 §2）：`bridge.ts` 原来
  * 手里攥着整个 cordis `Context`——`agents` / `agentPresets` / `agentDefaultModel` /
  * `permissionPresets` / `sessionTitle` / `workspaceRegistry` / `attachments` 七个服务，
  * 加上十来处 `as never`。后果不是"不好看"，而是**任何一次会话逻辑的测试都要先造一个

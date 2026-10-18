@@ -1,7 +1,7 @@
 /** AGENTS.md 的"指令受管区"（P6b）：把包尾的行为约定搬进指令层。
  *
  * 为什么落在工作区 AGENTS.md 的受管区，而不是宿主 `ctx.systemPrompt.section()`：
- * 宿主确实有提示片段接缝（见 `docs/internal/refactor-plan/09-宿主核实记录.md` V4），但它的两种
+ * 宿主确实有提示片段接缝（见 `内部文档宿主核实记录.md` V4），但它的两种
  * 落点都够不着本任务的改动面——按 Agent 注册要改 `adapters/dsh-host/agents.ts`
  * 的 `watchTurns`（别人的文件），在插件根上下文注册则是全局的、会把 QQ 行为约定
  * 漏给同进程里所有非 QQ 会话。AGENTS.md 是 05 §3.4 给的另一个落点，且这份文件

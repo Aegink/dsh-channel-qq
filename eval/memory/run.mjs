@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 记忆 60 题基准（P6e·e4 · [09 §9](../docs/internal/refactor-plan/09-记忆系统设计.md)）。
+ * 记忆 60 题基准（P6e·e4；设计取向见 docs/memory.md）。
  *
  *   node eval/memory/run.mjs                    # 跑基准（语料默认取 eval/memory/.cache/memory）
  *   node eval/memory/run.mjs --corpus <目录>    # 指向别的语料（服务器上是工作区 memory/）

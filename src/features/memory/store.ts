@@ -1,4 +1,4 @@
-/** 记忆记录的存储：`knowledge/records.jsonl`（[09 §4.3](../docs/internal/refactor-plan/09-记忆系统设计.md)）。
+/** 记忆记录的存储：`knowledge/records.jsonl`（09 §4.3）。
  *
  * 三个决定值得写下来：
  *

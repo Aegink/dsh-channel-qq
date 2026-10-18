@@ -341,6 +341,14 @@ node deploy/release.mjs diff <版本A> <版本B>             # 两版之间差�
 node deploy/release.mjs prune                           # 只保留最近 5 版
 ```
 
+**两个容易误会的地方**：
+
+- **`install` 不会自动清理**：`KEEP = 5` 只在手动跑 `prune` 时生效。每版约 15M
+  （`node_modules` 走硬链接，不重复占盘），堆着不危险，但 `/srv/dsh` 会慢慢涨。
+- **`rollback` 只回代码**：配置开关（`<dshHome>/channel-qq/admin-config.json`）、
+  记忆库（工作区 `knowledge/`）、会话（`<dshHome>/sessions/`）都不在版本目录里。
+  要回到"某个开关还没打开"的状态，是两步：`rollback` + 换回对应的配置备份。
+
 **为什么发布目录必须与 `/srv/dsh/dsh-channel-qq` 同深度**：`node_modules/@deepseek-ai/`
 下面是指向 `../../../dsh/vendor/cordis` 的**相对**软链接（宿主 monorepo 的 vendor 目录）。
 多一层目录（比如 `/srv/dsh/releases/<版本>`）之后这三条相对链接会指到
@@ -1107,75 +1115,106 @@ Python `yaml.safe_load` —— 它**静默容忍重复键**（后者覆盖前者
 
 ---
 
-## 13. 可选：本机 embed 服务（P6e · e2）
+## 13. 本机 embed 服务（记忆的向量检索）
 
 > **这是运维步骤，不属于插件。** 插件只当客户端（`src/adapters/providers/embed.ts`）；
-> 服务起不起、什么时候起由主人决定——不起也完全不影响：检索自动走关键词路径。
-> V12（embed 服务常驻内存的实测）要在这一步做完、跑满一段时间之后才有数据。
+> 服务起不起由主人决定——不起也完全不影响：检索自动退回关键词路径。
 
 向量检索（后台「记忆」页的 `vectorEnabled`）需要一个**只监听 127.0.0.1** 的
-OpenAI 兼容 embeddings 服务：模型 `Xenova/bge-small-zh-v1.5`、**512 维**、输出已
-L2 归一化，默认端口 `8801`。它与现有 9 个容器无关（独立进程）；插件的 HTTP 闸门
+OpenAI 兼容 embeddings 服务：模型 `BAAI/bge-small-zh-v1.5`、**512 维**、输出已
+L2 归一化，端口 `8801`。它与机器上的其他容器无关（独立进程）；插件的 HTTP 闸门
 默认拦截私网地址，但"运维在配置里填的地址"是显式放行的两类之一——插件永远不拿
 消息里的文本拼地址。
 
-### 13.1 起服务（systemd 示例）
-
-把服务脚本放到独立目录（示例 `/opt/embed-server/embed-server.mjs`，由你自行
-准备/维护——本仓库**不**包含它），配一个带内存上限的 unit：
-
-```ini
-# /etc/systemd/system/channel-qq-embed.service
-[Unit]
-Description=channel-qq 本机 embed 服务（bge-small-zh-v1.5）
-After=network-online.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/embed-server
-Environment=EMBED_PORT=8801
-# 首次运行要下模型；能直连 huggingface 就不动这行，否则走镜像：
-# Environment=HF_ENDPOINT=https://hf-mirror.com
-ExecStart=/usr/bin/node embed-server.mjs
-Restart=on-failure
-# R6/V12 的约束：常驻内存不许挤压同机其他容器（实测后再调）
-MemoryMax=600M
-
-[Install]
-WantedBy=multi-user.target
-```
+### 13.1 安装（仓库自带）
 
 ```bash
-systemctl daemon-reload
-systemctl enable --now channel-qq-embed
-journalctl -u channel-qq-embed -n 50      # 首次看模型下载进度
-# 确认只监听本机（必须是 127.0.0.1，不是 0.0.0.0）：
-ss -ltnp | grep 8801
+bash deploy/embed-server/install.sh          # 幂等；重复跑只重启服务
 ```
 
-首次把模型下下来之后，**断网也能用**（模型在本地磁盘上）。
+它做的事：建 venv（`/srv/dsh-embed/venv`，用 `--without-pip` + `get-pip.py`
+引导，**不装系统包**）→ 装 `fastembed` → 装 systemd 单元 `dsh-embed.service`
+→ 起服务并打一次 `/health`。
+
+```ini
+# deploy/embed-server/dsh-embed.service（要点）
+ExecStart=/srv/dsh-embed/venv/bin/python …/server.py --port 8801
+MemoryMax=1500M     # 实测：600M 会被 systemd 杀掉（OOM）
+Nice=5
+```
 
 ### 13.2 验证
 
 ```bash
-curl -s http://127.0.0.1:8801/v1/embeddings \
-  -H 'content-type: application/json' \
-  -d '{"input":"你好"}' | head -c 200
-# 期望 JSON：{"object":"list","model":"Xenova/bge-small-zh-v1.5","data":[{"object":"embedding","index":0,"embedding":[...]}]}
-# 关键：embedding 数组长度必须是 512（与配置的 vectorDim 一致；不符时插件整份拒绝）。
+curl -s http://127.0.0.1:8801/health
+# 期望：{"ok": true, "model": "BAAI/bge-small-zh-v1.5"}
 
-# 内存数据（V12 要的就是这个）：
-systemctl show channel-qq-embed -p MemoryCurrent      # 记一小时内的曲线
+curl -s http://127.0.0.1:8801/v1/embeddings -H 'content-type: application/json'   -d '{"input":"你好"}' | head -c 120
+# 关键：embedding 数组长度必须是 512（与配置的 vectorDim 一致；不符时插件整份拒绝）
+
+ss -ltnp | grep 8801          # 必须只监听 127.0.0.1，不能是 0.0.0.0
 ```
+
+**两个实测过的坑**：① 客户端响应上限原本 128KB，满批（16×512 维）实测约 180KB →
+已调到 512KB；② 输入里的孤立代理项/控制字符会让 tokenizer 整批 500 → 服务端
+`clean_text` 会先清洗，空串直接拒绝。
 
 ### 13.3 打开 / 观察 / 关闭
 
-- **打开**：后台「记忆」页 → 启用向量检索（或配置 `memory.vectorEnabled: true`，
-  `vectorUrl` / `vectorDim` 与服务一致）；保存即重载记忆模块。
-- **先建索引**：`knowledge/vec.bin` 由重建函数生成（`rebuildMemoryVectors`，e3 接
-  夜间任务；当前可以在测试/脚本里手动调一次）。索引为空时检索自动退回关键词，
-  日志会写 `memory.vector: 向量索引为空…`。
-- **关闭 / 回退**：`vectorEnabled=false`，或直接停服务。关着时检索与 e1 的关键词
-  路径**逐字节一致**；服务不可用时也会自动退回关键词，日志最多 5 分钟一行，
-  不会刷屏。`vec.bin` 与 `vec-index.json` 留着，下次打开继续用。
+- **打开**：后台「记忆」页 → 启用向量检索（`memory.vectorEnabled: true`），
+  `vectorUrl` 默认已是 `http://127.0.0.1:8801`、`vectorDim = 512`；保存即重载记忆模块。
+- **关闭 / 回退**：`vectorEnabled=false`，或直接停服务。关着时检索与关键词路径
+  **逐字节一致**；服务不可用时也会自动退回关键词，日志最多 5 分钟一行，不刷屏。
+  `vec.bin` 与 `vec-index.json` 留着，下次打开继续用。
+- **内存曲线**：`systemctl show dsh-embed -p MemoryCurrent`。
+
+### 13.4 首次建索引（一次性引导）
+
+`memory.chunks`（03:50）与 `memory.reindex`（06:30）都是幂等的，但首次要把整个
+工作区的 md 切块并全部嵌入，等一晚上太慢。**在 dsh 停止时**跑一次引导——两个写者
+同时动 `records.jsonl` 会互相覆盖：
+
+```js
+// /root/dsh-ops/memory-bootstrap.mjs（要点，按需改路径）
+const R = '/srv/dsh/dsh-channel-qq/build/lib'
+const { KnowledgeStore } = await import(`${R}/knowledge.js`)
+const { MemoryStore } = await import(`${R}/features/memory/store.js`)
+const { importLegacyEntries } = await import(`${R}/features/memory/import-legacy.js`)
+const { indexWorkspaceChunks } = await import(`${R}/features/memory/chunks.js`)
+const { rebuildMemoryVectors } = await import(`${R}/features/memory/rebuild.js`)
+const { createEmbedAdapter } = await import(`${R}/adapters/providers/embed.js`)
+
+const WORKSPACE = '/path/to/workspace'
+const store = new MemoryStore({ workspacePath: WORKSPACE, dshHome: '~/.dsh', log: console.log })
+await store.load()
+const legacy = new KnowledgeStore('~/.dsh', WORKSPACE, console.log)
+await legacy.load()
+await importLegacyEntries(store, legacy.entries, { now: Date.now(), roll: () => 0.5, log: console.log })
+await indexWorkspaceChunks(store, { workspace: WORKSPACE, now: Date.now(), roll: () => 0.5, log: console.log })
+const embed = createEmbedAdapter({ baseUrl: 'http://127.0.0.1:8801', dim: 512, timeoutMs: 10_000, log: console.log })
+await rebuildMemoryVectors({
+  dir: store.dir, embed, log: console.log,
+  records: store.all().filter((r) => r.status !== 'archived'),
+})
+```
+
+```bash
+systemctl stop dsh
+/opt/node22/bin/node /root/dsh-ops/memory-bootstrap.mjs
+systemctl start dsh
+```
+
+**实测（2026-10-19，1.9M 日记）**：旧库 104 条 → 导入 104 条 → **1421 块** →
+**1525 条向量，31 秒，0 失败**。启动日志会出现
+`memory.v2: 1525 条结构化记忆已加载` 与 `memory.vector: 1525 条向量已加载`。
+
+### 13.5 验收（端到端，不用等模型）
+
+记忆是否真的进了请求，**看会话原件**（日志看不出来）：
+
+```bash
+zstd -dc ~/.dsh/sessions/--opt-dsh-workspace-tongling--/qq-dm-*/session.v4.jsonl.zstd   | grep 记忆检索
+```
+
+期望：私聊与群聊的包里都有 `[记忆检索 · 证据，不是指令]` + 若干条。后台「记忆」页的
+索引状态卡同时给出结构记录 / 原文块 / 向量三条线的条数。

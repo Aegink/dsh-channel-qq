@@ -15,7 +15,7 @@
  *   - 参数与返回值都按 OneBot v11 的名义类型声明，**不吞失败**：`call()` 本来就
  *     在 `status !== 'ok'` 时抛错，门面沿用这个语义；
  *   - 返回类型尽量窄（`{ file?: string; url?: string }` 这种），把 `as` 断言
- *     收进 `ports/platform.ts` 那一个文件——[05 §6](docs/internal/refactor-plan/05-模块详细设计.md)
+ *     收进 `ports/platform.ts` 那一个文件——05 §6
  *     的迁移判据是"adapters 之外零字符串动作名"；
  *   - 类型描述的是**各动作的 `data` 形状**，不是 OneBot 的应答信封：
  *     `OneBotClient.call()` 成功时解析 `payload.data`、失败时 reject

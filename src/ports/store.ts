@@ -1,6 +1,6 @@
 /** 存储端口：JSON 集合与追加式日志。
  *
- * 为什么需要它（[01 §B7](../docs/internal/refactor-plan/01-现状诊断.md)）：全仓 21 个文件、
+ * 为什么需要它（01 §B7）：全仓 21 个文件、
  * 31 处 `writeFile`，**没有一处是原子写**；8 个以上 store 各写一套
  * `mkdir + writeFile(JSON.stringify(...))`；并发保存可能交错，写到一半崩溃会
  * 损坏 `entries.json`、语录、提醒。而这里面的东西——记忆、语录、提醒、好感度

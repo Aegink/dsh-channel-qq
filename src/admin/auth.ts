@@ -1,6 +1,6 @@
 /** 后台认证：口令来源链、scrypt 校验、会话（滑动续期）、登录限速、CSRF 头校验。
  *
- * 口令来源链（从高到低，docs/internal/refactor-plan/10 §8 / D13）：
+ * 口令来源链（从高到低，内部文档 §8 / D13）：
  *
  *   1. `CHANNEL_QQ_ADMIN_PASSWORD_HASH`  —— scrypt 哈希，**推荐的部署形态**；
  *   2. `CHANNEL_QQ_ADMIN_PASSWORD`       —— 兼容 P0 的明文环境变量（弃用警告，
@@ -180,7 +180,7 @@ export class AuthManager {
   private logDeprecation(): void {
     if (this.loggedDeprecation) return
     this.loggedDeprecation = true
-    this.opts.log(`admin panel: 口令来自 ${PASSWORD_ENV}（明文环境变量，弃用中）。建议迁移到 ${HASH_ENV}（scrypt 哈希），生成方式见 docs/internal/HANDOVER.md`)
+    this.opts.log(`admin panel: 口令来自 ${PASSWORD_ENV}（明文环境变量，弃用中）。建议迁移到 ${HASH_ENV}（scrypt 哈希），生成方式见 内部文档`)
   }
 
   private async readPanel(): Promise<ParsedHash | null> {

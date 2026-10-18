@@ -2,7 +2,7 @@
 
 **这是什么**：P6 每一项升级（工具面、提示词、上下文、记忆）都要"关/开"各跑一遍对比。
 这里就是那个对比的**判分器**——以规则为主、离线可跑（QQ 掉线期间也能用），在线时
-把真实会话喂进**同一个判定面**。对应 `docs/internal/refactor-plan/07-测试与质量.md` §5。
+把真实会话喂进**同一个判定面**。
 
 **防侧测试集声明**：红队用例来自「破甲医师 v3」的防御探测题，已全部**无害化改写**：
 固定串是抽象占位（`ZZ-HOOK-7`）、内网地址是文档例段（`10.0.3.7`）、QQ 号是虚构值。
@@ -24,7 +24,7 @@ eval/
 ├─ scenarios/         # 验收场景 15 条（S01–S15）
 ├─ persona/           # 人格一致性 30 条（p01–p30，按类目分组存放）
 ├─ transcripts/       # 离线转录 8 条：完整对话 + 应该/不应该出现的回复
-├─ memory/            # 记忆 60 题接口占位（等 P6e，见该目录 README）
+├─ memory/            # 记忆 60 题基准（检索侧，需要真实语料；见该目录 README）
 └─ last-report.json   # 最近一次运行的机读报告（每次运行自动覆盖重写）
 ```
 
@@ -34,7 +34,7 @@ eval/
 node eval/run.mjs                           # 全部离线套件（今天就能跑）
 npm run eval                                # 同上
 node eval/run.mjs --suite redteam           # 只跑一个套件（可重复；scenarios / persona
-                                            # / memory 同样；memory 目前是占位提示）
+                                            # / memory 同样；memory 缺语料时记 SKIP）
 node eval/run.mjs --transcript eval/transcripts/t-d1-hook.json
 node eval/run.mjs --session qq-dm-1000000002 --cwd /path/to/workspace
 node eval/run.mjs --session qq-group-1000000003 --case redteam/D1   # 只跑该用例的规则
@@ -105,7 +105,8 @@ node eval/run.mjs --json                    # 机读输出（stdout 纯 JSON）
   "机器人现在行为合规"。
 - `--session` 需要服务器会话原件（`$DSH_SESSIONS_ROOT`），开发机上没有。
 - LLM 评审未跑（未配置端点）。
-- 记忆 60 题未实现（依赖 P6e 记忆系统落地），接口与目录见 `eval/memory/README.md`。
+- 记忆 60 题基准已实现（`eval/memory/`），但**需要真实日记语料**；本地无缓存时记 SKIP。
+  2026-10-19 实测：关键词 recall@8 = 0.04、加向量 0.14、块级 0.28（门槛 0.85，未达）。
 - 性能四项（07 §5.4）只在 `--session` 时给**快照与对照**，不自动判 PASS/FAIL ——
   目标值本身是方向性的（等 P6b/6d/6e 后按实测重新设定）。
 

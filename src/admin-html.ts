@@ -3,7 +3,7 @@
  * Source: `src/admin/ui/**`（原生 ES 模块，多文件）
  * Regenerate: `node scripts/build-admin-html.mjs`
  *
- * 前端拆成多个原生 ES 模块（docs/internal/refactor-plan/10 §9），由生成器逐文件内嵌到这里：
+ * 前端拆成多个原生 ES 模块（内部文档 §9），由生成器逐文件内嵌到这里：
  * tsc 不复制非 TS 文件，内嵌之后**部署产物只有一个 .js**，页面与代码永远同版本。
  * 浏览器经 `/ui/*` 路径加载，服务端（src/admin.ts）从这份包直接应答。
  * 每个文件的每一行都经过 `JSON.stringify`，任何内容都不可能生成非法的 TS 字面量。
