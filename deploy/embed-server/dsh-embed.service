@@ -8,7 +8,7 @@ ExecStart=/srv/dsh-embed/venv/bin/python /srv/dsh/dsh-channel-qq/deploy/embed-se
 Restart=on-failure
 RestartSec=5
 # 只监听 127.0.0.1（脚本默认值）；这里不设 User，保持与部署惯例一致。
-MemoryMax=600M
+MemoryMax=1500M
 Nice=5
 
 [Install]

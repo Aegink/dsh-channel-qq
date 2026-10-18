@@ -42,6 +42,16 @@ def load_embedder(name: str):
         return _embedder
 
 
+def clean_text(value: str) -> str:
+    """去掉孤立代理项与控制字符。
+
+    JSON 里可能出现 `\\ud83d` 这种半个 emoji（日志截断、拼接产生），Python 的 str
+    能装下它，但 tokenizer 会抛 `TextEncodeInput must be Union[...]`——一整批向量
+    因此失败。这里按 UTF-8 可编码性过滤，坏字符丢掉而不是让整条链路挂掉。
+    """
+    return value.encode('utf-8', 'ignore').decode('utf-8', 'ignore').strip()
+
+
 def embed_texts(texts):
     embedder = load_embedder(_model_name)
     vectors = []
@@ -83,6 +93,10 @@ class Handler(BaseHTTPRequestHandler):
             texts = [raw] if isinstance(raw, str) else list(raw or [])
             if not texts or any(not isinstance(t, str) for t in texts):
                 self._send(400, {'error': {'message': 'input 必须是字符串或字符串数组'}})
+                return
+            texts = [clean_text(t) for t in texts]
+            if any(t == '' for t in texts):
+                self._send(400, {'error': {'message': 'input 里有空字符串（清洗后为空）'}})
                 return
             if _embedder is None:
                 load_embedder(_model_name)
