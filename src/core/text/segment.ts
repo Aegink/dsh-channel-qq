@@ -56,15 +56,30 @@ export function stripJunk(text: string): string {
   return filtered.trim()
 }
 
-/** 半角标点 → 全角；直引号 → 成对的弯引号。 */
+/** 半角标点 → 全角；直引号 → 成对的弯引号。
+ *
+ * **URL 与代码块必须先保护**：它们里面的 `:` `,` `?` `!` 是语法不是语气。
+ * 从前这里无条件全量替换，于是 `https://a.com/x?y=1,z=2` 会变成
+ * `https：//a.com/x？y=1，z=2`——链接直接死掉，而且 `?` 变成句末符后
+ * 还会把链接切成两条消息（2026-10-18 审计实测）。
+ */
 export function convertPunctuation(text: string): string {
-  const result = text.replace(/:/g, '：').replace(/,/g, '，').replace(/\?/g, '？').replace(/!/g, '！')
+  const slots: string[] = []
+  const protect = (s: string): string => {
+    slots.push(s)
+    return `\u0000${slots.length - 1}\u0000`
+  }
+  const body = text
+    .replace(/```[\s\S]*?```/g, protect)
+    .replace(/`[^`\n]+`/g, protect)
+    .replace(/https?:\/\/[^\s]+/g, protect)
+  const result = body.replace(/:/g, '：').replace(/,/g, '，').replace(/\?/g, '？').replace(/!/g, '！')
   let open = true
   let converted = ''
   for (const char of result) {
     if (char === '"') { converted += open ? '“' : '”'; open = !open } else converted += char
   }
-  return converted
+  return converted.replace(/\u0000(\d+)\u0000/g, (_match, index: string) => slots[Number(index)] ?? '')
 }
 
 const ENDERS = new Set(['。', '！', '？', '…', '!', '?'])

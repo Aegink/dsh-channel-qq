@@ -23,7 +23,7 @@ import type { QQChannelConfig } from '../../config.js'
 import type { QQApi } from '../../ports/platform.js'
 import type { OutboundQueue } from '../../outbound.js'
 import type { EmojiLibrary } from '../../emoji-library.js'
-import type { SentLog } from '../../sent-log.js'
+import type { SentLog, SentLogHub } from '../../sent-log.js'
 import type { KnowledgeStore } from '../../knowledge.js'
 import type { MemoryService } from '../../ports/memory.js'
 import { registerSpecs, type ToolHost, type ToolSpec } from '../../adapters/dsh-host/tools.js'
@@ -46,6 +46,8 @@ import { voiceTools } from '../voice/tools.js'
 import { musicTools } from '../music/tools.js'
 import { memoryTools } from '../memory/tools.js'
 import { affectionTools } from '../affection/tools.js'
+import { approvalEnabled } from '../approval/store.js'
+import { selfHarmHint, selfHarmReason } from '../../core/approval/self-harm.js'
 
 export type { QQToolDeps, AffectionPort } from '../tool-deps.js'
 
@@ -62,8 +64,8 @@ export interface RegisterToolsArgs {
   readonly library?: EmojiLibrary
   readonly affection?: QQToolDeps['affection']
   readonly sentLog?: SentLog
+  readonly sentLogHub?: SentLogHub
   readonly knowledge?: KnowledgeStore
-  /** 新记忆系统（P6e）。 */
   readonly memory?: MemoryService
   readonly extract?: (source: string, text: string) => Promise<unknown>
 }
@@ -91,11 +93,8 @@ function toolDeps(args: RegisterToolsArgs): QQToolDeps {
   }
 
   const assertDangerous = (action: string): void => {
-    // policy.v2 打开、且工具闸门真的挂在宿主上时，这三个动作的放行已由
-    // tools/pre-execute 按信任表裁决（只有 master 的回合能走到这里；见
-    // app/policy/tool-policy.ts），内层闸门不再重复判。关着、或闸门没挂上
-    // （宿主缺事件接缝）→ 回到 D10 的总闸门：判定与文案与从前逐字一致——
-    // 这是 fail-closed：接缝缺失时自动退回旧闸门，而不是放行。
+    // policy.v2 + 闸门已挂时由 tools/pre-execute 按信任表裁决，这里不重复判；
+    // 否则回到 D10 总闸门（fail-closed：接缝缺失时退回旧闸门，而不是放行）。
     if (policyEnabled(config) && isToolGateArmed()) return
     if (config.groupAdmin?.dangerous === true) return
     throw new Error(
@@ -113,6 +112,7 @@ function toolDeps(args: RegisterToolsArgs): QQToolDeps {
     library: args.library,
     affection: args.affection,
     sentLog: args.sentLog,
+    sentLogHub: args.sentLogHub,
     knowledge: args.knowledge,
     memory: args.memory,
     extract: args.extract,
@@ -231,169 +231,14 @@ export function registerQQTools(
   knowledge?: KnowledgeStore,
   extract?: (source: string, text: string) => Promise<unknown>,
   memory?: MemoryService,
+  sentLogHub?: SentLogHub,
 ): () => void {
-  const deps = toolDeps({ ctx, config, api, out, log, library, affection, sentLog, knowledge, extract, memory })
+  const deps = toolDeps({ ctx, config, api, out, log, library, affection, sentLog, sentLogHub, knowledge, extract, memory })
   const specs = allSpecs(deps)
   // tools.v2 打开时换面：旧 spec 全被收编、只上宿主 17 个合并工具。
   if (toolsV2Enabled(config)) return registerMergedSurface({ ctx, specs, log })
   return registerSpecs(ctx, specs, log, 'qq-tools')
 }
 
-// ── 工具闸门（P6c policy.v2）：回调与装/卸控制器 ─────────────────────────────
-//
-// 宿主监听器在 `adapters/dsh-host/services.ts` 的 `installToolGate`；根服务只在
-// `policy.v2` 打开时安装。这里放"装没装"的状态与两个回调的组装——旧总闸门
-// （上面 `assertDangerous`）与它共用同一个问题："这次调用能不能执行"。
-
-/** "闸门真的挂上了吗"——旧总闸门据此判断能不能把裁决权让给信任表。 */
-let toolGateArmed = false
-
-export function setToolGateArmed(armed: boolean): void { toolGateArmed = armed }
-export function isToolGateArmed(): boolean { return toolGateArmed }
-
-export interface ToolGateCall {
-  readonly name: string
-  readonly args: unknown
-  /** `exec.agent.id`——我们的会话 id 形如 `qq-group-1000000003`。 */
-  readonly agentId: string | undefined
-}
-
-export type ToolGateDecision =
-  | { readonly kind: 'pass' }
-  | { readonly kind: 'deny'; readonly reason: string }
-
-export interface ToolGateHooks {
-  /** 执行前裁决（`tools/pre-execute`）。 */
-  decide(call: ToolGateCall): ToolGateDecision
-  /** 执行后记账（`tools/post-execute`）：只记**真的发出去**的文本发送。 */
-  record(call: ToolGateCall, ok: boolean): void
-}
-
-export interface ToolGateDeps {
-  readonly trustOf: (sessionId: string) => Trust | undefined
-  /** reason key → 面向模型的拒绝文案（人格包渲染，根服务提供）。 */
-  readonly guardText: (reasonKey: string) => string
-  readonly workspacePath: () => string | null
-  readonly sendGuard: SendSignatureGuard | null
-  /** 两套规则的开关（P6d）：档位只看 toolsOn、签名与放行表只看 policyOn；缺省 = 旧行为（policyOn=true、toolsOn=false）。 */
-  readonly switches?: {
-    readonly policyOn?: () => boolean
-    readonly toolsOn?: () => boolean
-    readonly admins?: () => readonly number[]
-  }
-  readonly log: (line: string) => void
-}
-
-export function createToolGateHooks(deps: ToolGateDeps): ToolGateHooks {
-  const factsOf = (call: ToolGateCall): ToolCallFacts => {
-    const sessionId = call.agentId ?? ''
-    const isQqSession = sessionId.startsWith(SESSION_PREFIX)
-    return {
-      // 认不出归属的调用按 member 兜底——拿不到信任时最保守（不认 master）。
-      trust: isQqSession ? deps.trustOf(sessionId) ?? 'member' : 'member',
-      tool: call.name,
-      args: isRecord(call.args) ? call.args : {},
-      isQqSession,
-      isGroupTurn: isQqSession ? groupTurnOf(sessionId) : true,
-      workspacePath: deps.workspacePath(),
-    }
-  }
-  return {
-    decide(call) {
-      const facts = factsOf(call)
-      // tools.v2：会话档位（只看自己的开关；关着时这一段一个字节都不跑）。
-      // 第三参 = **本回合**的信任档：事件书（P6f）的回合发进群会话，靠 id 前缀
-      // 判不出"系统在做事"，只有信任账本知道（拿不到账本时为 null → 退回 id 判定）。
-      if (deps.switches?.toolsOn?.() === true) {
-        const tierKey = tierDenyFor(call, deps.switches.admins?.() ?? [], deps.trustOf(call.agentId ?? '') ?? null)
-        if (tierKey !== null) {
-          deps.log(`tools.v2: denied ${call.name} (session=${call.agentId ?? '?'}) reason=${tierKey}`)
-          return { kind: 'deny', reason: deps.guardText(tierKey) }
-        }
-      }
-      if (deps.switches?.policyOn?.() === false) return { kind: 'pass' }
-      const blocked = checkSendSignature(deps, call, facts)
-      if (blocked !== null) return { kind: 'deny', reason: blocked }
-      const verdict = decideToolCall(facts)
-      if (verdict.kind === 'allow') return { kind: 'pass' }
-      deps.log(`policy: denied ${call.name} (trust=${facts.trust}) reason=${verdict.reasonKey}`)
-      return { kind: 'deny', reason: deps.guardText(verdict.reasonKey) }
-    },
-    record(call, ok) {
-      if (!ok || deps.sendGuard === null) return
-      if (deps.switches?.policyOn?.() === false) return
-      const facts = factsOf(call)
-      if (!facts.isQqSession) return
-      const text = textSentBy(call.name, facts.args)
-      if (text === null) return
-      deps.sendGuard.record(roomKeyOf(facts.args) ?? fallbackRoom(call), text)
-    },
-  }
-}
-
-function checkSendSignature(deps: ToolGateDeps, call: ToolGateCall, facts: ToolCallFacts): string | null {
-  if (!facts.isQqSession || deps.sendGuard === null) return null
-  const text = textSentBy(call.name, facts.args)
-  if (text === null) return null
-  const room = roomKeyOf(facts.args) ?? fallbackRoom(call)
-  const hit = deps.sendGuard.check(room, text)
-  if (hit === null) return null
-  deps.log(`policy: output signature blocked ${call.name} in ${room} (${hit})`)
-  return deps.guardText(hit)
-}
-
-function fallbackRoom(call: ToolGateCall): string {
-  return `session:${call.agentId ?? 'unknown'}`
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
-
-/** 会话 id → 是不是群回合；解析不出来时按群（更严：好感的私聊豁免拿不到）。 */
-function groupTurnOf(sessionId: string): boolean {
-  const room = splitRoom(sessionId.slice(SESSION_PREFIX.length))
-  return room === null ? true : room.isGroup
-}
-
-export interface ToolGateControllerDeps {
-  readonly hooks: ToolGateHooks
-  /** 实际安装（真实现 = `adapters/dsh-host/services.ts` 的 installToolGate）；装不上返回 null。 */
-  readonly install: (hooks: ToolGateHooks) => (() => void) | null
-  readonly log: (line: string) => void
-}
-
-/** 让"装没装"与 `policy.v2` 保持一致；幂等，关着时一个监听器都不挂。 */
-export class ToolGateController {
-  private dispose: (() => void) | null = null
-
-  constructor(private readonly deps: ToolGateControllerDeps) {}
-
-  get installed(): boolean { return this.dispose !== null }
-
-  sync(wanted: boolean): void {
-    if (wanted === this.installed) return
-    if (!wanted) { this.stop(); return }
-    const dispose = this.deps.install(this.deps.hooks)
-    if (dispose === null) {
-      this.deps.log('工具闸门：宿主没有 tools/pre-execute 接缝，闸门未装（高危工具回到旧总闸门）')
-      return
-    }
-    this.dispose = dispose
-    setToolGateArmed(true)
-    this.deps.log('工具闸门已挂上（tools/pre-execute）')
-  }
-
-  stop(): void {
-    if (this.dispose === null) return
-    const dispose = this.dispose
-    this.dispose = null
-    setToolGateArmed(false)
-    try {
-      dispose()
-    } catch (error) {
-      this.deps.log(`工具闸门：卸载失败：${String(error)}`)
-    }
-    this.deps.log('工具闸门已卸下')
-  }
-}
+import { isToolGateArmed } from './gate.js'
+export { createToolGateHooks, setToolGateArmed, isToolGateArmed, ToolGateController, type ToolGateCall, type ToolGateDecision, type ToolGateHooks, type ToolGateDeps } from './gate.js'

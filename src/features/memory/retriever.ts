@@ -28,7 +28,7 @@ import {
   keywordRelevance, queryTerms, rankCandidates, type Candidate,
 } from '../../core/memory/score.js'
 import { buildQuery, boostRelevance, narrowestRange, type MemoryQuery } from '../../core/memory/query.js'
-import { renderEvidence, selectForInjection } from '../../core/memory/select.js'
+import { evidenceLine, renderEvidence, selectForInjection } from '../../core/memory/select.js'
 import type { MemoryStore } from './store.js'
 import type { VectorRecall } from './vector-store.js'
 
@@ -59,7 +59,13 @@ export interface RetrieveOptions {
    * 为什么做成参数而不是常量：这三项在后台面板上能改，而"面板上能改的东西必须
    * 真的被读到"是这个项目反复付过学费的一条（`minLength` 曾经写死 8）。
    */
-  readonly budget?: { readonly threshold?: number; readonly maxRecords?: number; readonly maxChars?: number }
+  readonly budget?: { readonly threshold?: number; readonly maxRecords?: number; readonly maxChars?: number; readonly maxPerTopic?: number }
+  /**
+   * 打分权重覆盖（默认 `DEFAULT_WEIGHTS`；`preferRecent` 命中时用 `TIME_WEIGHTS`）。
+   * 评测用它把排序压到"只看相关性"——离线语料里的 importance/recency 是合成值，
+   * 不该参与判断"检索能不能找到依据"。
+   */
+  readonly weights?: { readonly relevance: number; readonly importance: number; readonly recency: number }
 }
 
 export interface Retrieved {
@@ -112,14 +118,20 @@ export class MemoryRetriever {
       record: c.record,
       relevance: boostRelevance(c.relevance, c.record, query),
     }))
-    const ranked = rankCandidates(weighted, opts.now, query.preferRecent ? TIME_WEIGHTS : DEFAULT_WEIGHTS)
-    const picked = selectForInjection(ranked, opts.budget ?? {})
-    if (picked.length === 0) return { query, picked: [], evidence: '' }
-
-    const evidence = renderEvidence(picked, {
+    const weights = opts.weights ?? (query.preferRecent ? TIME_WEIGHTS : DEFAULT_WEIGHTS)
+    const ranked = rankCandidates(weighted, opts.now, weights)
+    // 预算与渲染同源：按真正要渲染的那一行算长度（前缀也计入）。
+    const lineOpts = {
       renderTime: this.deps.renderTime,
       ...(this.deps.labelOfSubject === undefined ? {} : { labelOfSubject: this.deps.labelOfSubject }),
+    }
+    const picked = selectForInjection(ranked, {
+      ...(opts.budget ?? {}),
+      lineOf: (record, index) => evidenceLine(record, index, lineOpts),
     })
+    if (picked.length === 0) return { query, picked: [], evidence: '' }
+
+    const evidence = renderEvidence(picked, lineOpts)
     await this.account(picked.map((c) => c.record), opts.now)
     return { query, picked: picked.map((c) => c.record), evidence }
   }

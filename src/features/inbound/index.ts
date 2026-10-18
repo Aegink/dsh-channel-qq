@@ -23,7 +23,7 @@ import { findPackageRoot } from '../../adapters/persona/fs-pack.js'
 import { systemClock, systemRandom } from '../../ports/clock.js'
 import { systemHttp } from '../../adapters/http/client.js'
 import { transcribeVoiceMessage } from '../../adapters/providers/stt.js'
-import { SentLog } from '../../sent-log.js'
+import { createSentLogHub } from '../../sent-log.js'
 import { readJson } from '../../read-json.js'
 import { atomicWriteFile, readTextFileOrNull } from '../../adapters/fs-store/atomic.js'
 import { announceToolsV2Switch, syncToolsRegion } from '../tools-v2/index.js'
@@ -288,8 +288,8 @@ export const inboundPlugin: SubPlugin = {
     const { config } = host
     const parts = host.need('platform')
     const health = new GatewayHealth()
-    // 同一房间只建一次 sent-log（它带着"她最近说过什么"）。
-    const sentLogs = new Map<string, Promise<SentLogReader>>()
+    // 同一房间只建一次 sent-log；读写共用（写侧按房间记账见 messaging/tools.ts）。
+    const sentLogHub = createSentLogHub(host.dshHome, host.log)
     // 注入特征表（P6c）：坏表/版本不认识 → 降级为"没有规则"，绝不挡对话（loader 内记日志）。
     const bundle = await loadSignatureBundle(host.log)
     host.log(bundle === null
@@ -309,17 +309,7 @@ export const inboundPlugin: SubPlugin = {
         const result = await transcribeVoiceMessage(parts.api, config.stt, messageId, host.log)
         return result === null ? null : result[0]
       },
-      openSentLog: (room: string) => {
-        const hit = sentLogs.get(room)
-        if (hit !== undefined) return hit
-        const created = (async () => {
-          const sent = new SentLog(host.dshHome, room, host.log)
-          await sent.load()
-          return sent
-        })()
-        sentLogs.set(room, created)
-        return created
-      },
+      openSentLog: (room: string) => sentLogHub.for(room),
       // 审批网关（默认关；CHANNEL_QQ_APPROVAL=1 时生效）。命令先于 agent 处理、不经模型。
       ...approvalEnabled() ? { adminCommand: createAdminCommand(config.admins) } : {},
     })
@@ -333,9 +323,9 @@ export const inboundPlugin: SubPlugin = {
       void dispatch(host, runtime, event)
     })
     // 主 sent-log：工具面（qq_search_history 等）与后台资源共用同一份。
-    const primary = new SentLog(host.dshHome, config.primaryGroup !== null ? `group-${config.primaryGroup}` : 'group-none', host.log)
-    await primary.load()
+    const primary = await sentLogHub.for(config.primaryGroup !== null ? `group-${config.primaryGroup}` : 'group-none')
     host.provide('sentLog', primary)
+    host.provide('sentLogHub', sentLogHub)
     registerSendlResource(host)
     // 指令层与工具面的落点：两个受管区各随挂载同步一次（翻开关走 reload，不重挂子插件）。
     host.log(`instruction region (AGENTS.md): ${await syncInstructionRegion(host)}`)

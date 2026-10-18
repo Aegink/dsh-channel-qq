@@ -294,12 +294,8 @@ export class InboundPipeline {
     imageRefs: readonly unknown[],
     called: boolean,
   ): Promise<void> {
-    if (line !== null) conversation.queue.push(line)
-    if (imageRefs.length > 0) {
-      const cap = this.deps.config().imageRecognition.maxPerMessage
-      conversation.pendingImages.push(...imageRefs.slice(-cap))
-    }
     // 跨窗口去重：同一个 QQ 消息号绝不入队两次（NapCat 重试与窗口回显会重复）。
+    // **必须在 push 之前**：放在后面时重复消息已经进队列，return 只退出、内容留着。
     if (typeof event.message_id === 'number') {
       if (!conversation.seenMessageIds) conversation.seenMessageIds = new Set()
       if (conversation.seenMessageIds.has(event.message_id)) return
@@ -307,6 +303,11 @@ export class InboundPipeline {
         conversation.seenMessageIds = new Set([...conversation.seenMessageIds].slice(-250))
       }
       conversation.seenMessageIds.add(event.message_id)
+    }
+    if (line !== null) conversation.queue.push(line)
+    if (imageRefs.length > 0) {
+      const cap = this.deps.config().imageRecognition.maxPerMessage
+      conversation.pendingImages.push(...imageRefs.slice(-cap))
     }
 
     conversation.calledLine = called

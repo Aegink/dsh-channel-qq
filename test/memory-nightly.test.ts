@@ -297,7 +297,8 @@ test('日记抽取 job：没有抽取器就具名跳过；有抽取器才写记�
   try {
     const dir = withRoute.dir
     mkdirSync(path.join(dir, 'memory'), { recursive: true })
-    writeFileSync(path.join(dir, 'memory', '2026-10-17.md'), '今天学弟说他从来不吃香菜，点菜的时候要记得备注一下；晚上他又提了一次，说上次那家店放了很多香菜他一口都没吃，看来这条得记牢。', 'utf-8')
+    // 04:20 的 job 处理**昨天**的日记（日记从每天 00:01 起写，当天凌晨只有几小时）。
+    writeFileSync(path.join(dir, 'memory', '2026-10-16.md'), '今天学弟说他从来不吃香菜，点菜的时候要记得备注一下；晚上他又提了一次，说上次那家店放了很多香菜他一口都没吃，看来这条得记牢。', 'utf-8')
     const outcome = await resolveJob('memory.diary-extract')!(ctxOf(dir, dir))
     assert.match(String(outcome?.note), /新增 1/)
     assert.equal(withRoute.store()!.all().filter((r) => r.content === '学弟不吃香菜').length, 1)

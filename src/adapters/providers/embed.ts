@@ -25,8 +25,9 @@ import { systemHttp } from '../http/client.js'
 const DEFAULT_TIMEOUT_MS = 800
 /** 一批最多几条：512 维 × 16 条约 74KB JSON，塞得进下面的响应上限。 */
 const MAX_BATCH = 16
-/** 响应体积上限（比端口的默认 256KiB 更小：这个服务除了向量不该返回别的）。 */
-const MAX_RESPONSE_BYTES = 128 * 1024
+/** 响应体积上限。512 维 × 16 条，每条浮点序列化成 ~20 字符 → 实测约 180KB；
+ * 128KB 会把**正常的满批响应**判成不可用（2026-10-18 实测踩到）。 */
+const MAX_RESPONSE_BYTES = 512 * 1024
 /** 失败后的冷却：这段时间内直接按"不可用"处理，不碰网络。 */
 const RETRY_COOLDOWN_MS = 60_000
 /** 持续不可用的重复日志间隔。 */

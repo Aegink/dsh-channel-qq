@@ -147,7 +147,10 @@ async function mirrorToLegacy(deps: NightlyDeps, items: readonly ExtractedItem[]
 /** 04:20 日记抽取：当天日记 → 记录。 */
 async function diaryExtract(deps: NightlyDeps, store: MemoryStore, ctx: JobContext): Promise<JobOutcome> {
   if (!deps.extractorReady()) return { skipped: 'no-extractor' }
-  const day = localDayKey(ctx.now)
+  // **昨天的日记**：日记从每天 00:01 起写，而这个 job 在 04:20 跑——用"今天"
+  // 只能看到开头几小时（实测 10-17 那天只抽到 5/147 段 = 3.4%）。与下面
+  // sessionSplit 的口径一致：昨天整天的内容，今天凌晨处理。
+  const day = localDayKey(new Date(ctx.now.getTime() - 86_400_000))
   const diary = await readDiary(deps.workspace(), day)
   if (diary.trim().length < MIN_DIARY_CHARS) return { skipped: 'diary-too-short' }
   const items = await deps.extract(`日记 ${day}`, diary)

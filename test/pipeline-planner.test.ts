@@ -128,3 +128,11 @@ test('开关关着：自环消息照旧入队（默认关 = 行为一字不改�
   assert.equal(h.conv.queue.length, 1)
   assert.deepEqual(h.logs, [])
 })
+
+test('去重：同一个 message_id 连投两次，只入队一次', async () => {
+  const h = harness({ planner: false })
+  const event = groupEvent(200, '同一条消息')
+  await h.pipeline.handle(event)
+  await h.pipeline.handle(event)
+  assert.equal(h.conv.queue.length, 1, '重复投递不能再入队（去重必须在 push 之前）')
+})

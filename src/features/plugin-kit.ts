@@ -35,7 +35,7 @@ import type { InboundPipeline } from '../app/inbound/pipeline.js'
 import type { InboundObservers } from './observers/inbound.js'
 import type { EmojiLibrary } from '../emoji-library.js'
 import type { EmojiStore } from '../emoji.js'
-import type { SentLog } from '../sent-log.js'
+import type { SentLog, SentLogHub } from '../sent-log.js'
 import type { KnowledgeStore } from '../knowledge.js'
 import type { AffectionStore } from '../affection.js'
 import type { QuoteStore } from './quotes/store.js'
@@ -87,6 +87,8 @@ export interface ServiceBag {
   persona?: PersonaParts
   inbound?: InboundParts
   sentLog?: SentLog
+  /** 按房间取 SentLog 的 hub（写侧按房间记账，读侧复用同一实例）。 */
+  sentLogHub?: SentLogHub
   emoji?: EmojiParts
   knowledge?: KnowledgeParts
   /** 记忆证据块（P6e；记忆子插件提供。入站组包"想起点什么"走它）。 */

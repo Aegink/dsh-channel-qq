@@ -88,8 +88,13 @@ export class SchedulerState {
       this.done = kept
       const count = Object.keys(kept).length
       if (count > 0) this.log(`scheduler state loaded: ${count} marks`)
-    } catch {
-      /* 文件不存在或损坏：当作空的，本轮该跑什么就跑什么 */
+    } catch (error) {
+      // 文件不存在是**正常**（第一次跑）；损坏是**异常**——后者必须留痕，
+      // 否则"今天做过了"静默归零，早报/梦/抽取当天重跑，而日志里一个字都没有。
+      // 启动失败仍然不允许（这是设计），只是要把两种情况分开。
+      if ((error as NodeJS.ErrnoException | null)?.code !== 'ENOENT') {
+        this.log(`scheduler state READ FAILED（当作空的继续）：${error instanceof Error ? error.message : String(error)}`)
+      }
     }
   }
 

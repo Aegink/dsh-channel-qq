@@ -57,6 +57,32 @@ export class SentLog {
       const hhmm = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`
       return `${hhmm} 咱发的 ${id}${quoted}：${e.text.slice(0, 80)}`
     })
-    return `【咱最近在群里发过的消息（这就是引用链的源头，别再说不是咱发的）】\n${lines.join('\n')}`
+    // 标题按房间取词：私聊的账曾经写进主群文件、标题还写死"在群里"，于是私聊内容
+    // 被当成"群里说过的话"喂回模型。群聊的标题保持原样（golden 逐字节）。
+    const where = this.key.startsWith('dm-') ? '私聊里' : '群里'
+    return `【咱最近在${where}发过的消息（这就是引用链的源头，别再说不是咱发的）】\n${lines.join('\n')}`
+  }
+}
+
+/** 房间键 → SentLog 实例的**唯一来源**：读写共用同一份，避免两份内存互不相干。 */
+export interface SentLogHub {
+  for(room: string): Promise<SentLog>
+}
+
+/** 建一个按房间缓存的 hub（懒加载：第一次用到才读文件）。 */
+export function createSentLogHub(dshHome: string, log: (line: string) => void): SentLogHub {
+  const cache = new Map<string, Promise<SentLog>>()
+  return {
+    for(room: string): Promise<SentLog> {
+      const hit = cache.get(room)
+      if (hit !== undefined) return hit
+      const created = (async () => {
+        const sent = new SentLog(dshHome, room, log)
+        await sent.load()
+        return sent
+      })()
+      cache.set(room, created)
+      return created
+    },
   }
 }

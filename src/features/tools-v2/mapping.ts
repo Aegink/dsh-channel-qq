@@ -122,11 +122,17 @@ export function renderMapping(): string {
  * 对照表，必须保持原样（调用方排除它）。
  */
 export function rewriteLegacyToolNames(text: string): string {
-  let out = text
+  // 按名字**从长到短**替换，并要求两侧不是标识符字符：否则 `qq_remind` 会把
+  // `qq_remind_at` 的前缀吃掉，变成 `qq_remind（action=add）_at`（2026-10-18 实测）。
+  const pairs: Array<[string, string]> = []
   for (const face of MAPPING) {
-    for (const branch of face.branches) {
-      out = out.split(branch.legacy).join(`${face.name}（action=${branch.action}）`)
-    }
+    for (const branch of face.branches) pairs.push([branch.legacy, `${face.name}（action=${branch.action}）`])
+  }
+  pairs.sort((a, b) => b[0].length - a[0].length)
+  let out = text
+  for (const [legacy, replacement] of pairs) {
+    const pattern = new RegExp(`(?<![A-Za-z0-9_])${legacy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_])`, 'g')
+    out = out.replace(pattern, replacement)
   }
   return out
 }

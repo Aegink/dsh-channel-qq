@@ -18,13 +18,14 @@ import debug from './debug.js'
 import persona from './persona.js'
 import tools from './tools.js'
 import groups from './groups.js'
+import memory from './memory.js'
 import providers from './providers.js'
 import { createModulePage } from './module.js'
 
 /** 通用模块页（描述表在 module.js；persona / tools 有各自的自定义实现）。 */
 const GENERIC_MODULES = [
   'connection', 'messages', 'media', 'stickers', 'links',
-  'music', 'quotes', 'learn', 'reminders', 'rss', 'flood', 'events', 'proactive', 'memory',
+  'music', 'quotes', 'learn', 'reminders', 'rss', 'flood', 'events', 'proactive',
 ]
 
 const pages = {
@@ -39,6 +40,7 @@ const pages = {
   persona,
   tools,
   groups,
+  memory,
   providers,
 }
 

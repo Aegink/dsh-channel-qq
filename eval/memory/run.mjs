@@ -25,8 +25,20 @@ import { fileURLToPath } from 'node:url'
 import { buildCorpus } from './corpus.mjs'
 
 const HERE = fileURLToPath(new URL('.', import.meta.url))
-const { keywordRelevance, queryTerms, rankCandidates } = await import('../../lib/core/memory/score.js')
-const { selectForInjection } = await import('../../lib/core/memory/select.js')
+/** 编译产物的两种落点：build/lib（新布局）与 lib（旧布局）。 */
+async function loadCore(rel) {
+  for (const base of ['../../build/lib', '../../lib']) {
+    try {
+      return await import(`${base}/${rel}`)
+    } catch (error) {
+      if (error?.code !== 'ERR_MODULE_NOT_FOUND') throw error
+    }
+  }
+  throw new Error(`找不到编译产物 ${rel}：先跑 npm run build`)
+}
+
+const { keywordRelevance, queryTerms, rankCandidates } = await loadCore('core/memory/score.js')
+const { selectForInjection } = await loadCore('core/memory/select.js')
 
 /** 09 §9.2 的门槛。 */
 export const THRESHOLDS = {
@@ -39,6 +51,9 @@ export const THRESHOLDS = {
 }
 
 /** 评测的"现在"：取语料最后一天之后，保证新近度项对所有记录都是过去。 */
+/** 评测只看相关性：语料里的 importance/recency 是切分时合成的。 */
+const REL_ONLY = { relevance: 1, importance: 0, recency: 0 }
+
 const NOW = Date.parse('2026-10-18T00:00:00+08:00')
 
 function parseCli() {
@@ -49,6 +64,8 @@ function parseCli() {
       threshold: { type: 'string' },
       enforce: { type: 'boolean', default: false },
       json: { type: 'boolean', default: false },
+      /** 本机 embed 服务地址（如 http://127.0.0.1:8801/v1）；给了就跑向量+关键词混合。 */
+      vectors: { type: 'string' },
     },
   })
   return {
@@ -57,6 +74,7 @@ function parseCli() {
     threshold: Number(values.threshold ?? 0.35),
     enforce: values.enforce === true,
     json: values.json === true,
+    vectors: values.vectors ?? null,
   }
 }
 
@@ -66,20 +84,36 @@ function hitsEvidence(span, evidence) {
   return span.file === evidence.file && evidence.line >= span.start && evidence.line <= span.end
 }
 
-/** 跑一题，返回它的检索结果与耗时（毫秒）。 */
-function retrieveOne(store, spans, question, opts) {
+/** 跑一题，返回它的检索结果与耗时（毫秒）。`retriever` 非空时走向量+关键词混合。 */
+async function retrieveOne(store, spans, question, opts) {
   const started = process.hrtime.bigint()
-  const terms = store.keepKnown(queryTerms(question))
-  const candidates = store
-    .candidatesByTerms(terms)
-    .filter((r) => r.status === 'active')
-    .map((record) => ({ record, relevance: keywordRelevance(terms, record, (t) => store.idfOf(t)) }))
-  const ranked = rankCandidates(candidates, NOW)
-  const picked = selectForInjection(ranked, {
-    threshold: opts.threshold,
-    maxRecords: opts.k,
-    maxChars: THRESHOLDS.injectChars,
-  })
+  let picked
+  if (opts.retriever !== null && opts.retriever !== undefined) {
+    const got = await opts.retriever.retrieve({
+      text: question,
+      room: '',
+      now: NOW,
+      // 语料记录全是同一个 subject+kind，默认的"同主题最多 2 条"会把候选压到 2 条
+      // ——那测的是多样性策略，不是检索能力。基准里放开它。
+      budget: { threshold: opts.threshold, maxRecords: opts.k, maxChars: THRESHOLDS.injectChars, maxPerTopic: opts.k },
+      // 只看相关性：语料里的 importance/recency 是切分时合成的，不参与判断检索能力。
+      weights: REL_ONLY,
+    })
+    picked = got.picked.map((record) => ({ record }))
+  } else {
+    const terms = store.keepKnown(queryTerms(question))
+    const candidates = store
+      .candidatesByTerms(terms)
+      .filter((r) => r.status === 'active')
+      .map((record) => ({ record, relevance: keywordRelevance(terms, record, (t) => store.idfOf(t)) }))
+    const ranked = rankCandidates(candidates, NOW, REL_ONLY)
+    picked = selectForInjection(ranked, {
+      threshold: opts.threshold,
+      maxRecords: opts.k,
+      maxChars: THRESHOLDS.injectChars,
+      maxPerTopic: opts.k,
+    })
+  }
   const ms = Number(process.hrtime.bigint() - started) / 1e6
   return { picked, ms, spans }
 }
@@ -108,12 +142,52 @@ async function main() {
       process.exit(2)
     })
 
+    // 向量路径（`--vectors`）：给全部语料建一份内存索引，再让真实的 Retriever 跑。
+    let retriever = null
+    if (cli.vectors !== null) {
+      const { createEmbedAdapter } = await loadCore('adapters/providers/embed.js')
+      const { MemoryRetriever } = await loadCore('features/memory/retriever.js')
+      const embed = createEmbedAdapter({ baseUrl: cli.vectors, dim: 512, log: (line) => console.error(line) })
+      const records = corpus.store.all()
+      const vecs = new Map()
+      const BATCH = 16
+      const started = Date.now()
+      for (let i = 0; i < records.length; i += BATCH) {
+        const batch = records.slice(i, i + BATCH)
+        const got = await embed.embed(batch.map((r) => r.content))
+        if (got === null) {
+          console.error(`向量服务不可用（${cli.vectors}）——先起 deploy/embed-server，或去掉 --vectors`)
+          process.exit(2)
+        }
+        batch.forEach((r, j) => vecs.set(r.id, got[j]))
+        if ((i / BATCH) % 20 === 0) console.error(`  已嵌 ${Math.min(i + BATCH, records.length)}/${records.length}`)
+      }
+      console.error(`向量索引：${vecs.size} 条（${((Date.now() - started) / 1000).toFixed(1)}s）`)
+      const vectors = {
+        weight: 1,
+        embedQuery: async (text) => {
+          const got = await embed.embed([text])
+          return got === null ? null : got[0]
+        },
+        vectorOf: (id) => vecs.get(id) ?? null,
+        all: () => [...vecs.entries()],
+      }
+      retriever = new MemoryRetriever({
+        store: corpus.store,
+        log: () => {},
+        renderTime: () => '',
+        clock: { now: () => NOW },
+        vectors,
+      })
+    }
+    cli.retriever = retriever
+
     const scored = []
     const latencies = []
     let injectCharsTotal = 0
     let injectCharsMax = 0
     for (const item of questions.questions) {
-      const { picked, ms } = retrieveOne(corpus.store, corpus.spans, item.question, cli)
+      const { picked, ms } = await retrieveOne(corpus.store, corpus.spans, item.question, cli)
       latencies.push(ms)
       const chars = picked.reduce((sum, c) => sum + c.record.content.length, 0)
       injectCharsTotal += chars

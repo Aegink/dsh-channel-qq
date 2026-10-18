@@ -26,6 +26,7 @@ import { MemoryRetriever } from './retriever.js'
 import { migrateMemoryFile } from './migrate.js'
 import { registerNightlyJobs } from './nightly.js'
 import { MemoryStore } from './store.js'
+import { importLegacyEntries } from './import-legacy.js'
 import { createMemoryService } from './service.js'
 import {
   createVectorRecall, loadVectorIndex, VEC_FILE_NAME, VEC_MANIFEST_NAME, type VectorRecall,
@@ -119,6 +120,10 @@ async function attachMemoryV2(
   const count = await store.load()
   nightly.store = store
   host.log(`memory.v2: ${count} 条结构化记忆已加载（${store.file}）`)
+  // 新库为空而旧库有货：先导入，否则"打开 v2"在用户看来就是"知识全丢了"。
+  if (count === 0 && legacy.entries.length > 0) {
+    await importLegacyEntries(store, legacy.entries, { now: Date.now(), roll: Math.random, log: host.log })
+  }
 
   const renderTime = (at: number): string => new Date(at).toISOString().slice(0, 10)
   const clock = { now: () => Date.now() }

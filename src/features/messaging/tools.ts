@@ -14,6 +14,7 @@ import type { ToolSpec } from '../../adapters/dsh-host/tools.js'
 import { smartSplitMessage } from '../../outbound.js'
 import { segmentText } from '../../core/text/segment.js'
 import type { QQToolDeps } from '../tool-deps.js'
+import { dmRoom, groupRoom } from '../../core/room.js'
 
 /**
  * 记一条"咱发过的话"。
@@ -21,6 +22,18 @@ import type { QQToolDeps } from '../tool-deps.js'
  * OneBotClient.call() 成功时给的是 data 本身（见 B13）：这里读 `.data.message_id`
  * 曾经多读了一层，于是 sent-log 的 messageId 全为 null。这条注释跟着这段代码走。
  */
+/**
+ * 取这个房间的 sent-log。
+ *
+ * 从前这里拿的是**主群那一份**单例：于是私聊的发言被记进 `sent-group-<主群>.json`，
+ * 私聊的引用链也就从未存在过（2026-10-18 审计实证）。现在按房间取，缺 hub 时才退回。
+ */
+async function sentLogFor(deps: QQToolDeps, isGroup: boolean, target: number): Promise<QQToolDeps['sentLog']> {
+  const room = isGroup ? groupRoom(target) : dmRoom(target)
+  if (deps.sentLogHub !== undefined) return await deps.sentLogHub.for(room)
+  return deps.sentLog
+}
+
 async function recordSent(
   sentLog: QQToolDeps['sentLog'],
   result: unknown,
@@ -65,7 +78,7 @@ function qqSendText(deps: QQToolDeps): ToolSpec {
               last = isGroup
                 ? await out.push(() => api.sendGroupMessage(target, message))
                 : await out.push(() => api.sendPrivateMessage(target, message))
-              await recordSent(sentLog, last, chunk)
+              await recordSent(await sentLogFor(deps, isGroup, target), last, chunk)
             }
           }
           return { ...(last as Record<string, unknown> | null), segments: pieces.length }
@@ -117,11 +130,12 @@ function qqReplyQuote(deps: QQToolDeps): ToolSpec {
           const result = args.isGroup === true
             ? await out.push(() => api.sendGroupMessage(Number(args.target), message))
             : await out.push(() => api.sendPrivateMessage(Number(args.target), message))
-          if (sentLog) {
+          const roomLog = await sentLogFor(deps, args.isGroup === true, Number(args.target))
+          if (roomLog) {
             // OneBotClient.call() 成功时给的是 data 本身（见 B13）：这里读 .data.message_id
             // 曾经多读了一层，于是 sent-log 的 messageId 全为 null。
             const mid = (result as { message_id?: number } | null)?.message_id ?? null
-            await sentLog.add({ messageId: typeof mid === 'number' ? mid : null, quotedId: Number(args.messageId) || null, text, time: Date.now() })
+            await roomLog.add({ messageId: typeof mid === 'number' ? mid : null, quotedId: Number(args.messageId) || null, text, time: Date.now() })
           }
           return result
         },

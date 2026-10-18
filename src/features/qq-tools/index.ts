@@ -23,10 +23,11 @@ export const qqToolsPlugin: SubPlugin = {
     const library = host.need('emoji').library
     const affection = host.need('affection')
     const sentLog = host.need('sentLog')
+    const sentLogHub = host.get('sentLogHub')
     const { store: knowledge, extract } = host.need('knowledge')
     return registerQQTools(
       host.bridge.toolHost(), config, api, out, host.log, library, affection, sentLog, knowledge, extract,
-      host.get('memory'),
+      host.get('memory'), sentLogHub,
     )
   },
 }

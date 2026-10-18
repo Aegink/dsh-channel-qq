@@ -14,7 +14,7 @@
 ## 特性
 
 - **消息**：群聊 / 私聊、图片、语音、文件、引用回复、戳一戳，自动分句发送
-- **工具面**：86 个细粒度工具；`tools.v2` 下合并为 17 个动作组（`qq_message`、`qq_lookup`…）
+- **工具面**：83 个细粒度工具；`tools.v2` 下合并为 17 个动作组（`qq_message`、`qq_lookup`…）
 - **群聊准入**：进 agent 之前先判"要不要说话"；非 @ 消息不进队列，省上下文与模型调用
 - **长期记忆**：日记 → 结构化记录 → 检索；夜间巩固、遗忘曲线、DIGEST
 - **主动行为**：事件书驱动巡逻、早报、主动私聊——时间表是数据，不是代码
@@ -54,6 +54,7 @@ npm run verify     # 类型 + 测试 + 分层 + 体积，全绿再继续
 | [docs/architecture.md](docs/architecture.md) | 分层、消息旅程、关键决定、往哪里加东西 |
 | [docs/configuration.md](docs/configuration.md) | 配置三层覆盖、生效方式、环境变量 |
 | [docs/deployment.md](docs/deployment.md) | 部署、发布、回滚、故障排查 |
+| [docs/memory.md](docs/memory.md) | 记忆系统：夜间任务、embed 服务、评测与限制 |
 | [SECURITY.md](SECURITY.md) | 威胁模型与部署清单 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 门禁、硬规则、提交信息 |
 

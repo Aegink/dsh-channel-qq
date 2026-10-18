@@ -13,7 +13,7 @@ import type { QQChannelConfig } from '../config.js'
 import type { QQApi } from '../ports/platform.js'
 import type { OutboundQueue } from '../outbound.js'
 import type { EmojiLibrary } from '../emoji-library.js'
-import type { SentLog } from '../sent-log.js'
+import type { SentLog, SentLogHub } from '../sent-log.js'
 import type { KnowledgeStore } from '../knowledge.js'
 import type { MemoryService } from '../ports/memory.js'
 
@@ -33,6 +33,8 @@ export interface QQToolDeps {
   readonly library: EmojiLibrary | undefined
   readonly affection: AffectionPort | undefined
   readonly sentLog: SentLog | undefined
+  /** 按房间取 sent-log（写侧按房间记账；缺省时退回 `sentLog` 那一份）。 */
+  readonly sentLogHub?: SentLogHub | undefined
   readonly knowledge: KnowledgeStore | undefined
   /**
    * 新记忆系统（P6e，`memory.v2` 打开时才有）。

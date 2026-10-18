@@ -140,3 +140,15 @@ test('接线：分段之后仍然过硬切分（单条超过上限时再切）',
     assert.ok(text.length <= 50, `每条都不许超上限：${text.length}`)
   }
 })
+
+test('标点转换：URL 与代码块必须原样（链接不能被全角化，也不能被切成两条）', () => {
+  const text = '看 https://a.com/x?y=1,z=2 这个，还有 https://b.com 也不错。'
+  const pieces = segmentText(text, { enabled: true, style: 'natural', minLength: 8, maxSegments: 3, removeTrailingPeriod: true })
+  const joined = pieces.join('')
+  assert.ok(joined.includes('https://a.com/x?y=1,z=2'), `URL 被改坏了：${joined}`)
+  assert.ok(joined.includes('https://b.com'), '第二个 URL 也要原样')
+  assert.equal(pieces.some((p) => p.includes('https：//')), false, '不许出现全角冒号的链接')
+
+  const code = segmentText('跑 `npm run build?x=1,y=2` 试试。', { enabled: true, style: 'natural', minLength: 8, maxSegments: 3, removeTrailingPeriod: true })
+  assert.ok(code.join('').includes('`npm run build?x=1,y=2`'), '行内代码原样')
+})

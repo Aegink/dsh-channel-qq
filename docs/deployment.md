@@ -2,6 +2,11 @@
 
 > 编写时间：2026-10-14 ｜ 依据：本机实测 + dsh 官方文档（`F:\aegent\oss\deepseek-harness`，v0.2.1-alpha.2）
 > 标注约定：**【实测】**= 本机已验证；**【文档】**= dsh 官方文档原文；**【调研】**= 联网查到的社区结论，需自行确认。
+>
+> **阅读提示**：§1–§7 是当前有效的部署与运维说明；**§8–§13 是历史实录**（2026-10-14 起逐轮排错的过程记录）。
+> 历史段落里提到的部分一次性脚本（`feature-test.mjs`、`media-placeholder-test.mjs`、
+> `analyze-turns.mjs`、`dump-session.mjs`、`ssh-run.mjs`、`http-push-fast.mjs`）已在开源整理时删除，
+> 保留文字只为记录当时的方法与结论。产物目录自 2026-10-18 起为 `build/lib`（旧布局是 `lib/`）。
 
 ---
 
@@ -83,7 +88,7 @@ dsh plugin --profile web add link:/srv/dsh/dsh-channel-qq
 
 ### 4.3 编译（可选）
 
-`lib/` 是**已编译且与 `src/` 同步**的产物（实测：`lib/*.js` 时间戳晚于对应 `src/*.ts`，且包含最新工具 `qq_search_music` / `qq_kugou_login` / `qq_netease_login` / `qq_search_history` 等）。
+`build/lib`（旧布局是 `lib/`）是**已编译且与 `src/` 同步**的产物（实测：`lib/*.js` 时间戳晚于对应 `src/*.ts`，且包含最新工具 `qq_search_music` / `qq_kugou_login` / `qq_netease_login` / `qq_search_history` 等）。
 所以**服务器上不编译也能直接跑**。需要改源码时再 `pnpm install && pnpm run build`（需 `tsc` + 兄弟目录 dsh 源码）。
 
 > ⚠️ 未验证项：peer 依赖 `@deepseek-ai/cordis`(4.0.5-alpha.1) 与 `@deepseek-ai/dsh-llm`(0.2.1-alpha.2) 在
@@ -278,7 +283,7 @@ sysctl -w net.ipv4.tcp_mtu_probing=1
 |---|---|
 | Node | 22.23.3，独立装在 `/opt/node22`（系统 node 18 未动） |
 | dsh 本体 | `/srv/dsh/dsh`，tag `dsh-v0.2.1-alpha.2` |
-| 插件 | `/srv/dsh/dsh-channel-qq`（源码 + 预编译 `lib/`） |
+| 插件 | `/srv/dsh/dsh-channel-qq`（源码 + 预编译 `build/lib`） |
 | Agent 工作区 | `/path/to/workspace` |
 | 启动 | `systemctl restart dsh`（`/etc/dsh/env` 里带 `TZ=Asia/Shanghai`） |
 | 日志 | `~/.dsh/channel-qq.log`（插件自己追加，带 ISO 时间戳） |
