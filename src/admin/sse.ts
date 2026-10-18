@@ -1,6 +1,6 @@
 /** SSE 广播：`GET /api/events` 的客户端集合与事件分发。
  *
- * 为什么是 SSE 而不是 WebSocket（refactor-plan/10 §2/§7）：这里只有**服务端→
+ * 为什么是 SSE 而不是 WebSocket（docs/internal/refactor-plan/10 §2/§7）：这里只有**服务端→
  * 浏览器**一个方向——状态卡、日志增量、配置版本变化；SSE 就是为这个形状设计的，
  * 浏览器自带断线重连（`retry:` 提示间隔），不需要握手与心跳协议。
  *

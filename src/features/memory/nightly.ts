@@ -1,4 +1,4 @@
-/** 夜间巩固（P6e·e3，[09 §6.2](../refactor-plan/09-记忆系统设计.md)）：八个 job。
+/** 夜间巩固（P6e·e3，[09 §6.2](../docs/internal/refactor-plan/09-记忆系统设计.md)）：八个 job。
  *
  * 全部注册成**事件书**（P6f）的 `kind: job`——什么时候跑、跑不跑由那本书决定
  * （默认书里有对应事件，见 `core/schedule/event-book.ts`），本文件只管"跑起来做什么"。

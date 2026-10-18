@@ -1,6 +1,6 @@
 /** 本机 embed 服务客户端（P6e·e2）：POST `<base>/v1/embeddings`，OpenAI 兼容形状。
  *
- * 三个决定值得写下来（[09 §5.4](../refactor-plan/09-记忆系统设计.md)）：
+ * 三个决定值得写下来（[09 §5.4](../docs/internal/refactor-plan/09-记忆系统设计.md)）：
  *
  *   1. **800ms 超时**：拿不到向量就放弃向量这一路候选，绝不拖住一回合的组包
  *      （"含 embed 调用"的检索延迟门槛是 800ms）；

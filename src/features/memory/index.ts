@@ -14,7 +14,7 @@
  * e1 只做到"记录模型 + 存储 + 关键词检索 + 注入"；e2 在其上加了向量：本机 embed
  * 服务客户端 + 分片 `vec.bin` + 混合打分，开关是 `memory.vectorEnabled`（默认关，
  * 关着时检索与 e1 逐字节一致；开着但服务不可用时自动退回关键词）；夜间巩固、
- * 遗忘与 MEMORY.md 迁移是 e3（见 refactor-plan/09 的落地分期）。
+ * 遗忘与 MEMORY.md 迁移是 e3（见 docs/internal/refactor-plan/09 的落地分期）。
  */
 
 import { KnowledgeStore, resolveExtractorRoute, extractFromText } from '../../knowledge.js'

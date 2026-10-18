@@ -1,7 +1,7 @@
 /** 工作区 `AGENTS.md` 的**指令受管区**（P6b）：渲染、写入、移除。
  *
  * 为什么落在受管区而不是宿主提示片段接缝（`ctx.systemPrompt.section()`）：宿主确实
- * 有那条接缝（`refactor-plan/09-宿主核实记录.md` V4），但按 Agent 注册要改
+ * 有那条接缝（`docs/internal/refactor-plan/09-宿主核实记录.md` V4），但按 Agent 注册要改
  * `adapters/dsh-host/agents.ts`（别人的文件），在插件根上下文注册则是全局的、会把
  * QQ 行为约定漏给同进程里所有非 QQ 会话——所以走 05 §3.4 的另一条落点。
  * 只碰 `<!-- channel-qq:begin -->…<!-- channel-qq:end -->` 之间的内容，区外逐字节保留。

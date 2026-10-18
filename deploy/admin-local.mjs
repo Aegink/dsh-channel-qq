@@ -1,6 +1,6 @@
 /** 本地后台实例：给「管理后台 E2E」起一个带假依赖的真后台（端口默认 8791）。
  *
- * 为什么需要它（refactor-plan/10 §9）：真后台只在服务器上跑，`deploy/admin-test.mjs`
+ * 为什么需要它（docs/internal/refactor-plan/10 §9）：真后台只在服务器上跑，`deploy/admin-test.mjs`
  * 从开发机连不到。这个脚本用**真实的** AdminServer + 真实的生成 UI（`/ui/**`），
  * 只把"插件世界"换成一组桩：状态、资源表、工作区文件（真 WorkspaceFiles，指向临时
  * 目录）、预设、会话、日志尾部、applyEffects（重听端口）。于是：

@@ -45,7 +45,7 @@ npm run verify     # 类型 + 测试 + 分层 + 体积，全绿再继续
     workspacePath: /path/to/agent-workspace
 ```
 
-部署与运维细节见 [DEPLOY.md](DEPLOY.md)。
+部署与运维细节见 [docs/deployment.md](docs/deployment.md)。
 
 ## 文档
 
@@ -53,7 +53,7 @@ npm run verify     # 类型 + 测试 + 分层 + 体积，全绿再继续
 |---|---|
 | [docs/architecture.md](docs/architecture.md) | 分层、消息旅程、关键决定、往哪里加东西 |
 | [docs/configuration.md](docs/configuration.md) | 配置三层覆盖、生效方式、环境变量 |
-| [DEPLOY.md](DEPLOY.md) | 部署、发布、回滚、故障排查 |
+| [docs/deployment.md](docs/deployment.md) | 部署、发布、回滚、故障排查 |
 | [SECURITY.md](SECURITY.md) | 威胁模型与部署清单 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 门禁、硬规则、提交信息 |
 

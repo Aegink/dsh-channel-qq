@@ -1,4 +1,4 @@
-/** 记忆记录：数据模型与不变量（[09-记忆系统设计](../refactor-plan/09-记忆系统设计.md) §4）。
+/** 记忆记录：数据模型与不变量（[09-记忆系统设计](../docs/internal/refactor-plan/09-记忆系统设计.md) §4）。
  *
  * 这是**可重放层**（R8）：不读时钟、不掷随机数，两个都从外面传进来。理由不只是
  * 测试方便——记忆的每一个时间字段（`validFrom` / `recordedAt` / `lastHitAt`）都要
@@ -171,7 +171,7 @@ export function isRetrievable(record: MemoryRecord, now: number): boolean {
 }
 
 /**
- * "钉住"：永不归档的记录（[09 §6.3](../refactor-plan/09-记忆系统设计.md)）。
+ * "钉住"：永不归档的记录（[09 §6.3](../docs/internal/refactor-plan/09-记忆系统设计.md)）。
  *
  * 判据刻意保守——归档是"她忘了一件事"，而她不该忘记学弟的偏好、被明确要求记住的
  * 事、人物关系，以及自己反复确认过的性格。宁可多留。

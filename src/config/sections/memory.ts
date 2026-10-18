@@ -18,7 +18,7 @@ import { b, n, s, type FieldGroup } from '../dsl.js'
  * 字段说明放这里（本段的字段定义也在这），config.ts 的 `MemoryConfig extends MemoryVectorConfig`。
  *
  * 语义：**默认关**——关着时检索走 e1 的关键词路径、输出逐字节一致；打开后用本机
- * embed 服务（起法与回退见 DEPLOY.md §13），服务不可用时自动退回关键词。
+ * embed 服务（起法与回退见 docs/deployment.md §13），服务不可用时自动退回关键词。
  */
 export interface MemoryVectorConfig {
   /** 开关。改它由记忆子插件的 watches 触发重载（hot: reload）。 */
@@ -51,7 +51,7 @@ export const MEMORY_GROUPS: FieldGroup[] = [
       // 触发重载（reload）。默认关 = 与 e1 关键词路径逐字节一致。
       vectorEnabled: b('启用向量检索', false, {
         hot: 'reload',
-        help: '需要先由运维在本机起 embed 服务（见 DEPLOY.md「可选：本机 embed 服务」）。'
+        help: '需要先由运维在本机起 embed 服务（见 docs/deployment.md「可选：本机 embed 服务」）。'
           + '关着时检索完全走关键词，与从前逐字节一致；打开但服务不可用时自动退回关键词。',
       }),
       vectorUrl: s('embed 服务地址', 'http://127.0.0.1:17861', {

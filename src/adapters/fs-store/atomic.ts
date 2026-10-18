@@ -1,6 +1,6 @@
 /** 原子写：先写临时文件、fsync、再 rename 覆盖。
  *
- * 为什么必须这样（[01 §B7](../refactor-plan/01-现状诊断.md)）：`writeFile(target)`
+ * 为什么必须这样（[01 §B7](../docs/internal/refactor-plan/01-现状诊断.md)）：`writeFile(target)`
  * 是"打开 → 截断 → 写"。进程在中间任何一刻死掉（崩溃、OOM、部署时被 SIGKILL），
  * 目标文件就变成半截 JSON，而下一个进程读到它就是"整个 store 空了"。
  * 全仓 31 处写文件全是这个写法，其中装着记忆、语录、提醒、好感度——丢了回不来。

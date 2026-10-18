@@ -1,4 +1,4 @@
-/** 查询构造：把"本回合的几句话"变成检索条件（[09 §5.1](../refactor-plan/09-记忆系统设计.md)）。
+/** 查询构造：把"本回合的几句话"变成检索条件（[09 §5.1](../docs/internal/refactor-plan/09-记忆系统设计.md)）。
  *
  * 对应 LongMemEval 的 time-aware query expansion。三件事：
  *

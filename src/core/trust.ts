@@ -14,7 +14,7 @@
  * 纯逻辑、零 IO、零时钟（R8）：`TurnTrustLedger` 只是一张 Map，时间与随机都不碰。
  */
 
-/** 四档信任。语义与列顺序见 `refactor-plan/05-模块详细设计.md` §5。 */
+/** 四档信任。语义与列顺序见 `docs/internal/refactor-plan/05-模块详细设计.md` §5。 */
 export type Trust = 'master' | 'admin' | 'member' | 'system'
 
 /** 档位高低（只用于"取最低者"的合并；不是权限大小的全序）。 */

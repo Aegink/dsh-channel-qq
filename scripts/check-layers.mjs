@@ -1,7 +1,7 @@
 /**
  * 分层检查（自写，零新依赖）。
  *
- * 目标架构（refactor-plan/04）里 `core/` `app/` `adapters/` `features/` 之间是有
+ * 目标架构（docs/internal/refactor-plan/04）里 `core/` `app/` `adapters/` `features/` 之间是有
  * 方向的：`adapters/dsh-host/` 是唯一允许 import `@deepseek-ai/*` 的地方，
  * `core/` 不许碰 `node:*` 之外的任何东西，`features/` 之间不许互相 import。
  *
@@ -39,7 +39,7 @@
  * R8 为什么值得单独一条：`core/` 与 `app/` 是要能"给同样的输入就出同样的输出"的两层，
  * 而**读全局时钟**与**读全局随机**正好是这条性质的两个反例。P3 搬 `bridge.ts` 时的
  * 判据就是"`core/` 与 `app/` 里零直接调用 `Date.now()` / `new Date()` / `setInterval`"
- * （[06 §P2.3](../refactor-plan/06-迁移路线.md)）。没有这条规则，判据就只能靠人肉 grep，
+ * （[06 §P2.3](../docs/internal/refactor-plan/06-迁移路线.md)）。没有这条规则，判据就只能靠人肉 grep，
  * 而下一个搬代码的人不会记得。`app/` 需要时间与定时器时注入 `ports/clock.ts` 的
  * `Clock`（见 `app/conversation/turn-tracker.ts`）。注意放行 `new Date(<参数>)`
  * ——那是**确定性的构造**，不是读时钟；被禁的是**无参**的 `new Date()`。

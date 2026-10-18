@@ -13,7 +13,7 @@
  * **注意一处刻意保留的不对称**：`agents.get()` 命中时（不论首次还是重试循环里
  * 命中）只有首次那条路径装了 `installModelOverride`，重试循环里的 `liveAgain`
  * 没有装。这看起来像漏了，但它决定了"恢复的会话用哪条路由"，改它会改行为，
- * 因此留给 P6 的 `policy.v2` 一起处理，见 `refactor-plan/11-阶段完成记录.md`。
+ * 因此留给 P6 的 `policy.v2` 一起处理，见 `docs/internal/refactor-plan/11-阶段完成记录.md`。
  */
 
 import { promises as fs } from 'node:fs'
