@@ -61,7 +61,7 @@ function qqResolveMusic(deps: QQToolDeps): ToolSpec {
           const br = Math.min(Number(args.br ?? 320000), 999000)
           const result = await neteaseSongUrl(String(args.songId), br)
           if (result.url === null) {
-            throw new Error(result.vipRequired ? '该曲为 VIP/付费歌曲：请先 qq_netease_login 扫码登录会员账号' : '拿不到播放直链（下架或地区限制）')
+            throw new Error(result.vipRequired ? '该曲为 VIP/付费歌曲：请先 qq_netease_login 扫码登录会员账号' : '拿不到播放直链：多半是没登录（后台「音乐」页扫码）或该曲受限')
           }
           return { audioUrl: result.url, quality: result.br, fee: result.fee, size: result.size }
         },
@@ -259,7 +259,7 @@ function qqKugouSearch(deps: QQToolDeps): ToolSpec {
           required: ['keyword'],
         },
         run: async (args) => {
-          const songs = await kugouSearch(String(args.keyword), Math.min(Number(args.limit ?? 5), 10))
+          const songs = await kugouSearch(String(args.keyword), Math.min(Number(args.limit ?? 5), 10), deps.config.music.kugouApiBase)
           return { count: songs.length, songs }
         },
       }
@@ -282,7 +282,7 @@ function qqKugouSend(deps: QQToolDeps): ToolSpec {
           required: ['target', 'hash'],
         },
         run: async (args) => {
-          const resolved = await kugouSongUrl(String(args.hash), String(args.quality ?? 'auto'))
+          const resolved = await kugouSongUrl(String(args.hash), String(args.quality ?? 'auto'), deps.config.music.kugouApiBase)
           const audio = await systemHttp.request(resolved.url, { limit: MAX_DOWNLOAD_BYTES })
           if (!audio.ok) throw new Error(`音频下载失败 HTTP ${audio.status}`)
           const fsMod = await import('node:fs/promises')
@@ -320,11 +320,11 @@ function qqKugouLogin(deps: QQToolDeps): ToolSpec {
         run: async (args) => {
           const action = String(args.action)
           if (action === 'start') {
-            const { key, qrUrl } = await kugouQrStart()
+            const { key, qrUrl } = await kugouQrStart(deps.config.music.kugouApiBase)
             return { key, qrUrl, hint: '把 qrUrl 发给学弟，用酷狗App扫码；然后每2秒调一次 action=poll' }
           }
           if (action === 'poll') {
-            const result = await kugouQrPoll(String(args.key ?? ''))
+            const result = await kugouQrPoll(String(args.key ?? ''), deps.config.music.kugouApiBase)
             if (result.status === 'ok') {
               return { status: '登录成功，酷狗Cookie已保存', nickname: result.nickname, cookieSaved: true }
             }

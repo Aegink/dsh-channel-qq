@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import * as path from 'node:path'
 import type { MemoryExtractorConfig, MemoryVectorConfig } from './config/sections/memory.js'
 import type { SwitchSections } from './config/sections/switches.js'
-
 /** Channel configuration. One row, one account. Values live in the profile's user patch layer. */
 export interface ConnectionConfig {
   /** forward = the plugin dials NapCat's WS server; reverse = the plugin hosts a WS server NapCat dials into. */
@@ -362,6 +361,7 @@ export interface QQChannelConfig extends SwitchSections {
   imageGen: ImageGenConfig
   learn: LearnConfig
   memory: MemoryConfig
+  music: import('./config/sections/music.js').MusicConfig
   eventMonitor: EventMonitorConfig
   contextBudget: ContextBudgetConfig
   context: ContextV2Config

@@ -11,13 +11,17 @@
  */
 
 import { systemHttp } from '../http/client.js'
-import { readSecret, writeSecret } from '../fs-store/secrets.js'
+import { readSecret, removeSecret, writeSecret } from '../fs-store/secrets.js'
 
 const COOKIE_NAME = 'netease-cookie'
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0'
 
 export async function loadCookie(): Promise<string> {
   return await readSecret(COOKIE_NAME)
+}
+
+export async function clearCookie(): Promise<void> {
+  await removeSecret(COOKIE_NAME)
 }
 
 export async function saveCookie(cookie: string): Promise<void> {
@@ -55,20 +59,31 @@ export interface NeteaseSearchHit {
   durationSec?: number
 }
 
+/**
+ * 搜索歌曲。
+ *
+ * 端点用 `cloudsearch/pc`：`/api/search/get/web` 从 2026-10 起返回的是加密串
+ * （`{"result":"35b1…"}`），解析出来永远是空列表——2026-10-19 实测发现。
+ * 两个端点的字段名不同（`ar`/`dt` vs `artists`/`duration`），所以两个都认。
+ */
 export async function searchSongs(keyword: string, limit = 5): Promise<NeteaseSearchHit[]> {
-  const data = await apiPost('/api/search/get/web', {
+  const data = await apiPost('/api/cloudsearch/pc', {
     s: keyword,
     limit: String(Math.min(limit, 10)),
     type: '1',
     offset: '0',
   }, 'appver=2.0.2')
   const songs = (data as { result?: { songs?: any[] } }).result?.songs ?? []
-  return songs.map((s: any) => ({
-    id: String(s.id),
-    name: s.name,
-    artists: (s.artists ?? []).map((a: any) => a.name).join('/'),
-    durationSec: s.duration !== undefined ? Math.round(s.duration / 1000) : undefined,
-  }))
+  return songs.map((s: any) => {
+    const artists = (s.ar ?? s.artists ?? []) as any[]
+    const duration = (s.dt ?? s.duration) as number | undefined
+    return {
+      id: String(s.id),
+      name: s.name,
+      artists: artists.map((a: any) => a.name).join('/'),
+      durationSec: duration !== undefined ? Math.round(duration / 1000) : undefined,
+    }
+  })
 }
 
 export interface NeteaseUrlResult {

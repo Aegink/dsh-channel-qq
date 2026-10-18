@@ -124,7 +124,13 @@ export function note(initial = '') {
   return n
 }
 
+/**
+ * `node` 可能已被上一个页面卸载（异步任务回来得比导航晚）。**静默忽略**比抛
+ * `Cannot set properties of undefined` 好：那会把一条普通的"页面已离开"变成
+ * 满屏红色错误条。真正需要报的错由调用方自己 toast。
+ */
 export function setNote(node, kind, text) {
+  if (node === null || node === undefined) return
   node.className = 'inline-note' + (kind ? ' ' + kind : '')
   node.textContent = text ?? ''
 }

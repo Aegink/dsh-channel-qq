@@ -9,6 +9,8 @@
 - 后台「记忆」页的**索引状态卡**：结构记录 / 原文块 / 向量各多少条、多少条参与检索
 - 知识抽取器（地址 / 模型 / API Key）可在后台配置，留空回退环境变量
 - 手写 JSON 的配置项（事件书等）多了「格式化」按钮
+- 后台「音乐」页：曲库账号（网易云 / 酷狗）扫码登录、登录态、清除登录、搜索自检；
+  二维码在浏览器本地生成，登录 key 不出本机。酷狗 API 地址进配置（`music.kugouApiBase`）
 
 ### 修复
 
@@ -21,6 +23,12 @@
   （实测 recall 反而归零）→ 检索器加 `accept` 过滤、服务层排除 `isChunkRecord`，
   原文块只对深召回工具可见
 - embed 服务默认地址从 `17861` 改为 `8801`（与 `install.sh`、systemd 单元一致）
+- **网易云搜索从未搜到过歌**：`/api/search/get/web` 现在返回加密串，解析出来恒为空 →
+  改用 `/api/cloudsearch/pc`，并兼容两套字段名（`ar`/`dt` 与 `artists`/`duration`）
+- **酷狗自建 API 一直被 HTTP 闸门拦下**（本机地址被判为内网/保留地址）→ 显式放行；
+  连不上时给出"先起 KuGouMusicApi"的说明，而不是 `fetch failed`
+- 人格页异步加载回来得比导航晚时抛 `Cannot set properties of undefined` → 加渲染代数
+  守卫，`setNote` 对已卸载节点静默返回
 
 ### 文档
 

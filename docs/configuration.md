@@ -41,6 +41,8 @@ cordis.patch.yml（部署级）
 | `CHANNEL_QQ_APPROVAL` | 审批网关开关（`1` = 启用） |
 | `CHANNEL_QQ_APPROVAL_DIR` | 审批目录（默认 `/var/lib/dsh-approval`） |
 | `CHANNEL_QQ_PERSONA_DIR` | 人格包目录（默认 `assets/persona/default`） |
+| `KUGOU_API_BASE` | 酷狗自建 API 的地址（默认 `http://127.0.0.1:4000`）。后台「音乐」页的
+  `music.kugouApiBase` 填了就以配置为准；两项都空则用默认值 |
 
 ## 最小可用配置
 

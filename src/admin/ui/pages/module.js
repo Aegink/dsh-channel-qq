@@ -81,7 +81,7 @@ const DESCRIPTORS = {
   },
   music: {
     logModule: 'tool',
-    status: () => ({ kv: [['说明', '点歌与歌单；曲库凭据在服务器侧的模块里，不在这里配。']] }),
+    status: () => ({ kv: [['说明', '曲库账号（扫码登录/清除）在这一页的「曲库账号」卡里；歌单在下方表格。']] }),
     resources: ['playlist'],
   },
   quotes: {

@@ -25,8 +25,15 @@ const files = {
 let host = null
 let refs = {}
 let form = null
+/**
+ * 渲染代数。异步加载回来时页面可能已经离开（dispose 把 refs 清空了）——
+ * 那时再写 refs 就会抛 `Cannot set properties of undefined`（2026-10-19 线上）。
+ * 每次 render/dispose 都 +1，加载器回来后对一下代数，对不上就安静退出。
+ */
+let generation = 0
 
 function render(h) {
+  generation += 1
   host = h
   host.textContent = ''
   refs = {}
@@ -187,9 +194,11 @@ function renderTree() {
 }
 
 async function loadFileTree(path, silent) {
+  const gen = generation
   const target = path ?? ''
   const url = `/api/files${target ? `?path=${encodeURIComponent(target)}` : ''}`
   const res = await api(url)
+  if (gen !== generation) return
   if (res.status !== 200) {
     files.children[target] = []
     if (silent !== true) {
@@ -427,12 +436,14 @@ function buildPresetsCard() {
 }
 
 async function loadPresets() {
+  const gen = generation
   const select = refs.presetSelect
   if (select === undefined) return
   select.disabled = true
   select.textContent = ''
   select.appendChild(el('option', { text: '读取中…' }))
   const res = await api('/api/presets')
+  if (gen !== generation) return
   select.textContent = ''
   if (res.status !== 200) {
     select.appendChild(el('option', { text: '（不可用）' }))
@@ -509,11 +520,13 @@ function buildSessionsCard() {
 }
 
 async function loadSessions() {
+  const gen = generation
   const list = refs.sessionList
   if (list === undefined) return
   list.textContent = ''
   list.appendChild(el('div', { class: 'loading' }, [el('span', { class: 'spin' }), el('span', { text: '正在读取会话…' })]))
   const res = await api('/api/sessions')
+  if (gen !== generation) return
   list.textContent = ''
   if (res.status !== 200) { list.appendChild(emptyBox('读取会话失败', errText(res), 'alert')); return }
   const sessions = Array.isArray(res.body.sessions) ? res.body.sessions : []
@@ -559,6 +572,7 @@ async function rebuildSession(room, btn) {
 }
 
 function dispose() {
+  generation += 1
   refs = {}
   host = null
   if (form !== null) { form.destroy(); form = null }

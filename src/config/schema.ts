@@ -15,6 +15,7 @@
 import type { ConfigSchema, FieldGroup, FieldSpec, SectionFieldSpec } from './dsl.js'
 import { CONTENT_GROUPS } from './sections/content.js'
 import { MEMORY_GROUPS } from './sections/memory.js'
+import { MUSIC_GROUPS } from './sections/music.js'
 import { CHAT_GROUPS } from './sections/chat.js'
 import { MEDIA_GROUPS } from './sections/media.js'
 import { NETWORK_GROUPS } from './sections/network.js'
@@ -40,6 +41,7 @@ export const SCHEMA: ConfigSchema = {
     ...NETWORK_GROUPS,
     ...CONTENT_GROUPS,
     ...MEMORY_GROUPS,
+    ...MUSIC_GROUPS,
     ...SAFETY_GROUPS,
     ...TOOLS_GROUPS,
     ...PROACTIVE_GROUPS,

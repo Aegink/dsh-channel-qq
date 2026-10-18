@@ -143,6 +143,9 @@ override = {}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -648,6 +651,9 @@ override = {}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -1150,6 +1156,9 @@ override = {"batching":{"windowMs":20000}}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
  },
  "eventMonitor": {
   "enabled": true,
@@ -1654,6 +1663,9 @@ override = {"admin":{"port":8790}}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -2156,6 +2168,9 @@ override = {"imageGen":{"model":"flux"}}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
  },
  "eventMonitor": {
   "enabled": true,
@@ -2660,6 +2675,9 @@ override = {"tts":{"voice":"b"}}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -3162,6 +3180,9 @@ override = {"flood":{"windowSec":30}}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
  },
  "eventMonitor": {
   "enabled": true,
@@ -3673,6 +3694,9 @@ override = {}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -4175,6 +4199,9 @@ override = {"keywordTriggers":[]}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
  },
  "eventMonitor": {
   "enabled": true,
@@ -4686,6 +4713,9 @@ override = {"rss":{"pollIntervalMin":5}}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -5188,6 +5218,9 @@ override = {"groupEnabled":false}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
  },
  "eventMonitor": {
   "enabled": true,
@@ -5692,6 +5725,9 @@ override = {}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -6194,6 +6230,9 @@ override = {"groupEnabled":true}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
  },
  "eventMonitor": {
   "enabled": true,
@@ -6698,6 +6737,9 @@ override = {"admin":{"host":"127.0.0.1"}}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -7201,6 +7243,9 @@ override = {}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -7703,6 +7748,9 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "music": {
+  "kugouApiBase": "http://127.0.0.1:4000"
  },
  "eventMonitor": {
   "enabled": true,
