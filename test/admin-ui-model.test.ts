@@ -10,11 +10,11 @@ import assert from 'node:assert/strict'
 
 /* 编译产物在 lib-test/test/ 下，动态 import 指回仓库里的源文件（`.js` 是原生 ESM）。 */
 async function model(): Promise<any> {
-  return await import(new URL('../../src/admin/ui/model/form-model.js', import.meta.url).href)
+  return await import(new URL('../../../src/admin/ui/model/form-model.js', import.meta.url).href)
 }
 
 async function table(): Promise<any> {
-  return await import(new URL('../../src/admin/ui/model/table-model.js', import.meta.url).href)
+  return await import(new URL('../../../src/admin/ui/model/table-model.js', import.meta.url).href)
 }
 
 test('列表文本解析：逗号/中文逗号/空白都算分隔；number 模式过滤非数字', async () => {

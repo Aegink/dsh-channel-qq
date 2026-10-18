@@ -21,7 +21,7 @@ const { makeRecord } = await import('../src/core/memory/model.js')
 const { MemoryStore } = await import('../src/features/memory/store.js')
 // 评测器是纯 JS（.mjs），没有类型声明。用 `import.meta.url` 而不是字面相对路径：
 // 测试编译到 `lib-test/test/`，字面路径 `../eval/…` 会解析到 `lib-test/eval/…`。
-const corpusUrl = new URL('../../eval/memory/corpus.mjs', import.meta.url).href
+const corpusUrl = new URL('../../../eval/memory/corpus.mjs', import.meta.url).href
 const { splitDiary, MIN_SEGMENT_CHARS } = await import(corpusUrl)
 
 const NOW = Date.parse('2026-10-17T12:00:00+08:00')

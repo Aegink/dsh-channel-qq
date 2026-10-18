@@ -38,8 +38,8 @@ const { PromptComposer } = await import('../src/app/conversation/prompt-composer
 const { createPersonaPack } = await import('../src/adapters/persona/fs-pack.js')
 const { resolveConfig } = await import('../src/config.js')
 
-const GROUP = PRIMARY_GROUP
-const MASTER = ADMIN_QQ
+const GROUP = 1000000003
+const MASTER = 1000000002
 const OTHER = 1086437543
 const WS = '/path/to/workspace'
 

@@ -306,7 +306,7 @@ for (const file of files) {
     }
     if (/^\.\.?\//.test(spec)) {
       const resolved = path.posix.normalize(path.posix.join(path.posix.dirname(file), spec))
-      const outside = ['lib/', 'test/', 'deploy/', 'scripts/', 'lib-test/']
+      const outside = ['build/', 'lib/', 'test/', 'deploy/', 'scripts/', 'lib-test/']
       const hit = outside.find((prefix) => resolved.startsWith(prefix) || resolved.startsWith(`../${prefix}`))
       if (hit !== undefined) {
         violations.push({ file, line, rule: 'R1', detail: `跨出 src 引用 ${resolved}` })

@@ -52,9 +52,9 @@ const NOW = Date.parse('2026-10-16T15:04:05+08:00')
 /** 固定的事件时间（秒），对应 14:31:00 本地。 */
 const EVENT_TIME = Math.floor(Date.parse('2026-10-16T14:31:00+08:00') / 1000)
 
-const SELF = BOT_QQ
-const GROUP = PRIMARY_GROUP
-const MASTER = ADMIN_QQ
+const SELF = 1000000001
+const GROUP = 1000000003
+const MASTER = 1000000002
 const OTHER = 1086437543
 
 /** 在冻结时钟下跑一段逻辑。 */

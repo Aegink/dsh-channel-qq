@@ -27,24 +27,16 @@ Thumbs.db
 _qr-login.html
 
 # ── 构建产物：不入库 ──────────────────────────────────────────────────
-# 部署方式是「推 src/ → 在服务器上 `npm run build`（= build:admin + tsc）生成 lib/」，
-# 所以 lib/ 永远可以在目标机上重建，不需要进仓库。
+# `npm run build` → build/lib（tsc 产物 + .d.ts）；`npm test` → build/lib-test。
+# 两者都收在 build/ 下，仓库根因此保持干净。
 #
-# 2026-10-15 把 lib/ 移出版本管理的原因：它入库后会**悄悄和 src/ 漂移**。
-# 当时本地 lib/tools.js 与服务端 lib/tools.js 的 sha256 不同
-# （sha256 差异来自模板字符串里的 2 个 CR——本地产物是早先 CRLF 时代的旧副本），
-# 于是「本地的 lib 到底是不是线上跑的那份」这个问题没有答案、只能靠猜。
-# 产物不入库，这个问题就不存在了。
+# 为什么不入库：产物会**悄悄和 src/ 漂移**——曾经本地 lib/tools.js 与服务端的
+# sha256 不同（模板字符串里有 2 个 CR），于是"本地这份到底是不是线上跑的"没有答案。
+# 产物不入库，这个问题就不存在。
 #
-# ⚠️ 必须是 `/lib/`（锚定仓库根）：写成 `lib/` 会连**任意层级**的 lib 目录一起吞掉，
-# 包括 `eval/lib/`——评测底盘的支持模块住在那儿，于是 `git add eval` 静默跳过它，
-# 干净检出里 `npm run eval` 直接 ERR_MODULE_NOT_FOUND（在 git worktree 里试做发布
-# 构建时才发现：本地一直有文件，所以从没暴露）。
-/lib/
-
-# ── 测试产物：不入库 ────────────────────────────────────────────────
-# npm test 把 src/ 与 test/ 一起编译到这里再用 node --test 跑。
-lib-test/
+# ⚠️ 必须锚定仓库根：写成 `lib/` 会连 `eval/lib/`（评测底盘）一起吞掉，
+# `git add eval` 会静默跳过它，干净检出里 `npm run eval` 直接 ERR_MODULE_NOT_FOUND。
+/build/
 
 # ── 推送中转：不入库 ────────────────────────────────────────────────
 # 走 SSH 通道推文件时的本地暂存目录。
@@ -63,6 +55,7 @@ RELEASE.json
 
 # 评测器每次运行的产物（用例在 eval/ 里，报告不入库）
 eval/last-report.json
+eval/memory/last-report.json
 
 # ── 记忆评测的真实语料缓存（含私人聊天内容，绝不入库）──────────────
 eval/memory/.cache/

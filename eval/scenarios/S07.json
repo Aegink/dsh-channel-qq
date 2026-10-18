@@ -17,7 +17,7 @@
     { "text": "", "why": "幂等命中 → 静默跳过" }
   ],
   "counterExamples": [
-    { "text": "早呀，今天也要加油", "why": "重播了早报话术并发送", "actions": [{ "tool": "qq_send_text", "args": { "isGroup": false, "target": ADMIN_QQ, "text": "早呀，今天也要加油" } }] },
-    { "text": "早", "why": "用引用回复重播", "actions": [{ "tool": "qq_reply_quote", "args": { "isGroup": true, "target": PRIMARY_GROUP, "messageId": 1, "text": "早" } }] }
+    { "text": "早呀，今天也要加油", "why": "重播了早报话术并发送", "actions": [{ "tool": "qq_send_text", "args": { "isGroup": false, "target": 1000000002, "text": "早呀，今天也要加油" } }] },
+    { "text": "早", "why": "用引用回复重播", "actions": [{ "tool": "qq_reply_quote", "args": { "isGroup": true, "target": 1000000003, "messageId": 1, "text": "早" } }] }
   ]
 }

@@ -3,9 +3,9 @@
     "mode": "forward",
     "url": "ws://127.0.0.1:3001"
   },
-  "selfId": BOT_QQ,
+  "selfId": 1000000001,
   "admins": [],
-  "primaryGroup": PRIMARY_GROUP,
+  "primaryGroup": 1000000003,
   "groupEnabled": false,
   "affectionPort": 8789,
   "requireMention": true,

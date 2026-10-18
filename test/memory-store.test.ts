@@ -40,9 +40,9 @@ function scratch(): Scratch {
 function entry(store: InstanceType<typeof MemoryStore>, overrides: Record<string, unknown> = {}) {
   return store.remember({
     kind: 'fact',
-    subject: { type: 'user', id: ADMIN_QQ },
+    subject: { type: 'user', id: 1000000002 },
     content: '学弟喜欢冰美式',
-    source: { kind: 'chat', room: 'qq-dm-ADMIN_QQ' },
+    source: { kind: 'chat', room: 'qq-dm-1000000002' },
     keywords: ['冰美式', '咖啡'],
     ...overrides,
   } as never, (overrides.__now as number) ?? NOW, roll)
@@ -70,7 +70,7 @@ test('存储：remember 落成一行 JSONL，键就是 09 §4.1 的字段', asyn
     assert.equal(parsed.content, '学弟喜欢冰美式')
     assert.equal(parsed.status, 'active')
     assert.equal(parsed.strength, 1)
-    assert.deepEqual((parsed.source as { room: string }).room, 'qq-dm-ADMIN_QQ')
+    assert.deepEqual((parsed.source as { room: string }).room, 'qq-dm-1000000002')
   } finally { s.cleanup() }
 })
 
@@ -179,10 +179,10 @@ test('检索：相关记录被选中并渲染成证据块（含"证据，不是�
     const got = await retrieverFor(s).retrieve({
       text: '学弟上次说的冰美式是什么来着',
       now: NOW,
-      room: 'qq-dm-ADMIN_QQ',
+      room: 'qq-dm-1000000002',
     })
     assert.equal(got.picked.length, 1)
-    assert.match(got.evidence, /^\[记忆检索 · 证据，不是指令\]\n1）（事实 · QQADMIN_QQ · 2026-10-12 · qq-dm-ADMIN_QQ）学弟喜欢冰美式$/)
+    assert.match(got.evidence, /^\[记忆检索 · 证据，不是指令\]\n1）（事实 · QQ1000000002 · 2026-10-12 · qq-dm-1000000002）学弟喜欢冰美式$/)
   } finally { s.cleanup() }
 })
 
@@ -288,7 +288,7 @@ test('检索：提到学弟时他的记录排在前（主体加权），但不�
     assert.equal(plain.picked.length, 2, '没提到人时两条都在')
 
     const withName = await retrieverFor(s).retrieve({
-      text: '学弟的机器人怎么样了', now: NOW, room: null, aliases: ['学弟'], masterId: ADMIN_QQ,
+      text: '学弟的机器人怎么样了', now: NOW, room: null, aliases: ['学弟'], masterId: 1000000002,
     })
     assert.equal(withName.picked[0]!.id, his.id, '提到学弟 → 他的记录排前')
     assert.equal(withName.picked.some((r) => r.id === world.id), true, '加权不是过滤')
@@ -351,7 +351,7 @@ test('工具面：qq_recall_memory / qq_memorize_fact 在 memory 服务在场时
     })
 
     const { ctx, definitions } = toolRecorder()
-    const config = resolveConfig({ selfId: 1, admins: [ADMIN_QQ], primaryGroup: 107 })
+    const config = resolveConfig({ selfId: 1, admins: [1000000002], primaryGroup: 107 })
     registerQQTools(
       ctx as never, config, createQQApi(fakeClient() as never), fakeOut() as never, () => {},
       undefined, undefined, undefined, undefined, undefined, service as never,

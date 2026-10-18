@@ -19,7 +19,7 @@ import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const RUNNER = path.join(REPO, 'eval', 'run.mjs')
 
 interface EvalItem {

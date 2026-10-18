@@ -49,7 +49,7 @@ export interface GroupPacketV2Input {
   /** 当前消息：队列里最后一条**整条**原文（含它自己的换行；空串 = 这一包没有当前消息）。 */
   readonly current: string
   readonly room: string
-  /** 信封的 room 属性（`group:PRIMARY_GROUP`）。 */
+  /** 信封的 room 属性（`group:1000000003`）。 */
   readonly roomKey: string
   readonly period: string
   readonly knowledgeHint: string

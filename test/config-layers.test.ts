@@ -27,7 +27,7 @@ const CASES: Array<{ name: string; patch?: Record<string, unknown>; override?: R
   {
     name: '01-黄金用例（主群 + 学弟 + 关视觉）',
     patch: {
-      selfId: BOT_QQ, admins: [ADMIN_QQ], primaryGroup: PRIMARY_GROUP,
+      selfId: 1000000001, admins: [1000000002], primaryGroup: 1000000003,
       workspacePath: '/tmp/ws', requireMention: true,
       imageRecognition: { enabled: false, maxPerMessage: 2 },
     },

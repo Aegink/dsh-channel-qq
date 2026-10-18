@@ -13,7 +13,7 @@
 export interface MemoryEvidenceInput {
   /** 本回合要处理的文本（队列里的若干行）。 */
   readonly text: string
-  /** 房间键（`qq-group-PRIMARY_GROUP` 这种），用于房间级记忆的过滤。 */
+  /** 房间键（`qq-group-1000000003` 这种），用于房间级记忆的过滤。 */
   readonly room: string
   readonly isGroup: boolean
 }

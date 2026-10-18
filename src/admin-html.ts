@@ -3232,7 +3232,7 @@ const UI_FILE_LIST: ReadonlyArray<{ path: string; lines: readonly string[] }> = 
       "  quotes: { label: '群语录', hint: '群梗语录库。', creatable: true, createTemplate: { text: '语录正文', speaker: '谁说的', tags: ['梗'] } },",
       "  memories: { label: '长期记忆', hint: '知识条目（技能/事实/偏好/事件/人物）。', creatable: true, createTemplate: { type: 'fact', content: '一句话知识', tags: ['标签'], source: '来源' } },",
       "  reminders: { label: '提醒', hint: '到点推送的提醒任务。' },",
-      "  rss: { label: '订阅源', hint: 'RSS/Atom 订阅；在这里增删会直接写进 config.rss.feeds。', creatable: true, createTemplate: { url: 'https://example.com/feed.xml', isGroup: true, target: PRIMARY_GROUP } },",
+      "  rss: { label: '订阅源', hint: 'RSS/Atom 订阅；在这里增删会直接写进 config.rss.feeds。', creatable: true, createTemplate: { url: 'https://example.com/feed.xml', isGroup: true, target: 1000000003 } },",
       "  learned: { label: '学到的口癖', hint: '从群聊里统计出来的短语。', creatable: true, createTemplate: { text: '短语' } },",
       "  sendl: { label: '机器人发送记录', hint: '她最近发出去的消息（跨会话持久）。' },",
       "  playlist: { label: '歌单', hint: '跨重启持久化的点歌记录。', creatable: true, createTemplate: { songId: '123', name: '歌名', artists: '歌手' } },",

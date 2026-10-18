@@ -79,7 +79,7 @@ export class PacketComposer {
     return this.deps.config().context?.v2 === true
   }
 
-  /** 信封的 room 属性（`group:PRIMARY_GROUP` / `dm:ADMIN_QQ`）。 */
+  /** 信封的 room 属性（`group:1000000003` / `dm:1000000002`）。 */
   private envelopeOf(conversation: ConversationRecord): string {
     return envelopeKey(conversation.isGroup, conversation.chatId)
   }

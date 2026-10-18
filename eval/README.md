@@ -36,8 +36,8 @@ npm run eval                                # 同上
 node eval/run.mjs --suite redteam           # 只跑一个套件（可重复；scenarios / persona
                                             # / memory 同样；memory 目前是占位提示）
 node eval/run.mjs --transcript eval/transcripts/t-d1-hook.json
-node eval/run.mjs --session qq-dm-ADMIN_QQ --cwd /path/to/workspace
-node eval/run.mjs --session qq-group-PRIMARY_GROUP --case redteam/D1   # 只跑该用例的规则
+node eval/run.mjs --session qq-dm-1000000002 --cwd /path/to/workspace
+node eval/run.mjs --session qq-group-1000000003 --case redteam/D1   # 只跑该用例的规则
 node eval/run.mjs --json                    # 机读输出（stdout 纯 JSON）
 ```
 

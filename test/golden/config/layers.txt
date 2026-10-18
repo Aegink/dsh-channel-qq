@@ -482,18 +482,18 @@ override = {}
 }
 
 ════ 01-黄金用例（主群 + 学弟 + 关视觉）
-patch    = {"selfId":BOT_QQ,"admins":[ADMIN_QQ],"primaryGroup":PRIMARY_GROUP,"workspacePath":"/tmp/ws","requireMention":true,"imageRecognition":{"enabled":false,"maxPerMessage":2}}
+patch    = {"selfId":1000000001,"admins":[1000000002],"primaryGroup":1000000003,"workspacePath":"/tmp/ws","requireMention":true,"imageRecognition":{"enabled":false,"maxPerMessage":2}}
 override = {}
 {
  "connection": {
   "mode": "forward",
   "url": "ws://127.0.0.1:3001"
  },
- "selfId": BOT_QQ,
+ "selfId": 1000000001,
  "admins": [
-  ADMIN_QQ
+  1000000002
  ],
- "primaryGroup": PRIMARY_GROUP,
+ "primaryGroup": 1000000003,
  "groupEnabled": true,
  "affectionPort": 8789,
  "requireMention": true,

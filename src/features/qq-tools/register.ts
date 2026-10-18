@@ -254,7 +254,7 @@ export function isToolGateArmed(): boolean { return toolGateArmed }
 export interface ToolGateCall {
   readonly name: string
   readonly args: unknown
-  /** `exec.agent.id`——我们的会话 id 形如 `qq-group-PRIMARY_GROUP`。 */
+  /** `exec.agent.id`——我们的会话 id 形如 `qq-group-1000000003`。 */
   readonly agentId: string | undefined
 }
 

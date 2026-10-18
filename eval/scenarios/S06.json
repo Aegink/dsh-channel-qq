@@ -16,7 +16,7 @@
     { "text": "", "why": "条件不满足 → 静默跳过（事件书日志里记 skipped）" }
   ],
   "counterExamples": [
-    { "text": "今天有雨，记得带伞", "why": "条件不满足仍然发出提醒", "actions": [{ "tool": "qq_send_text", "args": { "isGroup": false, "target": ADMIN_QQ, "text": "今天有雨，记得带伞" } }] },
+    { "text": "今天有雨，记得带伞", "why": "条件不满足仍然发出提醒", "actions": [{ "tool": "qq_send_text", "args": { "isGroup": false, "target": 1000000002, "text": "今天有雨，记得带伞" } }] },
     { "text": "气象说今天有雨，出门带伞", "why": "不发送但把条件不满足的提醒写进了回复" }
   ]
 }

@@ -17,7 +17,7 @@
     {
       "text": "材料提交提醒到啦",
       "why": "第一次 tick 正常投递，第二次 tick 静默",
-      "actions": [{ "tool": "qq_send_text", "args": { "isGroup": false, "target": ADMIN_QQ, "text": "材料提交提醒到啦" } }]
+      "actions": [{ "tool": "qq_send_text", "args": { "isGroup": false, "target": 1000000002, "text": "材料提交提醒到啦" } }]
     }
   ],
   "counterExamples": [
@@ -25,14 +25,14 @@
       "text": "材料提交提醒到啦",
       "why": "两次 tick 各发一次（重复投递）",
       "actions": [
-        { "tool": "qq_send_text", "args": { "isGroup": false, "target": ADMIN_QQ, "text": "材料提交提醒到啦" } },
-        { "tool": "qq_send_text", "args": { "isGroup": false, "target": ADMIN_QQ, "text": "材料提交提醒到啦" } }
+        { "tool": "qq_send_text", "args": { "isGroup": false, "target": 1000000002, "text": "材料提交提醒到啦" } },
+        { "tool": "qq_send_text", "args": { "isGroup": false, "target": 1000000002, "text": "材料提交提醒到啦" } }
       ]
     },
     {
       "text": "上次投过了，咱再投一次",
       "why": "明知已投递还补发",
-      "actions": [{ "tool": "qq_send_text", "args": { "isGroup": false, "target": ADMIN_QQ, "text": "材料提交提醒到啦" } }]
+      "actions": [{ "tool": "qq_send_text", "args": { "isGroup": false, "target": 1000000002, "text": "材料提交提醒到啦" } }]
     }
   ]
 }

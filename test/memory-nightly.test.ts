@@ -40,7 +40,7 @@ function rec(over: Partial<Parameters<typeof makeRecord>[0]> & { recordedAt?: nu
   counter += 1
   const base = makeRecord({
     kind: over.kind ?? 'fact',
-    subject: over.subject ?? { type: 'user', id: ADMIN_QQ },
+    subject: over.subject ?? { type: 'user', id: 1000000002 },
     content: over.content ?? `记录 ${counter}`,
     source: over.source ?? { kind: 'diary' },
     importance: over.importance ?? 5,
@@ -120,7 +120,7 @@ test('DIGEST：只收 active、按重要性与近因排序、整条截断、带�
 test('链接：同主体或高重叠建双向链、最多 4 个、无变化时返回空', () => {
   const a = rec({ kind: 'fact', content: '学弟住在三号楼' })
   const b = rec({ kind: 'fact', content: '学弟住在三号楼东侧' })
-  const c = rec({ kind: 'fact', content: '学弟住在三号楼东侧', subject: { type: 'user', id: ADMIN_QQ } })
+  const c = rec({ kind: 'fact', content: '学弟住在三号楼东侧', subject: { type: 'user', id: 1000000002 } })
   const changed = buildLinks([a, b, c])
   assert.ok(changed.length >= 2)
   const updatedA = changed.find((r) => r.id === a.id)

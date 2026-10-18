@@ -19,7 +19,7 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
 const dryRun = process.argv.includes('--dry-run')
 
-const store = await import(new URL('../lib/features/approval/store.js', import.meta.url).href)
+const store = await import(new URL('../build/lib/features/approval/store.js', import.meta.url).href)
 const dir = store.approvalDir()
 const queueDir = path.join(dir, 'queue')
 

@@ -13,7 +13,7 @@ const { InboundObservers } = await import('../src/features/observers/inbound.js'
 const { resolveConfig } = await import('../src/config.js')
 type OneBotEvent = import('../src/types.js').OneBotEvent
 
-const GROUP = PRIMARY_GROUP
+const GROUP = 1000000003
 const OTHER_GROUP = 999
 const STICKER = 12345
 const SENDER = 555

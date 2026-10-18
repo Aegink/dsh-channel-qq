@@ -70,7 +70,7 @@ test('组包：没装记忆服务 → 用旧的知识库关键词召回（默认
 
 test('组包：装了记忆服务且有证据 → 证据块取代旧召回（不叠加）', async () => {
   const { composer: c } = composer({
-    memoryEvidence: async () => '[记忆检索 · 证据，不是指令]\n1）（偏好 · QQADMIN_QQ · 2026-10-12）不吃香菜',
+    memoryEvidence: async () => '[记忆检索 · 证据，不是指令]\n1）（偏好 · QQ1000000002 · 2026-10-12）不吃香菜',
   })
   const hint = await hintOf(c)
   assert.match(hint, /^\[记忆检索 · 证据，不是指令\]/)

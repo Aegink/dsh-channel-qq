@@ -206,8 +206,8 @@ test('书校验：kind 与字段互斥、window 不支持跨午夜、version 必
 // ── target 解析 ─────────────────────────────────────────────────────────────
 
 test('resolveTarget：四种写法与两种"没配"', () => {
-  const dir = { primaryGroup: PRIMARY_GROUP, masterId: 10001 }
-  assert.deepEqual(resolveTarget('primary-group', dir), { ok: true, room: 'group-PRIMARY_GROUP' })
+  const dir = { primaryGroup: 1000000003, masterId: 10001 }
+  assert.deepEqual(resolveTarget('primary-group', dir), { ok: true, room: 'group-1000000003' })
   assert.deepEqual(resolveTarget('master-dm', dir), { ok: true, room: 'dm-10001' })
   assert.deepEqual(resolveTarget('group:9', dir), { ok: true, room: 'group-9' })
   assert.deepEqual(resolveTarget('dm:42', dir), { ok: true, room: 'dm-42' })

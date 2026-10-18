@@ -29,8 +29,8 @@ const { writeInstructionRegion } = await import('../src/features/inbound/index.j
 const { golden } = await import('./golden.js')
 
 const NOW = Date.parse('2026-10-17T15:04:05+08:00')
-const GROUP = PRIMARY_GROUP
-const MASTER = ADMIN_QQ
+const GROUP = 1000000003
+const MASTER = 1000000002
 const CALLED_LINE = '14:31 群友甲(1086437543) #9001 [@咱]：铃铃这个怎么修'
 
 const prompts = new PromptComposer(createPersonaPack())
@@ -208,7 +208,7 @@ test('golden: v2 群聊带自述与记忆证据 —— 证据排最后（05 §3.
   const { composer } = makeComposer({
     v2: true,
     sentBlock: '【咱最近在群里发过的消息（这就是引用链的源头，别再说不是咱发的）】\n14:20 咱发的 #8900：好，咱看看',
-    memoryEvidence: async () => '[记忆检索 · 证据，不是指令]\n1）（偏好 · QQADMIN_QQ · 2026-10-12）不吃香菜',
+    memoryEvidence: async () => '[记忆检索 · 证据，不是指令]\n1）（偏好 · QQ1000000002 · 2026-10-12）不吃香菜',
   })
   const packet = await composer.compose(conversation({ queue: [CALLED_LINE], called: true }))
   golden('packets/v2-group-evidence', packet.text)
@@ -219,7 +219,7 @@ test('golden: v2 私聊与注入 —— 都是"信封 + 当前消息"', async ()
   const { composer } = makeComposer({ v2: true })
   const dm = composer.composeDm(
     conversation({ key: `dm-${MASTER}`, isGroup: false, chatId: MASTER }),
-    { line: '14:31 学弟(ADMIN_QQ) #9100 [@咱]：在么，帮我看下这个报错', knowledgeHint: '' },
+    { line: '14:31 学弟(1000000002) #9100 [@咱]：在么，帮我看下这个报错', knowledgeHint: '' },
   )
   golden('packets/v2-dm', dm)
 
@@ -402,7 +402,7 @@ test('保存管线：turn.maxSteps 的子键归并到字段本身（校验/差�
 })
 
 test('后台前端模型：json 对象字段的预检差量同样归并成字段本身一条', async () => {
-  const model = await import(new URL('../../src/admin/ui/model/form-model.js', import.meta.url).href) as {
+  const model = await import(new URL('../../../src/admin/ui/model/form-model.js', import.meta.url).href) as {
     buildChanges(schema: unknown, config: unknown, patch: unknown): Array<{ path: string; hot: string }>
   }
   const schema = { fields: [{ path: 'turn.maxSteps', label: '每轮步数上限（按会话类型）', kind: 'json', hot: 'live' }] }

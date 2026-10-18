@@ -15,7 +15,7 @@ export const PENDING_TITLE = '[自上次回复以来的群消息 · 仅供参考
 /** 引发这一回合的当前消息块标题。 */
 export const CURRENT_TITLE = '[当前消息 · 需要回应]'
 
-/** 房间信封键：`group:PRIMARY_GROUP` / `dm:ADMIN_QQ`（与 `ports/platform.ts` 的 RoomKey 同形）。 */
+/** 房间信封键：`group:1000000003` / `dm:1000000002`（与 `ports/platform.ts` 的 RoomKey 同形）。 */
 export function envelopeKey(isGroup: boolean, chatId: number): string {
   return `${isGroup ? 'group' : 'dm'}:${chatId}`
 }

@@ -13,15 +13,31 @@
  *      「检索出来的记录覆盖了那一行」。所以切段时**标题行并入紧随的段落**——
  *      出题时锚点通常就是标题行。
  *
- * 本文件 import 的是**编译产物**（`lib/`）。这是 eval 里唯一的例外：检索逻辑必须
- * 是系统里那一份，抄一份到 eval 就会与产品漂移（`lib/` 是入库的预编译产物，
- * 服务器部署树里也有，所以两边都能跑）。跑之前 `npm run build`。
+ * 本文件 import 的是**编译产物**，不是源码：检索逻辑必须是系统里那一份，抄一份到
+ * eval 就会与产品漂移。产物有两种落点——部署树里的 `lib/`，以及 `npm test` 编译
+ * 出来的 `lib-test/src/`。这里按顺序找，找到哪个用哪个（干净检出没有 `lib/`，
+ * 2026-10-18 CI 就是这么红的）。
  */
 
 import { readdir, readFile } from 'node:fs/promises'
 import * as path from 'node:path'
 
-const { MemoryStore } = await import('../../lib/features/memory/store.js')
+async function loadMemoryStore() {
+  const candidates = [
+    '../../build/lib/features/memory/store.js',
+    '../../build/lib-test/src/features/memory/store.js',
+  ]
+  for (const candidate of candidates) {
+    try {
+      return await import(candidate)
+    } catch (error) {
+      if (error?.code !== 'ERR_MODULE_NOT_FOUND') throw error
+    }
+  }
+  throw new Error('找不到编译后的 MemoryStore：先跑 `npm run build`（或 `npm test` 会生成 lib-test）')
+}
+
+const { MemoryStore } = await loadMemoryStore()
 
 /** 段落的长度门限：太短的段（碎句、表格残片）不值得当一条记忆。 */
 export const MIN_SEGMENT_CHARS = 40

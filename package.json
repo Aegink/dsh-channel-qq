@@ -3,22 +3,22 @@
   "version": "0.1.0",
   "description": "QQ channel plugin for DeepSeek Harness (OneBot v11 / NapCat): tools, memory, proactive events, admin panel.",
   "type": "module",
-  "main": "lib/index.js",
-  "types": "lib/types/index.d.ts",
+  "main": "build/lib/index.js",
+  "types": "build/lib/types/index.d.ts",
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
   },
   "imports": {
-    "#lib/*": "./lib/*"
+    "#lib/*": "./build/lib/*"
   },
   "scripts": {
     "build": "npm run build:admin && tsc -p tsconfig.json",
     "build:admin": "node scripts/build-admin-html.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:tests": "tsc -p tsconfig.test.json",
-    "test": "npm run typecheck:tests && node --test \"lib-test/test/*.test.js\"",
+    "test": "npm run typecheck:tests && node --test \"build/lib-test/test/*.test.js\"",
     "check:layers": "node scripts/check-layers.mjs",
     "check:size": "node scripts/check-size.mjs",
     "check:admin": "node scripts/build-admin-html.mjs --check",
@@ -68,7 +68,7 @@
   ],
   "author": "Aegink",
   "files": [
-    "lib",
+    "build",
     "assets",
     "cordis.patch.yml",
     "README.md",

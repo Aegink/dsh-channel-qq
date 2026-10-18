@@ -34,7 +34,7 @@ const outFile = outFlag === -1
 /** 发布内容：源码、产物、测试、脚本、资源、清单文件。**不含** node_modules（服务器侧已有）。 */
 const INCLUDE = [
   'package.json', 'cordis.patch.yml', 'tsconfig.json', 'tsconfig.test.json',
-  'src', 'lib', 'lib-test', 'assets', 'scripts', 'test', 'deploy', 'eval',
+  'src', 'build', 'assets', 'scripts', 'test', 'deploy', 'eval',
   'MANIFEST.sha256', 'RELEASE.json',
 ]
 

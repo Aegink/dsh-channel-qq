@@ -541,7 +541,7 @@ commit 看**为什么改**。服务器刻意不留 `.git`（产物里没有，�
 - `--fixtures <file>`：把 `fetch` 换成真实后台响应（`dump-admin-fixtures.mjs`
   导出的 JSON），验**数据契约**。字段改名、会话列表少了 `bytes`、群列表从对象
   变字符串这类问题只有这个模式才看得见——已确认真实 `groupList` 是
-  `["PRIMARY_GROUP 群名"]` 字符串数组（UI 两种形态都兼容，展开后 9 条全部渲染）。
+  `["1000000003 群名"]` 字符串数组（UI 两种形态都兼容，展开后 9 条全部渲染）。
 
 实测数字：4 个宽度**横向溢出 0px**、**JS 错误 0**、窄屏底部标签栏 / 宽屏侧栏
 正确切换、配置项窄屏堆叠而宽屏两栏、深色 `rgb(13,16,23)` ↔ 浅色
@@ -669,10 +669,10 @@ zstd 解码器只解第一帧，必须先用 `zstd -dc` 解压再分析）。
 数据先说话。把群会话和私聊会话的**所有发送工具调用**拉出来对比：
 
 ```
-群会话  qq-group-PRIMARY_GROUP :  0 次发送
-私聊会话 qq-dm-ADMIN_QQ   : 21 次发送，其中 2 次是
-          10:38:20 qq_reply_quote isGroup=true target=PRIMARY_GROUP
-          10:42:29 qq_reply_quote isGroup=true target=PRIMARY_GROUP
+群会话  qq-group-1000000003 :  0 次发送
+私聊会话 qq-dm-1000000002   : 21 次发送，其中 2 次是
+          10:38:20 qq_reply_quote isGroup=true target=1000000003
+          10:42:29 qq_reply_quote isGroup=true target=1000000003
 ```
 
 **群消息是从私聊会话里发出去的**：在私聊里回答你的问题，却把答案发进了主群。
@@ -688,7 +688,7 @@ zstd 解码器只解第一帧，必须先用 `zstd -dc` 解压再分析）。
    提交的是**裸文本**，连消息行都没有——而 18:12 那次串台正是走的这条路径。
 
 修法：新增 `roomDirectiveFor(isGroup, chatId)`，产出一行明确的房间指令
-（`【这是私聊】对方 QQ ADMIN_QQ。要发言必须用 qq_send_text / qq_reply_quote，且 isGroup=false、target=ADMIN_QQ；不要发到任何群里。`），
+（`【这是私聊】对方 QQ 1000000002。要发言必须用 qq_send_text / qq_reply_quote，且 isGroup=false、target=1000000002；不要发到任何群里。`），
 并**接到全部 5 条路径**上：群消息、私聊消息、主动私聊、后台注入、定时巡逻。
 
 ### 11.2 提示词换成「诺诺」
@@ -722,8 +722,8 @@ zstd 解码器只解第一帧，必须先用 `zstd -dc` 解压再分析）。
 **修好后的实测**（新会话）：
 
 ```
-房间指令: 【这是私聊】对方 QQ ADMIN_QQ
-工具调用: qq_send_text isGroup=false target=ADMIN_QQ | 学弟 自检ok
+房间指令: 【这是私聊】对方 QQ 1000000002
+工具调用: qq_send_text isGroup=false target=1000000002 | 学弟 自检ok
 ```
 
 ### 11.4 时间不对：日志时间戳是 UTC
@@ -745,7 +745,7 @@ zstd 解码器只解第一帧，必须先用 `zstd -dc` 解压再分析）。
 测试中我连着重建会话，把私聊搞坏了，日志是：
 
 ```
-admin: rebuilt session qq-dm-ADMIN_QQ :: 该会话当前没有运行中的 agent; 注册表里仍有该会话; 历史已移到备份
+admin: rebuilt session qq-dm-1000000002 :: 该会话当前没有运行中的 agent; 注册表里仍有该会话; 历史已移到备份
 ensureConversation ... live=true          ← 活的 agent 还在
 agent error: ENOENT ... session.v4.jsonl.zstd   ← 它指向我搬走的文件，每轮必失败
 ```
@@ -772,8 +772,8 @@ agent error: ENOENT ... session.v4.jsonl.zstd   ← 它指向我搬走的文件�
 | `requireMention` + 房间指令 `require-mention-test.mjs` | **10/10**（含 4 条房间指令断言） |
 | 后台全链路 `admin-test.mjs` | **39/39** |
 | `localStamp` 与平台时区一致性 `check-localtime.mjs` | **PASS** |
-| 端到端：私聊注入 → 是否真的调用发送工具 | **qq_send_text isGroup=false target=ADMIN_QQ \| 学弟 自检ok** |
-| 群会话房间指令 | `【这是群聊】群号 PRIMARY_GROUP` 已注入 |
+| 端到端：私聊注入 → 是否真的调用发送工具 | **qq_send_text isGroup=false target=1000000002 \| 学弟 自检ok** |
+| 群会话房间指令 | `【这是群聊】群号 1000000003` 已注入 |
 | 会话内旧称呼残留 | **0 次** |
 
 ### 11.7 仍未处理
@@ -862,7 +862,7 @@ link-cache / music-tmp / voice-tmp）。
 > （在 `./data/qq` 这个 bind mount 里），丢的是会话有效性。
 >
 > **2026-10-15 实测已按此流程恢复**：扫码后 `QQ link ready` 恢复，
-> `get_login_info` 返回 `selfId=BOT_QQ nickname= 我路痴`。
+> `get_login_info` 返回 `selfId=1000000001 nickname= 我路痴`。
 >
 > **2026-10-16 补充：掉登录不需要先重建容器。** 当天 17:12:35 账号在没有任何
 > 容器操作的情况下自己掉了（同样的 `ErrType: 1 ErrCode: 3`，随后每约 2 分钟换
@@ -940,7 +940,7 @@ answer: red, green, blue, yellow          ← 4/4 全中，确实是视觉模型
 | `yesterdayActivity` 用 `slice(0,24)` 砍掉时区偏移 | 改成正则取完整时间戳再 `Date.parse` |
 
 **实测**：本机把服务 `TZ` 临时挪到窗口内，日志出现
-`morning report submitted to ADMIN_QQ (weather=no, schedule=no)`，
+`morning report submitted to 1000000002 (weather=no, schedule=no)`，
 且私聊会话里那条**真的发出去了**——而且因为没配天气/课表，
 它**没有编造**，原话「没给天气和课表，所以我没编——不拿不存在的信息充数」。
 

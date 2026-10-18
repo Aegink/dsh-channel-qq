@@ -28,7 +28,7 @@ import type { GatewayHealth } from './gateway-health.js'
  * 落盘的东西（说过的话、好感度、语录）都不在这里。
  */
 export interface ConversationRecord {
-  /** 房间键（`group-PRIMARY_GROUP` / `dm-ADMIN_QQ`）。 */
+  /** 房间键（`group-1000000003` / `dm-1000000002`）。 */
   readonly key: string
   /** 会话 id（`qq-<key>`）；它同时是磁盘上的目录名。 */
   readonly sessionId: string

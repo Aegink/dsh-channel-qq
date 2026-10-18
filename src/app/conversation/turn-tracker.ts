@@ -19,7 +19,7 @@ import { GATEWAY_RETRY_MAX, classifyFailure, gatewayBackoffMs } from '../../core
 import type { GatewayHealth } from './gateway-health.js'
 
 export interface TurnTrackerDeps {
-  /** 房间键，只用于日志（`group-PRIMARY_GROUP`）。 */
+  /** 房间键，只用于日志（`group-1000000003`）。 */
   readonly room: string
   readonly health: GatewayHealth
   readonly clock: Clock

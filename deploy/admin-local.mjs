@@ -29,8 +29,8 @@ const PASSWORD_ENV = 'CHANNEL_QQ_ADMIN_PASSWORD'
 
 /** `lib/` 是部署产物；本地 E2E 依赖它，缺了就先构建（幂等，构建过就跳过）。 */
 function ensureBuilt() {
-  if (existsSync(path.join(root, 'lib', 'admin.js'))) return
-  console.log('[admin-local] lib/ 不存在，先执行 npm run build …')
+  if (existsSync(path.join(root, 'build', 'lib', 'admin.js'))) return
+  console.log('[admin-local] build/lib 不存在，先执行 npm run build …')
   execSync('npm run build', { cwd: root, stdio: 'inherit', shell: true })
 }
 
@@ -58,7 +58,7 @@ function seedWorkspace(workspace) {
     '- 不确定的事不要编。',
     '',
   ].join('\n'), 'utf8')
-  writeFileSync(path.join(workspace, 'MEMORY.md'), '# 长期记忆\n\n- 学弟喜欢在深夜写代码。\n- 主群是 PRIMARY_GROUP。\n', 'utf8')
+  writeFileSync(path.join(workspace, 'MEMORY.md'), '# 长期记忆\n\n- 学弟喜欢在深夜写代码。\n- 主群是 1000000003。\n', 'utf8')
   writeFileSync(path.join(workspace, 'memory', '2026-10-17.md'), '# 2026-10-17\n\n今天在调管理后台。\n', 'utf8')
   writeFileSync(path.join(workspace, 'notes', 'todo.md'), '# TODO\n\n- [ ] 验证配置保存的 diff 展示\n', 'utf8')
   writeFileSync(path.join(workspace, 'scripts', 'heartbeat.mjs'), "console.log('alive')\n", 'utf8')
@@ -69,9 +69,9 @@ const LOG_LINES = [
   '2026-10-17T02:58:11.120+08:00 [info] channel-qq: admin panel ready (local instance)',
   '2026-10-17T02:58:11.480+08:00 [info] channel-qq: OneBot connected (ws://127.0.0.1:3001)',
   '2026-10-17T02:58:12.330+08:00 [info] channel-qq: registered 86/86 tools',
-  '2026-10-17T02:58:40.010+08:00 [info] inbound: group PRIMARY_GROUP message from ADMIN_QQ（@了机器人）',
+  '2026-10-17T02:58:40.010+08:00 [info] inbound: group 1000000003 message from 1000000002（@了机器人）',
   '2026-10-17T02:58:40.050+08:00 [info] batching: window opened (1200ms)',
-  '2026-10-17T02:58:41.260+08:00 [info] outbound: reply sent to group PRIMARY_GROUP (segment 1/1)',
+  '2026-10-17T02:58:41.260+08:00 [info] outbound: reply sent to group 1000000003 (segment 1/1)',
   '2026-10-17T02:59:02.870+08:00 [info] tool: qq_imagegen invoked by master',
   '2026-10-17T02:59:09.910+08:00 [warn] rss: feed poll timeout, will retry in 5 min',
   '2026-10-17T02:59:31.410+08:00 [info] memory: diary appended (memory/2026-10-17.md)',
@@ -105,8 +105,8 @@ export async function startLocalAdmin(opts = {}) {
   config.admin.host = '127.0.0.1'
   config.workspacePath = workspace
   config.selfId = 10000
-  config.admins = [ADMIN_QQ]
-  config.primaryGroup = PRIMARY_GROUP
+  config.admins = [1000000002]
+  config.primaryGroup = 1000000003
 
   const logs = []
   const log = (line) => {
@@ -115,12 +115,12 @@ export async function startLocalAdmin(opts = {}) {
   }
   const startedAt = Date.now()
   const ref = { server: null }
-  const groupList = ['群 PRIMARY_GROUP（主群）', '群 987654321', '群 123456789', '群 555000111', '群 777888999', '群 246810121', '群 135791113']
+  const groupList = ['群 1000000003（主群）', '群 987654321', '群 123456789', '群 555000111', '群 777888999', '群 246810121', '群 135791113']
 
   const fileStore = new WorkspaceFiles(() => config.workspacePath, path.join(home, 'channel-qq', 'backups'), log)
 
-  const memQuotes = [{ id: 'q_seed', text: '这个梗我记下了', speaker: '学弟', groupId: PRIMARY_GROUP, tags: ['测试'], at: Date.now() - 60000 }]
-  const memPhrases = [{ id: 'p1', text: '绷不住了', count: 12, groupId: PRIMARY_GROUP }]
+  const memQuotes = [{ id: 'q_seed', text: '这个梗我记下了', speaker: '学弟', groupId: 1000000003, tags: ['测试'], at: Date.now() - 60000 }]
+  const memPhrases = [{ id: 'p1', text: '绷不住了', count: 12, groupId: 1000000003 }]
   const resources = {
     emoji: {
       label: '表情包库',
@@ -158,9 +158,9 @@ export async function startLocalAdmin(opts = {}) {
     reminders: {
       label: '提醒',
       list: () => ({ count: 3, reminders: [
-        { id: 'r1', text: '提醒学弟喝水', at: Date.now() + 3600000, room: 'group-PRIMARY_GROUP' },
-        { id: 'r2', text: '明天 9 点早报', at: Date.now() + 7200000, room: 'group-PRIMARY_GROUP' },
-        { id: 'r3', text: '周报', at: Date.now() + 86400000, room: 'dm-ADMIN_QQ' },
+        { id: 'r1', text: '提醒学弟喝水', at: Date.now() + 3600000, room: 'group-1000000003' },
+        { id: 'r2', text: '明天 9 点早报', at: Date.now() + 7200000, room: 'group-1000000003' },
+        { id: 'r3', text: '周报', at: Date.now() + 86400000, room: 'dm-1000000002' },
       ] }),
       remove: async () => ({ removed: true }),
     },
@@ -187,7 +187,7 @@ export async function startLocalAdmin(opts = {}) {
     },
     sendl: {
       label: '机器人发送记录',
-      list: async () => ({ 'group-PRIMARY_GROUP': ['（本地实例）她最近发出去的消息 1', '（本地实例）消息 2'] }),
+      list: async () => ({ 'group-1000000003': ['（本地实例）她最近发出去的消息 1', '（本地实例）消息 2'] }),
     },
     playlist: {
       label: '歌单',
@@ -271,10 +271,10 @@ export async function startLocalAdmin(opts = {}) {
     },
     sessions: {
       list: async () => [
-        { room: 'group-PRIMARY_GROUP', sessionId: 'sess_local_alpha', files: 14, bytes: 182734, mtime: Date.now() - 120000 },
-        { room: 'dm-ADMIN_QQ', sessionId: 'sess_local_beta', files: 6, bytes: 41233, mtime: Date.now() - 600000 },
+        { room: 'group-1000000003', sessionId: 'sess_local_alpha', files: 14, bytes: 182734, mtime: Date.now() - 120000 },
+        { room: 'dm-1000000002', sessionId: 'sess_local_beta', files: 6, bytes: 41233, mtime: Date.now() - 600000 },
       ],
-      rebuild: async (room) => ({ room, removed: room === 'group-PRIMARY_GROUP' ? 14 : 0, note: `（本地实例）房间 ${room} 的会话已重建；新指令文件立即生效。` }),
+      rebuild: async (room) => ({ room, removed: room === 'group-1000000003' ? 14 : 0, note: `（本地实例）房间 ${room} 的会话已重建；新指令文件立即生效。` }),
     },
   }
 

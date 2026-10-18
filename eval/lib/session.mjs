@@ -113,7 +113,7 @@ export function decodeZstdFrames(raw, decompress = zstdDecompressSync) {
  * 读取一个会话的日志文本。
  *
  * @param {object} opts
- * @param {string} opts.sessionId 会话 id，如 `qq-dm-ADMIN_QQ`
+ * @param {string} opts.sessionId 会话 id，如 `qq-dm-1000000002`
  * @param {string} [opts.cwd] 会话运行的工作区路径（不传 → `_no-cwd`）
  * @param {object} [opts.env] 环境变量（默认 process.env）
  * @returns {Promise<{text: string, file: string, frames: number, skipped: number} | null>}

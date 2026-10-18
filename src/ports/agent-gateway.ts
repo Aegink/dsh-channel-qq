@@ -46,7 +46,7 @@ export interface TurnListener {
 
 /** 打开（创建或恢复）一个会话需要的东西。 */
 export interface SessionSpec {
-  /** 会话 id，例如 `qq-group-PRIMARY_GROUP`。它同时是磁盘上的目录名。 */
+  /** 会话 id，例如 `qq-group-1000000003`。它同时是磁盘上的目录名。 */
   readonly sessionId: string
   /** 会话的工作目录（= 配置里的 `workspacePath`，可热改）。 */
   readonly cwd: string
