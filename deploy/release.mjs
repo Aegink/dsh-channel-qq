@@ -165,12 +165,18 @@ function install(tarball) {
   const source = sh(`sha256sum ${tarball} | cut -c1-64`)
 
   console.log('=== 冒烟：这一版至少能被解释器读进来 ===')
-  sh(`cd ${dir} && /opt/node22/bin/node -e "import('${dir}/build/lib/index.js').then(()=>console.log('LOAD-OK'))"`)
+  // 兼容两种产物布局：新版本把产物收在 build/ 下，旧版本直接在根（lib/）。
+  // 服务器上跑的可能是旧版脚本，第一次切换到新布局时靠这个判断。
+  const libDir = existsSync(path.join(dir, 'build', 'lib')) ? 'build/lib' : 'lib'
+  const testDir = existsSync(path.join(dir, 'build', 'lib-test', 'test'))
+    ? 'build/lib-test/test'
+    : 'lib-test/test'
+  sh(`cd ${dir} && /opt/node22/bin/node -e "import('${dir}/${libDir}/index.js').then(()=>console.log('LOAD-OK'))"`)
 
   // 在**新目录里**跑一遍测试，跑不过就不切换。这一步才是"校验通过后切换"的实处：
   // 清单只能证明"文件传对了"，测试才能证明"这份代码在这个宿主上还能用"。
   // 失败时什么都不动——新版本留在磁盘上供排查，活跃版本还是旧的。
-  if (existsSync(path.join(dir, 'build', 'lib-test', 'test'))) {
+  if (existsSync(path.join(dir, testDir))) {
     console.log('=== 在新版本目录里跑测试（跑不过就不切换）===')
     // ⚠️ 退出码必须**显式取**。写成 `node --test … | tail -12` 时 `$?` 是 `tail` 的，
     // 管道会把失败整个吞掉——第一版就是这么写的，服务器上 5 个测试失败它照样切换了。
@@ -180,14 +186,14 @@ function install(tarball) {
     // TZ=Asia/Shanghai：宿主（dsh.service 走 /etc/dsh/env）的运行时区就是它，"今天是
     // 哪天"的测试必须与生产同一口径。手动 shell 默认 TZ=UTC，会在北京过午夜后让
     // localDayKey 差一天——2026-10-17 深夜就是这样挂了两条记忆测试、发布被拦下。
-    const out = sh(`cd ${dir} && TZ=Asia/Shanghai /opt/node22/bin/node --test 'build/lib-test/test/*.test.js' > ${log} 2>&1; echo "EXIT=$?"`)
+    const out = sh(`cd ${dir} && TZ=Asia/Shanghai /opt/node22/bin/node --test '${testDir}/*.test.js' > ${log} 2>&1; echo "EXIT=$?"`)
     const exit = Number(/EXIT=(\d+)/.exec(out)?.[1] ?? '1')
     sh(`tail -14 ${log}`, { stdio: 'inherit' })
     if (exit !== 0) {
       throw new Error(`新版本的测试没通过（exit ${exit}），已放弃切换（活跃版本未变）。完整日志：${log}`)
     }
   } else {
-    console.log('  ⚠️ 产物里没有 build/lib-test/test，跳过测试闸门')
+    console.log('  ⚠️ 产物里没有测试目录，跳过测试闸门')
   }
 
   console.log('=== 切换 ===')
