@@ -14,7 +14,7 @@ process.env.TZ = 'Asia/Shanghai'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-const { dmRoom, groupRoom, roomDirectiveFor, roomOf, sessionIdOf, splitRoom } = await import('../src/core/room.js')
+const { dmRoom, groupRoom, roomOf, sessionIdOf, splitRoom } = await import('../src/core/room.js')
 const { isCalled, reactionHintOf, talkChanceOf } = await import('../src/core/trigger.js')
 const { decideFlush, isBatchFull, queueChars } = await import('../src/core/batching.js')
 const { GATEWAY_RETRY_MAX, classifyFailure, gatewayBackoffMs } = await import('../src/core/retry-policy.js')
@@ -59,17 +59,6 @@ test('core/room：从事件推房间，非群非私聊返回 null', () => {
   assert.equal(roomOf(groupEvent()), 'group-107')
   assert.equal(roomOf(groupEvent({ message_type: 'private', user_id: MASTER })), 'dm-280')
   assert.equal(roomOf(groupEvent({ message_type: undefined })), null)
-})
-
-test('core/room：房间指令行逐字节钉住（模型靠它决定 target）', () => {
-  assert.equal(
-    roomDirectiveFor(true, GROUP),
-    '【这是群聊】群号 107。要发言必须用 qq_send_text / qq_reply_quote，且 isGroup=true、target=107；不要发到私聊。',
-  )
-  assert.equal(
-    roomDirectiveFor(false, MASTER),
-    '【这是私聊】对方 QQ 280。要发言必须用 qq_send_text / qq_reply_quote，且 isGroup=false、target=280；不要发到任何群里。',
-  )
 })
 
 // ── trigger ─────────────────────────────────────────────────────────────────

@@ -55,18 +55,3 @@ export function splitRoom(room: string): { isGroup: boolean; chatId: number } | 
   if (dm !== null) return { isGroup: false, chatId: Number(dm[1]) }
   return null
 }
-
-/**
- * 告诉模型"你在哪个房间、该往哪发"的那一行。
- *
- * 没有它，群聊与私聊的入站行长得一模一样（`HH:MM 昵称(QQ号)…：正文`），而指令
- * 只说"发到本会话"却没给目标——模型只能猜 `isGroup` 和 `target`。它真的猜错过：
- * 2026-10-14 学弟在私聊问了一句，回答发到了主群，因为群聊在上下文里更显眼。
- * 现在每一条把回合交给模型的路径（群包、私聊、主动私聊、后台指令、巡逻）都带上
- * 这一行，猜测被彻底去掉。
- */
-export function roomDirectiveFor(isGroup: boolean, chatId: number): string {
-  return isGroup
-    ? `【这是群聊】群号 ${chatId}。要发言必须用 qq_send_text / qq_reply_quote，且 isGroup=true、target=${chatId}；不要发到私聊。`
-    : `【这是私聊】对方 QQ ${chatId}。要发言必须用 qq_send_text / qq_reply_quote，且 isGroup=false、target=${chatId}；不要发到任何群里。`
-}

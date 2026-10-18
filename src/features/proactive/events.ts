@@ -218,10 +218,10 @@ export class Scheduler {
       dshHome: resolveDshHome(),
       primaryGroup: this.config.primaryGroup,
     })
-    const prompt = `【每日早报】现在是早上，学弟刚醒。下面这些是插件替你备好的今日素材：\n${material}\n\n`
-      + `用你自己的口吻写一条早安早报，私聊发给学弟：qq_send_text isGroup=false target=${master}。`
-      + `把天气读成人话（该带伞、该加衣就直接说），课表里挑一两件最要紧的提醒他，最后带一句你自己的话。`
-      + `不要照抄素材、不要写成表格或清单、不要提"素材"两个字——就像你早上给他发的消息。一轮只发这一条。`
+    // 走人格包模板而不是内联字符串：模板在 tools.v2 下会被 composer 改写成
+    // `qq_message（action=send）`。内联那一份曾经硬编码 `qq_send_text`，于是
+    // 旧调度器（proactive.v2 关）在 tools.v2 开的部署里会教模型调用不存在的工具。
+    const prompt = this.prompts.render('events/morning-report', { master: String(master), material })
     try {
       await this.turns.dmProactive(prompt)
       this.log(`morning report submitted to ${master} (weather=${weather !== '' ? 'yes' : 'no'}, schedule=${schedule !== '' ? 'yes' : 'no'})`)
