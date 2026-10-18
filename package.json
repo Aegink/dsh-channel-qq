@@ -47,5 +47,31 @@
   "license": "MIT",
   "engines": {
     "node": ">=22"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aegink/dsh-channel-qq.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Aegink/dsh-channel-qq/issues"
+  },
+  "homepage": "https://github.com/Aegink/dsh-channel-qq#readme",
+  "keywords": [
+    "qq",
+    "onebot",
+    "napcat",
+    "deepseek",
+    "harness",
+    "llm",
+    "agent",
+    "chatbot"
+  ],
+  "author": "Aegink",
+  "files": [
+    "lib",
+    "assets",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ]
 }
