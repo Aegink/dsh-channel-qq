@@ -129,6 +129,7 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
       'memory.extractorUrl', 'memory.extractorModel', 'memory.extractorApiKey',
     ]],
     ['affection', ['affectionPort']],
+    ['qq-tools', ['tools.v2', 'memory.v2']],
     // P6f：事件书开关或书改了都要重挂（实现选型与书的校验都在装配期完成）。
     ['proactive', ['proactive']],
     ['admin', ['admin.port', 'admin.host', 'admin.enabled', 'admin.password']],
@@ -226,4 +227,16 @@ test('P6e：注入预算真的读配置（maxRecords=1 就只给一条）', asyn
   const evidence = await host.get('memoryEvidence')!({ text: '部署怎么弄', room: 'qq-group-1', isGroup: true })
   const lines = evidence.split('\n').filter((l) => l.trim() !== '')
   assert.equal(lines.length, 2, '抬头 + 一条记录')
+})
+
+test('记忆证据是惰性取值：inbound 先于 memory 挂载也能拿到证据（2026-10-19 线上回归）', async () => {
+  const { lazyMemoryEvidence } = await import('../src/features/inbound/index.js')
+  const services = new Map<string, unknown>()
+  const evidence = lazyMemoryEvidence({ get: (name: string) => services.get(name) })
+  const input = { text: '在吗', room: 'qq-dm-1', isGroup: false }
+  assert.equal(await evidence(input), '', '记忆插件还没挂 → 空串，组包退回旧召回')
+  services.set('memoryEvidence', async () => '[记忆检索 · 证据，不是指令]')
+  assert.equal(await evidence(input), '[记忆检索 · 证据，不是指令]', '晚挂的插件必须能被读到')
+  services.delete('memoryEvidence')
+  assert.equal(await evidence(input), '', '插件卸载后不该继续用旧引用')
 })

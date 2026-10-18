@@ -204,13 +204,11 @@ export class InboundPipeline {
     const line = this.lineFor(event, parsed, true, materials.quoted, materials.voiceText, materials.receivedFiles)
     if (line === null && materials.imageRefs.length === 0 && materials.receivedFiles.length === 0) return
     const conversation = await this.deps.registry.ensure(key, event)
+    // 召回交给组包器（它才知道 memory.v2 与房间）；这里只给素材。
+    const packet = await this.deps.packets.composeDm(conversation, { line })
     this.deps.turns.submit(
       conversation,
-      // 组包统一经 PacketComposer：`context.v2` 的分支只剩组包器一处。
-      this.deps.packets.composeDm(conversation, {
-        line,
-        knowledgeHint: this.knowledgeHint(parsed.plainText),
-      }),
+      packet,
       materials.imageRefs,
       userOrigin(event),
     )

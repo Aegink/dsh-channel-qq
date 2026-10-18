@@ -186,9 +186,9 @@ export class ScreeningPacketComposer extends PacketComposer {
     return result
   }
 
-  override composeDm(conversation: ConversationRecord, input: DmComposeInput): string {
+  override async composeDm(conversation: ConversationRecord, input: DmComposeInput): Promise<string> {
     const scan = this.screening.scan(input.line ?? '')
-    const result = super.composeDm(conversation, this.screening.merge(input, scan))
+    const result = await super.composeDm(conversation, this.screening.merge(input, scan))
     this.screening.stage(conversation.sessionId, result)
     return result
   }
@@ -278,6 +278,24 @@ function registerSendlResource(host: SubHost): void {
   })
 }
 
+/**
+ * 记忆证据的**惰性**取值。装载表里 inbound 在 memory 之前，apply 时记忆插件还没
+ * provide——从前这里是直接 `host.get(...)`，于是 `memory.v2` 打开后证据一次都没注入过
+ * （2026-10-19 线上实测发现：两个回合的会话里没有任何「记忆检索」块）。
+ *
+ * 现在每次组包现查：晚挂的记忆插件、以及之后的重挂，都能立刻被读到。
+ * 没装记忆服务时返回空串，组包会照旧退回旧知识库召回。
+ */
+export function lazyMemoryEvidence(host: { get(name: string): unknown }): (input: {
+  readonly text: string; readonly room: string; readonly isGroup: boolean;
+}) => Promise<string> {
+  return async (input) => {
+    const evidence = host.get('memoryEvidence') as
+      | ((arg: typeof input) => Promise<string>) | undefined
+    return evidence === undefined ? '' : await evidence(input)
+  }
+}
+
 export const inboundPlugin: SubPlugin = {
   name: 'inbound',
   // context.v2 翻开关时要重写工作区 AGENTS.md 的指令受管区（组包行为是现取配置，不用重挂）。
@@ -303,7 +321,7 @@ export const inboundPlugin: SubPlugin = {
       prompts: host.need('persona').composer,
       log: host.log,
       knowledge: () => host.get('knowledge')?.store ?? null,
-      ...(host.get('memoryEvidence') === undefined ? {} : { memoryEvidence: host.get('memoryEvidence') }),
+      memoryEvidence: lazyMemoryEvidence(host),
       screen: { scanner: bundle === null ? null : bundle.scanner },
       transcribe: async (messageId: number) => {
         const result = await transcribeVoiceMessage(parts.api, config.stt, messageId, host.log)

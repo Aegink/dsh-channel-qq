@@ -15,7 +15,10 @@ import type { SubPlugin } from '../plugin-kit.js'
 
 export const qqToolsPlugin: SubPlugin = {
   name: 'qq-tools',
-  watches: [],
+  // 工具面在注册时就定死：这两个开关一变必须重挂，否则后台标着「自动重载」却要等重启。
+  //   - tools.v2：58 个旧工具是上宿主还是被收编成 17 个合并工具；
+  //   - memory.v2：qq_recall_memory / qq_memory_search 拿到的是结构化服务还是旧库。
+  watches: ['tools.v2', 'memory.v2'],
   requires: ['platform', 'emoji', 'affection', 'sentLog', 'knowledge'],
   apply(host) {
     const { config } = host

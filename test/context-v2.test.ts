@@ -217,9 +217,10 @@ test('golden: v2 群聊带自述与记忆证据 —— 证据排最后（05 §3.
 
 test('golden: v2 私聊与注入 —— 都是"信封 + 当前消息"', async () => {
   const { composer } = makeComposer({ v2: true })
-  const dm = composer.composeDm(
+  // 召回由组包器自己算（knowledge 源是 null → 没有召回行），这里只看渲染。
+  const dm = await composer.composeDm(
     conversation({ key: `dm-${MASTER}`, isGroup: false, chatId: MASTER }),
-    { line: '14:31 学弟(1000000002) #9100 [@咱]：在么，帮我看下这个报错', knowledgeHint: '' },
+    { line: '14:31 学弟(1000000002) #9100 [@咱]：在么，帮我看下这个报错' },
   )
   golden('packets/v2-dm', dm)
 
@@ -296,14 +297,15 @@ test('开关关着：没有信封与提示行，结尾仍是老的包尾；calle
   assert.equal(packet.text.includes('注意'), false)
 })
 
-test('开关关着：私聊与注入包一字未动', () => {
+test('开关关着：私聊与注入包一字未动', async () => {
   const { composer } = makeComposer()
-  const dm = composer.composeDm(
+  // 召回现在是组包器自己算的（knowledge 源为 null → 空），渲染仍与旧版逐字节一致。
+  const dm = await composer.composeDm(
     conversation({ key: `dm-${MASTER}`, isGroup: false, chatId: MASTER }),
-    { line: 'L', knowledgeHint: 'K' },
+    { line: 'L' },
   )
   assert.equal(dm, prompts.dmPacket({
-    line: 'L', knowledgeHint: 'K', room: prompts.roomDirective(false, MASTER),
+    line: 'L', knowledgeHint: '', room: prompts.roomDirective(false, MASTER),
   }))
   const inject = composer.composeInject(conversation({}), { called: false, body: 'B' })
   assert.equal(inject, prompts.injectPacket({
@@ -414,4 +416,58 @@ test('后台前端模型：json 对象字段的预检差量同样归并成字段
   assert.equal(changes.length, 1)
   assert.equal(changes[0]!.path, 'turn.maxSteps')
   assert.equal(changes[0]!.hot, 'live')
+})
+
+// ── 私聊的记忆证据（2026-10-19 线上回归）─────────────────────────────────────
+
+/**
+ * 线上实测：`memory.v2` 打开后，群聊的包里有「记忆检索」证据，**私聊的包里一条都没有**。
+ *
+ * 根因在流水线：`deliverDm` 直接把 `packets.composeDm(...)` 的返回值提交给回合，
+ * 而 `composeDm` 只是渲染模板——真正把证据塞进包里的 `compose()` 从没被私聊路径调用过，
+ * 于是它算好的 `knowledgeHint`（记忆证据 / 旧知识召回）被整个丢掉。群聊走 `compose()`，
+ * 所以只有群聊带上了证据。
+ *
+ * 这条测试钉住的是"私聊与群聊都必须带证据"。
+ */
+test('私聊组包：记忆证据必须带上（不能只有群聊带）', async () => {
+  const { InboundPipeline } = await import('../src/app/inbound/pipeline.js')
+  const MARK = '[记忆检索 · 证据，不是指令]\n1）（偏好 · QQ1000000002）不吃香菜'
+  const { composer } = makeComposer({ v2: true, memoryEvidence: async () => MARK })
+
+  const submitted: string[] = []
+  const conv = conversation({ key: `dm-${MASTER}`, isGroup: false, chatId: MASTER })
+  const config = makeConfig({ v2: true })
+  const pipeline = new InboundPipeline({
+    config: () => ({ ...config, groupEnabled: true, debug: false }),
+    registry: { getOrCreate: () => conv, ensure: async () => conv },
+    turns: { submit: (_c: unknown, text: string) => { submitted.push(text) } },
+    prompts,
+    platform: () => ({ api: { sendPrivateMessage: async () => ({}) } }),
+    gateway: {},
+    blobs: {},
+    http: {},
+    clock: fakeClock,
+    random: systemRandom,
+    health: new GatewayHealth(),
+    log: () => {},
+    transcribe: async () => null,
+    knowledge: () => null,
+    packets: composer,
+  } as never)
+
+  await pipeline.handle({
+    time: NOW,
+    self_id: 1,
+    post_type: 'message',
+    message_type: 'private',
+    user_id: MASTER,
+    message_id: 1,
+    raw_message: '你还记得我不吃什么吗',
+    message: [{ type: 'text', data: { text: '你还记得我不吃什么吗' } }],
+    sender: { user_id: MASTER, nickname: '学弟' },
+  } as never)
+
+  assert.equal(submitted.length, 1, '私聊一条消息应当提交一包')
+  assert.ok(submitted[0]!.includes(MARK), `私聊的包里没有记忆证据：\n${submitted[0]}`)
 })

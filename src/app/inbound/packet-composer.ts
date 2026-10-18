@@ -36,10 +36,16 @@ export interface ComposeInput {
   readonly signals?: readonly InjectionSignal[]
 }
 
-/** 私聊直投的素材。 */
+/**
+ * 私聊直投的素材。
+ *
+ * **没有 knowledgeHint**：召回由组包器自己算（与群聊同一个 recallHint）。
+ * 从前它是流水线用 knowledgeOf(plainText) 算好传进来的——那条路只查旧知识库、
+ * 拿不到记忆证据，而且算好的东西在渲染时被丢掉（2026-10-19 线上实测：私聊的包里
+ * 一条「记忆检索」都没有）。context.v2 关着时仍走旧渲染，只是召回换成同一套。
+ */
 export interface DmComposeInput {
   readonly line: string | null
-  readonly knowledgeHint: string
   readonly signals?: readonly InjectionSignal[]
 }
 
@@ -99,21 +105,28 @@ export class PacketComposer {
   }
 
   /** 私聊直投的一包：v1 与从前逐字节一致；v2 换成"信封 + 当前消息"结构。 */
-  composeDm(conversation: ConversationRecord, input: DmComposeInput): string {
+  async composeDm(conversation: ConversationRecord, input: DmComposeInput): Promise<string> {
     const room = this.deps.prompts.roomDirective(conversation.isGroup, conversation.chatId)
+    // 召回用**当前消息**：私聊没有待回块，这一条就是全部。
+    const knowledgeHint = await this.recallHint(input.line ?? '', conversation)
     if (!this.v2()) {
-      return this.deps.prompts.dmPacket({ line: input.line, knowledgeHint: input.knowledgeHint, room })
+      return this.deps.prompts.dmPacket({ line: input.line, knowledgeHint, room })
     }
     return this.deps.prompts.dmPacketV2({
       line: input.line,
-      knowledgeHint: input.knowledgeHint,
+      knowledgeHint,
       room,
       roomKey: this.envelopeOf(conversation),
       signals: input.signals ?? [],
     })
   }
 
-  /** 注入模式一条：每条注入的都是"当前消息"。 */
+  /**
+   * 注入模式一条：每条注入的都是"当前消息"。
+   *
+   * 刻意**不带召回**：注入的是群里连续不断的旁白，逐条做一次向量检索既贵又吵；
+   * 需要回忆时它自己会调 `qq_memory_search`。
+   */
   composeInject(conversation: ConversationRecord, input: InjectComposeInput): string {
     const room = this.deps.prompts.roomDirective(conversation.isGroup, conversation.chatId)
     if (!this.v2()) {
