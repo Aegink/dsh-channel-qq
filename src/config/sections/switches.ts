@@ -40,6 +40,6 @@ export interface SwitchSections {
   tools: ToolsSwitchConfig
   proactive: ProactiveConfig
   planner: PlannerSwitchConfig
-  /** 按群覆盖（键是群号；缺省 = 跟全局）。 */
-  rooms?: Record<string, RoomOverride>
+  /** 按群覆盖（数组：`[{ id, enabled?, requireMention?, talkValue? }]`；缺省 = 跟全局）。 */
+  rooms?: RoomOverride[]
 }

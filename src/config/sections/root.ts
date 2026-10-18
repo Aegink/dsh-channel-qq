@@ -37,8 +37,8 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
     hot: 'live', page: 'groups',
   })],
   ['rooms', json('按群覆盖', NO_DEFAULT, {
-    help: '键是群号，值可覆盖 enabled（是否处理）、requireMention（是否必须 @）、talkValue（接话概率）。'
-      + '缺省字段跟全局；后台「群聊与房间」页有一张逐群开关表。',
+    help: '数组：[{ id: 群号, enabled?, requireMention?, talkValue? }]，只写要覆盖的字段。'
+      + '后台「群聊与房间」页可以搜索群号加入管理列表。',
     hot: 'live', page: 'groups',
   })],
   ['rateLimitMs', n('发送间隔', 300, {
