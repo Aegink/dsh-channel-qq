@@ -165,6 +165,17 @@ export function isValidAt(record: MemoryRecord, now: number): boolean {
   return record.validTo === null || record.validTo > now
 }
 
+/**
+ * 原文块的标签。块是"原始层"（600 字原文），只给**深召回工具**用：
+ * 自动注入与主动召回的预算只有 600 字，塞一块就装不下别的证据（实测 recall 反而 0）。
+ */
+export const CHUNK_TAG = 'chunk'
+
+/** 这条记录是不是原文块。 */
+export function isChunkRecord(record: MemoryRecord): boolean {
+  return record.tags.includes(CHUNK_TAG)
+}
+
 /** 参与检索的最小条件：状态与时间都对。scope/房间由检索器另判。 */
 export function isRetrievable(record: MemoryRecord, now: number): boolean {
   return record.status === 'active' && isValidAt(record, now)

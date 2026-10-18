@@ -18,6 +18,7 @@
  */
 
 import { KnowledgeStore, resolveExtractorRoute, extractFromText } from '../../knowledge.js'
+import { isChunkRecord, type MemoryRecord } from '../../core/memory/model.js'
 import { createEmbedAdapter } from '../../adapters/providers/embed.js'
 import { findConflicts } from '../../core/memory/nightly.js'
 import type { Json } from '../../admin/config-engine.js'
@@ -153,6 +154,8 @@ async function attachMemoryV2(
         maxRecords: memory.maxRecords,
         maxChars: memory.maxChars,
       },
+      // 原文块只留给深召回：600 字预算装一块就满了。
+      accept: (record: MemoryRecord) => !isChunkRecord(record),
     })
     return got.evidence
   })

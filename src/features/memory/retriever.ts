@@ -61,6 +61,11 @@ export interface RetrieveOptions {
    */
   readonly budget?: { readonly threshold?: number; readonly maxRecords?: number; readonly maxChars?: number; readonly maxPerTopic?: number }
   /**
+   * 额外的候选过滤。自动注入与主动召回都用它排除原文块（`tags` 含 `chunk`）：
+   * 块是 600 字的原文，塞进 600 字预算后整回合只剩一条证据——实测 recall 反而变 0。
+   */
+  readonly accept?: (record: MemoryRecord) => boolean
+  /**
    * 打分权重覆盖（默认 `DEFAULT_WEIGHTS`；`preferRecent` 命中时用 `TIME_WEIGHTS`）。
    * 评测用它把排序压到"只看相关性"——离线语料里的 importance/recency 是合成值，
    * 不该参与判断"检索能不能找到依据"。
@@ -110,8 +115,8 @@ export class MemoryRetriever {
       ? null
       : await vectors.embedQuery(opts.text)
     const candidates = queryVec !== null && vectors !== undefined
-      ? this.hybridCandidates(query, queryVec, opts.now, opts.room, opts.roomOnly === true)
-      : this.keywordCandidates(query, opts.now, opts.room, opts.roomOnly === true)
+      ? this.hybridCandidates(query, queryVec, opts.now, opts.room, opts.roomOnly === true, opts.accept)
+      : this.keywordCandidates(query, opts.now, opts.room, opts.roomOnly === true, opts.accept)
     if (candidates.length === 0) return { query, picked: [], evidence: '' }
 
     const weighted: Candidate[] = candidates.map((c) => ({
@@ -148,13 +153,14 @@ export class MemoryRetriever {
     now: number,
     room: string | null,
     roomOnly: boolean,
+    accept?: (record: MemoryRecord) => boolean,
   ): Candidate[] {
     const terms = this.deps.store.keepKnown(queryTerms(query.text))
     const range = narrowestRange(query)
     const scored = new Map<string, number>()
 
     for (const record of this.deps.store.candidatesByTerms(terms)) {
-      if (!this.admits(record, now, room, roomOnly, range)) continue
+      if (!this.admits(record, now, room, roomOnly, range, accept)) continue
       scored.set(record.id, keywordRelevance(terms, record, this.idf))
       if (scored.size >= MAX_CANDIDATES) break
     }
@@ -172,7 +178,7 @@ export class MemoryRetriever {
         if (scored.has(linkId)) continue
         const neighbour = this.deps.store.get(linkId)
         if (neighbour === undefined) continue
-        if (!this.admits(neighbour, now, room, roomOnly, range)) continue
+        if (!this.admits(neighbour, now, room, roomOnly, range, accept)) continue
         const own = keywordRelevance(terms, neighbour, this.idf)
         if (own <= 0) continue
         scored.set(linkId, own)
@@ -202,19 +208,20 @@ export class MemoryRetriever {
     now: number,
     room: string | null,
     roomOnly: boolean,
+    accept?: (record: MemoryRecord) => boolean,
   ): Candidate[] {
     const vectors = this.deps.vectors
-    if (vectors === undefined) return this.keywordCandidates(query, now, room, roomOnly)
+    if (vectors === undefined) return this.keywordCandidates(query, now, room, roomOnly, accept)
     const terms = this.deps.store.keepKnown(queryTerms(query.text))
     const range = narrowestRange(query)
     const scored = new Map<string, number>()
-    for (const record of this.keywordTop(terms, now, room, roomOnly, range)) {
+    for (const record of this.keywordTop(terms, now, room, roomOnly, range, accept)) {
       scored.set(record.id, this.hybridRelevance(terms, record, queryVec, vectors.weight))
     }
-    for (const record of this.vectorTop(queryVec, now, room, roomOnly, range)) {
+    for (const record of this.vectorTop(queryVec, now, room, roomOnly, range, accept)) {
       if (!scored.has(record.id)) scored.set(record.id, this.hybridRelevance(terms, record, queryVec, vectors.weight))
     }
-    this.expandLinksHybrid(scored, terms, queryVec, vectors.weight, now, room, roomOnly, range)
+    this.expandLinksHybrid(scored, terms, queryVec, vectors.weight, now, room, roomOnly, range, accept)
     const out: Candidate[] = []
     for (const [id, relevance] of scored) {
       const record = this.deps.store.get(id)
@@ -230,10 +237,11 @@ export class MemoryRetriever {
     room: string | null,
     roomOnly: boolean,
     range: { from: number; to: number } | null,
+    accept?: (record: MemoryRecord) => boolean,
   ): MemoryRecord[] {
     const hits: Array<{ record: MemoryRecord; score: number }> = []
     for (const record of this.deps.store.candidatesByTerms(terms)) {
-      if (!this.admits(record, now, room, roomOnly, range)) continue
+      if (!this.admits(record, now, room, roomOnly, range, accept)) continue
       hits.push({ record, score: keywordRelevance(terms, record, this.idf) })
     }
     hits.sort((a, b) => b.score - a.score || a.record.id.localeCompare(b.record.id))
@@ -247,13 +255,14 @@ export class MemoryRetriever {
     room: string | null,
     roomOnly: boolean,
     range: { from: number; to: number } | null,
+    accept?: (record: MemoryRecord) => boolean,
   ): MemoryRecord[] {
     const vectors = this.deps.vectors
     if (vectors === undefined) return []
     const ranked: Array<{ record: MemoryRecord; score: number }> = []
     for (const [id, vector] of vectors.all()) {
       const record = this.deps.store.get(id)
-      if (record === undefined || !this.admits(record, now, room, roomOnly, range)) continue
+      if (record === undefined || !this.admits(record, now, room, roomOnly, range, accept)) continue
       ranked.push({ record, score: cosineSimilarity(queryVec, vector) })
     }
     ranked.sort((a, b) => b.score - a.score || a.record.id.localeCompare(b.record.id))
@@ -282,6 +291,7 @@ export class MemoryRetriever {
     room: string | null,
     roomOnly: boolean,
     range: { from: number; to: number } | null,
+    accept?: (record: MemoryRecord) => boolean,
   ): void {
     const seeds = [...scored.entries()]
       .sort((a, b) => b[1] - a[1])
@@ -293,7 +303,7 @@ export class MemoryRetriever {
         if (scored.has(linkId)) continue
         const neighbour = this.deps.store.get(linkId)
         if (neighbour === undefined) continue
-        if (!this.admits(neighbour, now, room, roomOnly, range)) continue
+        if (!this.admits(neighbour, now, room, roomOnly, range, accept)) continue
         const own = this.hybridRelevance(terms, neighbour, queryVec, weight)
         if (own > LINK_MIN_RELEVANCE) scored.set(linkId, own)
       }
@@ -307,8 +317,10 @@ export class MemoryRetriever {
     room: string | null,
     roomOnly: boolean,
     range: { from: number; to: number } | null,
+    accept?: (record: MemoryRecord) => boolean,
   ): boolean {
     if (!isRetrievable(record, now)) return false
+    if (accept !== undefined && !accept(record)) return false
     // `room === null` 是"不按房间过滤"（深召回工具用）：自动注入永远传具体房间。
     if (room !== null && record.scope === 'room' && record.room !== undefined && record.room !== room) return false
     if (roomOnly && record.scope === 'room' && record.room !== room) return false

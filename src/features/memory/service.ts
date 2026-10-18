@@ -11,7 +11,7 @@
  *     召回，等 e2 的嵌入到位再用模型补 keywords/context。
  */
 
-import { makeRecord, withHit, type MemoryKind, type MemoryRecord } from '../../core/memory/model.js'
+import { isChunkRecord, makeRecord, withHit, type MemoryKind, type MemoryRecord } from '../../core/memory/model.js'
 import { keywordRelevance, queryTerms, rankCandidates } from '../../core/memory/score.js'
 import type { MemoryService } from '../../ports/memory.js'
 import type { MemoryStore } from './store.js'
@@ -115,7 +115,8 @@ async function recall(deps: MemoryServiceDeps, input: RecallInput): Promise<Reca
   const terms = deps.store.keepKnown(queryTerms(input.query))
   const kind = input.kind === undefined ? null : asKind(input.kind)
   const candidates = deps.store.candidatesByTerms(terms)
-    .filter((r) => r.status === 'active' && (kind === null || r.kind === kind))
+    // 原文块不参与主动召回：那是 600 字原文，不是"一条记忆"。
+    .filter((r) => r.status === 'active' && !isChunkRecord(r) && (kind === null || r.kind === kind))
     .map((record) => ({ record, relevance: keywordRelevance(terms, record, (t) => deps.store.idfOf(t)) }))
   const ranked = rankCandidates(candidates, deps.clock.now()).slice(0, Math.max(1, input.limit))
   if (ranked.length === 0) return []

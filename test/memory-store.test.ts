@@ -387,3 +387,43 @@ test('工具面：qq_recall_memory / qq_memorize_fact 在 memory 服务在场时
     assert.equal(memories[0]!.date, '2026-10-12', '证据带成立时间')
   } finally { rm(dir, { recursive: true, force: true }) }
 })
+
+// ── 原文块的隔离（2026-10-19：chunk 层上线的回归保护）─────────────────────────
+
+test('检索：accept 过滤生效——原文块不进自动注入预算', async () => {
+  const s = scratch()
+  try {
+    await s.store.load()
+    const fact = await entry(s.store, { content: '学弟喜欢冰美式', keywords: ['冰美式'] })
+    const chunk = await entry(s.store, {
+      content: '学弟喜欢冰美式，每天早上到了工位第一件事就是冲一杯。', keywords: ['冰美式'], tags: ['chunk'],
+    })
+    const got = await retrieverFor(s).retrieve({
+      text: '冰美式',
+      now: NOW,
+      room: null,
+      accept: (record: { tags: readonly string[] }) => !record.tags.includes('chunk'),
+    })
+    const ids = got.picked.map((r) => r.id)
+    assert.equal(ids.includes(fact.id), true)
+    assert.equal(ids.includes(chunk.id), false, '600 字预算装一块就满了，块必须挡在注入之外')
+  } finally { s.cleanup() }
+})
+
+test('主动召回：原文块不作为「一条记忆」返回', async () => {
+  const { createMemoryService } = await import('../src/features/memory/service.js')
+  const s = scratch()
+  try {
+    await s.store.load()
+    await entry(s.store, { content: '学弟喜欢冰美式', keywords: ['冰美式'] })
+    await entry(s.store, {
+      content: '这段话是日记原文块：学弟喜欢冰美式，每天早上都喝。', keywords: ['冰美式'], tags: ['chunk'],
+    })
+    const service = createMemoryService({
+      store: s.store, log: () => {}, renderTime: () => '2026-10-12', clock: { now: () => NOW }, legacy: null,
+    })
+    const hits = await service.recall({ query: '冰美式', limit: 5 })
+    assert.equal(hits.length, 1)
+    assert.equal(hits[0]!.content, '学弟喜欢冰美式')
+  } finally { s.cleanup() }
+})
