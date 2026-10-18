@@ -8,6 +8,10 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    # 产品以本地时区解释"今天是哪天"（部署侧固定 Asia/Shanghai）。测试里有两条
+    # 按这个时区写死了期望值，CI 的 runner 是 UTC——不固定的话它们会红。
+    env:
+      TZ: Asia/Shanghai
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

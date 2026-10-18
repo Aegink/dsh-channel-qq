@@ -31,7 +31,8 @@ const { splitMemoryMarkdown } = await import('../src/core/memory/migrate.js')
 const { migrateMemoryFile } = await import('../src/features/memory/migrate.js')
 
 const DAY = 86_400_000
-const NOW = Date.parse('2026-10-17T06:30:00+08:00')
+// 用本地时间构造：这些用例比较的是 localDayKey(now)，写死 +08:00 会在 UTC 的 CI 上挂。
+const NOW = new Date(2026, 9, 17, 6, 30).getTime()
 
 type Rec = ReturnType<typeof makeRecord>
 
@@ -166,7 +167,7 @@ test('会话切分：只取当天、按 30 分钟间隔断块', () => {
 })
 
 test('会话切分：没有当天的对话就返回空', () => {
-  const line = JSON.stringify({ type: 'user/message', time: Date.parse('2026-10-10T10:00:00+08:00'), data: { content: [{ type: 'text', text: 'x' }] } })
+  const line = JSON.stringify({ type: 'user/message', time: new Date(2026, 9, 10, 10, 0).getTime(), data: { content: [{ type: 'text', text: 'x' }] } })
   assert.deepEqual(chunksOfDay(line, 'group-1', '2026-10-16'), [])
 })
 
