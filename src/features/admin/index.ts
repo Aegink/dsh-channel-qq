@@ -50,6 +50,10 @@ export async function buildStatus(host: SubHost, startedAt: number): Promise<Rec
     connection: `${config.connection.mode} · ${config.connection.url}`,
     groups: connected ? groups.length : '未连接',
     groupList: groups.slice(0, 30).map((g) => `${g.group_id ?? '?'} ${g.group_name ?? ''}`.trim()),
+    /** 结构化群列表：后台「群聊与房间」页的逐群开关表要 id + 名字。 */
+    groupsDetail: groups
+      .map((g) => ({ id: Number(g.group_id ?? 0), name: String(g.group_name ?? '') }))
+      .filter((g) => g.id > 0),
     primaryGroup: config.primaryGroup,
     master: config.admins[0] ?? null,
     workspace: config.workspacePath,

@@ -36,6 +36,11 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
     help: '留空表示与上面的概率相同。', min: 0, max: 1, step: 0.05,
     hot: 'live', page: 'groups',
   })],
+  ['rooms', json('按群覆盖', NO_DEFAULT, {
+    help: '键是群号，值可覆盖 enabled（是否处理）、requireMention（是否必须 @）、talkValue（接话概率）。'
+      + '缺省字段跟全局；后台「群聊与房间」页有一张逐群开关表。',
+    hot: 'live', page: 'groups',
+  })],
   ['rateLimitMs', n('发送间隔', 300, {
     help: '两条消息之间至少等这么久（毫秒）。', min: 0, max: 10_000,
     hot: 'live', page: 'messages', unit: 'ms',

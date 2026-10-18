@@ -9,6 +9,7 @@
  */
 
 import type { EventBook } from '../../core/schedule/event-book.js'
+import type { RoomOverride } from '../../core/room-policy.js'
 
 /** 工具策略 v2（P6c）；字段定义见 `sections/safety.ts`。 */
 export interface PolicySwitchConfig {
@@ -39,4 +40,6 @@ export interface SwitchSections {
   tools: ToolsSwitchConfig
   proactive: ProactiveConfig
   planner: PlannerSwitchConfig
+  /** 按群覆盖（键是群号；缺省 = 跟全局）。 */
+  rooms?: Record<string, RoomOverride>
 }

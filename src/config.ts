@@ -10,7 +10,6 @@ export interface ConnectionConfig {
   /** forward: NapCat WS URL. reverse: listen URL, e.g. ws://127.0.0.1:8082 (port is the bind port). */
   url: string
 }
-
 export interface SegmentationConfig {
   enabled: boolean
   /** natural = 跟句号走; conservative = 太短的相邻句合并; active = 每句一条. */
@@ -331,6 +330,7 @@ export interface QQChannelConfig extends SwitchSections {
   /** Base reply probability in groups; the primary group may override via primaryTalkValue. */
   talkValue: number
   primaryTalkValue?: number
+  /** 按群覆盖：键是群号，值只写要覆盖的字段；缺省 = 跟全局。 */
   /** Workspace the QQ agents run in (main knowledge workspace). */
   workspacePath: string | null
   agentPreset: string

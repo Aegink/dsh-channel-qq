@@ -40,7 +40,11 @@ function gate(cfg: unknown) {
   return {
     logs,
     allows: (userId: number, text: string, called: boolean) =>
-      plannerAllows({ config: () => cfg as never, log: (line) => logs.push(line) }, 'group-1', event(userId), parsed(text), called),
+      plannerAllows(
+        { config: () => cfg as never, log: (line) => logs.push(line) },
+        'group-1', event(userId), parsed(text), called,
+        (cfg as { requireMention: boolean }).requireMention,
+      ),
   }
 }
 

@@ -23,7 +23,8 @@ import { parseInbound, type ParsedInbound } from '../../core/message/parse.js'
 import { renderMessageLine } from '../../core/message/render.js'
 import { decideFlush, isBatchFull, queueChars, type FlushDecision } from '../../core/batching.js'
 import { plannerAllows } from './planner-gate.js'
-import { isCalled, reactionHintOf, talkChanceOf } from '../../core/trigger.js'
+import { isCalled, reactionHintOf } from '../../core/trigger.js'
+import { resolveRoomPolicy } from '../../core/room-policy.js'
 import { roomOf } from '../../core/room.js'
 import type { AgentGateway } from '../../ports/agent-gateway.js'
 import type { BlobStore } from '../../ports/blob-store.js'
@@ -122,10 +123,10 @@ export class InboundPipeline {
     }
   }
 
-  /** 步骤 1：这条事件该不该进流水线。 */
+  /** 步骤 1：这条事件该不该进流水线（群聊按"这个群自己的开关"判）。 */
   private admits(event: OneBotEvent): boolean {
     if (event.post_type !== 'message' || event.message_type === undefined) return false
-    if (event.message_type === 'group' && !this.deps.config().groupEnabled) return false
+    if (event.message_type === 'group' && !resolveRoomPolicy(this.deps.config(), event.group_id ?? null).enabled) return false
     return true
   }
 
@@ -225,14 +226,15 @@ export class InboundPipeline {
     const conversation = this.deps.registry.getOrCreate(key, event)
     conversation.lastEvent = event
     const config = this.deps.config()
+    const policy = resolveRoomPolicy(config, event.group_id ?? null)
     const called = isCalled(event, parsed, config)
 
     // P6g 群聊准入（默认关）：被挡下的消息不进队列，每一条都写清理由。
-    if (!plannerAllows(this.deps, key, event, parsed, called)) return
+    if (!plannerAllows(this.deps, key, event, parsed, called, policy.requireMention)) return
 
     // "需要 @ 才回"：不认这个开关的话，她会在没人叫的时候按概率往群里说话，
     // 群友读起来就是"答非所问"。环境消息仍会被学习 / 风控 / 链接观察看到。
-    if (config.requireMention && !called) {
+    if (policy.requireMention && !called) {
       if (config.debug) this.deps.log(`ignored group message (requireMention, not called) ${key}`)
       return
     }
@@ -349,7 +351,7 @@ export class InboundPipeline {
       immediate,
       nowMs: this.deps.clock.now(),
       backoffUntilMs: this.deps.health.deadline(),
-      chance: talkChanceOf(this.deps.config(), conversation),
+      chance: resolveRoomPolicy(this.deps.config(), conversation.isGroup ? conversation.chatId : null).talkValue,
       roll: () => this.deps.random.next(),
     })
   }
