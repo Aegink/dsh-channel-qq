@@ -54,6 +54,7 @@ npm run verify     # 类型 + 测试 + 分层 + 体积，全绿再继续
 | [docs/architecture.md](docs/architecture.md) | 分层、消息旅程、关键决定、往哪里加东西 |
 | [docs/configuration.md](docs/configuration.md) | 配置三层覆盖、生效方式、环境变量 |
 | [docs/deployment.md](docs/deployment.md) | 部署、发布、回滚、故障排查 |
+| [docs/memory-standalone.md](docs/memory-standalone.md) | 记忆库插件化：脱离 cordis 独立使用 |
 | [SECURITY.md](SECURITY.md) | 威胁模型与部署清单 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 门禁、硬规则、提交信息 |
 
