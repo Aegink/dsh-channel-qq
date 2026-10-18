@@ -29,7 +29,7 @@ cordis.patch.yml（部署级）
 | `CHANNEL_QQ_ADMIN_PASSWORD` / `_HASH` | 管理后台口令（哈希优先） |
 | `CHANNEL_QQ_ADMIN_ALLOW_REMOTE` | 允许后台监听非本机地址（默认关） |
 | `CHANNEL_QQ_NAPCAT_ROOTS` | 允许 NapCat 直接读取的宿主目录（冒号分隔） |
-| `CHANNEL_QQ_EXTRACTOR_BASE_URL` / `_MODEL` / `_API_KEY` | 知识抽取的模型端点 |
+| `CHANNEL_QQ_EXTRACTOR_BASE_URL` / `_MODEL` / `_API_KEY` | 知识抽取的模型端点。后台「记忆」页可覆盖这三项（填了就不看环境变量） |
 | `CHANNEL_QQ_APPROVAL` | 审批网关开关（`1` = 启用） |
 | `CHANNEL_QQ_APPROVAL_DIR` | 审批目录（默认 `/var/lib/dsh-approval`） |
 | `CHANNEL_QQ_PERSONA_DIR` | 人格包目录（默认 `assets/persona/default`） |

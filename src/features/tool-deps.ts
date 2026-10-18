@@ -15,7 +15,7 @@ import type { OutboundQueue } from '../outbound.js'
 import type { EmojiLibrary } from '../emoji-library.js'
 import type { SentLog, SentLogHub } from '../sent-log.js'
 import type { KnowledgeStore } from '../knowledge.js'
-import type { MemoryService } from '../ports/memory.js'
+import type { MemorySearch, MemoryService } from '../ports/memory.js'
 
 /** 好感度与阶段：`AffectionStore` 里工具真正用到的那几个方法。 */
 export interface AffectionPort {
@@ -44,6 +44,8 @@ export interface QQToolDeps {
    * ——那是 P6d 的事。
    */
   readonly memory: MemoryService | undefined
+  /** 深召回（原文块）：agent 主动搜索用。 */
+  readonly memorySearch?: MemorySearch | undefined
   /** 从一段文字里抽取知识条目（知识库没配抽取器时为 undefined）。 */
   readonly extract: ((source: string, text: string) => Promise<unknown>) | undefined
   /**

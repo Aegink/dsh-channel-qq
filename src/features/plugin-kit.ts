@@ -24,7 +24,7 @@ import type { AdminResource } from '../admin.js'
 import type { ProvidersSurface } from '../adapters/dsh-host/providers.js'
 import type { OneBotClient } from '../onebot.js'
 import type { ChatPlatform, QQApi } from '../ports/platform.js'
-import type { MemoryEvidence, MemoryService } from '../ports/memory.js'
+import type { MemoryEvidence, MemorySearch, MemoryService } from '../ports/memory.js'
 import type { OutboundQueue } from '../outbound.js'
 import type { PersonaPack } from '../ports/persona.js'
 import type { PromptComposer } from '../app/conversation/prompt-composer.js'
@@ -95,6 +95,8 @@ export interface ServiceBag {
   memoryEvidence?: MemoryEvidence
   /** 记忆服务（P6e）：工具面的主动召回与写入走它。 */
   memory?: MemoryService
+  /** 深召回（原文块）：agent 主动搜索用，不进自动注入。 */
+  memorySearch?: MemorySearch
   affection?: AffectionStore
   quotes?: QuoteStore
   reminders?: ReminderStore

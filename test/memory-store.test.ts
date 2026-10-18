@@ -233,6 +233,19 @@ test('检索：房间作用域——别的房间的 room 记录不参与，全�
   } finally { s.cleanup() }
 })
 
+test('检索：room 为 null = 不按房间过滤（深召回要能跨房间翻旧账）', async () => {
+  const s = scratch()
+  try {
+    await s.store.load()
+    const mine = await entry(s.store, { scope: 'room', room: 'qq-group-107', keywords: ['部署'] })
+    const other = await entry(s.store, { scope: 'room', room: 'qq-dm-1000000002', keywords: ['部署'] })
+    const got = await retrieverFor(s).retrieve({ text: '部署的事', now: NOW, room: null })
+    const ids = got.picked.map((r) => r.id)
+    assert.equal(ids.includes(mine.id), true)
+    assert.equal(ids.includes(other.id), true, '深召回不按房间过滤')
+  } finally { s.cleanup() }
+})
+
 test('检索：命中时间词时按区间过滤（"前天"不会给出上个月的事）', async () => {
   const s = scratch()
   try {

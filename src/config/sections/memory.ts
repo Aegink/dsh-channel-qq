@@ -23,7 +23,7 @@ import { b, n, s, type FieldGroup } from '../dsl.js'
 export interface MemoryVectorConfig {
   /** 开关。改它由记忆子插件的 watches 触发重载（hot: reload）。 */
   vectorEnabled: boolean
-  /** OpenAI 兼容 `/v1/embeddings` 的基地址（默认即本机 17861；只接受运维在配置里填的地址）。 */
+  /** OpenAI 兼容 `/v1/embeddings` 的基地址（默认即本机 8801；只接受运维在配置里填的地址）。 */
   vectorUrl: string
   /** 向量维度（bge-small-zh-v1.5 = 512）。响应/索引文件不符即整份拒绝，绝不错位读。 */
   vectorDim: number
@@ -31,6 +31,22 @@ export interface MemoryVectorConfig {
   vectorTimeoutMs: number
   /** 余弦相对关键词的权重（0..1）；1 = 纯余弦（09 §5.2 的默认语义，e4 调参用）。 */
   vectorWeight: number
+}
+
+/**
+ * 知识抽取器的接入参数（原来只有环境变量，后台看不到也改不了）。
+ *
+ * 三个字段都留空 = 完全沿用环境变量（`CHANNEL_QQ_EXTRACTOR_BASE_URL` /
+ * `_MODEL` / `_API_KEY`，后者回退 `DSH_LLM_API_KEY`）。填了就以配置为准——
+ * 这样"抽取器到底配没配"在后台一眼可见，不必登服务器查 env。
+ */
+export interface MemoryExtractorConfig {
+  /** OpenAI 兼容基地址（如 `https://gateway.example/v1`）；空 = 用环境变量。 */
+  extractorUrl: string
+  /** 模型名；空 = 用环境变量。 */
+  extractorModel: string
+  /** API Key；空 = 用环境变量或 DSH_LLM_API_KEY。 */
+  extractorApiKey: string
 }
 
 export const MEMORY_GROUPS: FieldGroup[] = [
@@ -46,6 +62,21 @@ export const MEMORY_GROUPS: FieldGroup[] = [
       threshold: n('检索分数阈值', 0.35, { min: 0, max: 1, step: 0.05, hot: 'live' }),
       maxRecords: n('每回合最多注入几条', 8, { min: 1, max: 20, hot: 'live' }),
       maxChars: n('每回合最多注入多少字', 600, { min: 100, max: 2000, hot: 'live' }),
+      // ── 知识抽取器（原先只有环境变量）────────────────────────────────────────
+      // 读法：装配记忆模块时取值；改完由 watches 触发重载。留空 = 沿用环境变量。
+      extractorUrl: s('抽取器地址', '', {
+        hot: 'reload', advanced: true,
+        help: 'OpenAI 兼容接口的基地址（例：https://gateway.example/v1）。留空则读环境变量 CHANNEL_QQ_EXTRACTOR_BASE_URL；'
+          + '地址或模型为空时抽取整体跳过（日志里会说"extractor not configured"）。',
+      }),
+      extractorModel: s('抽取器模型', '', {
+        hot: 'reload', advanced: true,
+        help: '留空则读环境变量 CHANNEL_QQ_EXTRACTOR_MODEL。',
+      }),
+      extractorApiKey: s('抽取器 API Key', '', {
+        hot: 'reload', advanced: true, secret: true,
+        help: '留空则读环境变量 CHANNEL_QQ_EXTRACTOR_API_KEY，再回退 DSH_LLM_API_KEY。',
+      }),
       // ── 向量检索（P6e·e2）──────────────────────────────────────────────────
       // 读法：装配记忆模块时取值，据此建 embed 客户端与向量索引；改完由 watches
       // 触发重载（reload）。默认关 = 与 e1 关键词路径逐字节一致。
@@ -54,7 +85,7 @@ export const MEMORY_GROUPS: FieldGroup[] = [
         help: '需要先由运维在本机起 embed 服务（见 docs/deployment.md「可选：本机 embed 服务」）。'
           + '关着时检索完全走关键词，与从前逐字节一致；打开但服务不可用时自动退回关键词。',
       }),
-      vectorUrl: s('embed 服务地址', 'http://127.0.0.1:17861', {
+      vectorUrl: s('embed 服务地址', 'http://127.0.0.1:8801', {
         hot: 'reload', advanced: true,
         help: 'OpenAI 兼容 /v1/embeddings 的基地址。会补 /v1/embeddings 后缀；已以 /embeddings 结尾则原样使用。',
       }),

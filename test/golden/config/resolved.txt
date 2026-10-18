@@ -131,8 +131,11 @@
     "threshold": 0.35,
     "maxRecords": 8,
     "maxChars": 600,
+    "extractorUrl": "",
+    "extractorModel": "",
+    "extractorApiKey": "",
     "vectorEnabled": false,
-    "vectorUrl": "http://127.0.0.1:17861",
+    "vectorUrl": "http://127.0.0.1:8801",
     "vectorDim": 512,
     "vectorTimeoutMs": 800,
     "vectorWeight": 1

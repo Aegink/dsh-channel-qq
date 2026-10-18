@@ -140,9 +140,10 @@ test('SCHEMA 由段拼装：sectionIds 与 groups 一致', () => {
   assert.ok(sectionIds().length >= 20, `段只有 ${sectionIds().length} 个，明显不完整`)
 })
 
-test('记忆段（P6e）：字段落在 memory 页；v2 四项 live、向量五项 reload', () => {
+test('记忆段（P6e）：字段落在 memory 页；v2 四项 live、向量与抽取器 reload', () => {
   const refs = fieldRefs().filter((ref) => ref.path.startsWith('memory.'))
   assert.deepEqual(refs.map((ref) => ref.path).sort(), [
+    'memory.extractorApiKey', 'memory.extractorModel', 'memory.extractorUrl',
     'memory.maxChars', 'memory.maxRecords', 'memory.threshold', 'memory.v2',
     'memory.vectorDim', 'memory.vectorEnabled', 'memory.vectorTimeoutMs', 'memory.vectorUrl', 'memory.vectorWeight',
   ])
@@ -151,7 +152,10 @@ test('记忆段（P6e）：字段落在 memory 页；v2 四项 live、向量五�
     const ref = refs.find((r) => r.path === path)!
     assert.equal(hotOf(ref.spec), 'live', `${path} 应为 live（记忆子插件 watches 它）`)
   }
-  for (const path of ['memory.vectorDim', 'memory.vectorEnabled', 'memory.vectorTimeoutMs', 'memory.vectorUrl', 'memory.vectorWeight']) {
+  for (const path of [
+    'memory.vectorDim', 'memory.vectorEnabled', 'memory.vectorTimeoutMs', 'memory.vectorUrl', 'memory.vectorWeight',
+    'memory.extractorApiKey', 'memory.extractorModel', 'memory.extractorUrl',
+  ]) {
     const ref = refs.find((r) => r.path === path)!
     assert.equal(hotOf(ref.spec), 'reload', `${path} 应为 reload（装配期取值，watches 重载）`)
   }

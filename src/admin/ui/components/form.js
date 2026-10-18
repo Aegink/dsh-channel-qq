@@ -185,12 +185,22 @@ export function createConfigForm({ pageKey }) {
         if (parsed.error !== undefined) { commit(undefined, parsed.error); return }
         commit(parsed.value)
       })
+      // 手写 JSON 的两个刚需：知道"现在是合法的"、以及一键排版。校验仍然只在
+      // change 时做（错误落在行内的 stat 上），格式化按钮把同一份内容重排成缩进版。
+      const fmt = button('格式化', 'small ghost', 'wand')
+      fmt.addEventListener('click', () => {
+        const parsed = model.parseJsonText(ta.value)
+        if (parsed.error !== undefined) { commit(undefined, parsed.error); return }
+        ta.value = JSON.stringify(parsed.value, null, 2)
+        commit(parsed.value)
+      })
+      const wrap = el('div', {}, [ta, el('div', { class: 'rowflex', style: 'margin-top:6px' }, [fmt])])
       refreshers.set(field.path, {
         refresh: () => { ta.value = model.serializeValue(field, currentValue(field.path)) },
-        markDirty: (dirty) => ta.classList.toggle('edited', dirty),
+        markDirty: (dirty) => wrap.classList.toggle('edited', dirty),
         field,
       })
-      return ta
+      return wrap
     }
 
     // string（含 secret / 路径）

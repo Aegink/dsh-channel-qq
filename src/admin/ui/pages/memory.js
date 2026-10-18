@@ -9,7 +9,7 @@
 
 import { el } from '../dom.js'
 import { api, errText } from '../api.js'
-import { button, emptyBox, section } from '../components/card.js'
+import { button, emptyBox, section, statTile } from '../components/card.js'
 import { toast } from '../components/toast.js'
 import { createModulePage } from './module.js'
 
@@ -27,6 +27,36 @@ function row(content, buttons) {
   card.appendChild(el('div', { class: 'objmeta', text: content }))
   card.appendChild(el('div', { class: 'rowflex', style: 'margin-top:8px' }, buttons))
   return card
+}
+
+/** 索引状态：三条线（结构记录 / 原文块 / 向量）各自有多少条、多少条参与检索。
+ *
+ * 深召回（`qq_memory_search`）靠的是原文块 + 向量，「块索引建了没有」原本只能翻日志，
+ * 现在在页面上一眼能看到。
+ */
+function statsCard() {
+  const card = section({
+    title: '索引状态',
+    icon: 'db',
+    blurb: '结构记录、原文块、向量各自有多少条。原文块由夜间 memory.chunks 建（03:50），向量由 memory.reindex 建（06:30）。',
+  })
+  const box = el('div', {})
+  card.body.appendChild(box)
+
+  const load = async () => {
+    box.textContent = ''
+    const res = await api('/api/resource/memory-stats')
+    if (res.status !== 200) { box.appendChild(emptyBox('读取失败', errText(res), 'alert')); return }
+    const d = res.body?.data ?? res.body ?? {}
+    if (d.enabled !== true) { box.appendChild(emptyBox('记忆系统关着', String(d.note ?? 'memory.v2 未打开'), 'info')); return }
+    const grid = el('div', { class: 'grid' })
+    grid.appendChild(statTile('结构记录', d.records, `${d.active} 条参与检索`))
+    grid.appendChild(statTile('原文块', d.chunks, `${d.chunkActive} 条参与检索 · 深召回用`))
+    grid.appendChild(statTile('向量', d.vectors, d.vectorEnabled ? '向量检索已开' : '向量关闭（纯关键词）'))
+    box.appendChild(grid)
+  }
+  void load()
+  return { node: card.node, reload: load }
 }
 
 function pendingCard() {
@@ -99,7 +129,17 @@ function pendingCard() {
   return card.node
 }
 
-const page = createModulePage('memory', { extras: () => pendingCard() })
+let statsReload = null
+const page = createModulePage('memory', {
+  extras: () => {
+    const wrap = el('div', { class: 'stack' })
+    const stats = statsCard()
+    statsReload = stats.reload
+    wrap.appendChild(stats.node)
+    wrap.appendChild(pendingCard())
+    return wrap
+  },
+})
 
 export default {
   ...page,
@@ -108,6 +148,7 @@ export default {
   },
   refresh() {
     page.refresh?.()
+    statsReload?.()
     globalThis.__dshMemoryPendingReload?.()
   },
 }

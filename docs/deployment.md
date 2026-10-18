@@ -375,7 +375,7 @@ commit 看**为什么改**。服务器刻意不留 `.git`（产物里没有，�
      `admin.port/host/enabled/password` → 重新监听（先绑新端口再放旧端口；
      同端口改 host 则先释放再重试 12 次，失败自动回滚到原监听，**绝不把运营者锁在门外**）；
      `connection.*`/`accessToken` → `OneBotClient.reconnect()` 就地换传输，
-     不重建客户端（88 个工具和 bridge 都持有这个实例）；
+     不重建客户端（89 个工具和 bridge 都持有这个实例）；
      `emoji.*` → 重读表情索引；`affectionPort` → 重新监听悬浮窗。
      保存响应里带 `effects: string[]`，逐条说明实际做了什么，运营者不用猜。
 - 页面是单文件、免构建的原生 JS；配置表单由 schema 生成（含 `keywordReactions`、
@@ -390,7 +390,7 @@ commit 看**为什么改**。服务器刻意不留 `.git`（产物里没有，�
 
 ### 8.5 功能模块与工具数
 
-插件注册 **88 个工具**（核心 57 + 各功能模块 31，取自 `channel-qq.log` 的
+插件注册 **89 个工具**（核心 58 + 各功能模块 31，取自 `channel-qq.log` 的
 `registered N QQ tools` / `registered N/M tools` 行）：
 
 | 模块 | 文件 | 工具 |
@@ -404,7 +404,7 @@ commit 看**为什么改**。服务器刻意不留 `.git`（产物里没有，�
 | AI 生图 | `imagegen.ts` | `qq_generate_image` `qq_generate_image_save` `qq_imagegen_models` |
 | 防刷屏 | `flood.ts` | `qq_flood_stats` `qq_flood_exempt` `qq_group_mute_user` |
 | 口癖学习 | `learn.ts` | `qq_learned_phrases` `qq_learn_phrase` `qq_forget_phrase` `qq_learn_stats` |
-| 记忆召回（并入核心） | `tools.ts` | `qq_recall_memory` `qq_memorize_fact` `qq_send_sticker` |
+| 记忆召回（并入核心） | `tools.ts` | `qq_recall_memory` `qq_memorize_fact` `qq_memory_search` `qq_send_sticker` |
 
 后台 runner：口癖 flush（5 分钟）、提醒轮询（30 秒）、RSS 轮询（默认 15 分钟，首次延迟 20 秒）。
 群事件监控在 `bridge.ts` 的 `handleMonitoredNotice`（进门/退群/禁言/撤回/改名/加好友，
@@ -1115,7 +1115,7 @@ Python `yaml.safe_load` —— 它**静默容忍重复键**（后者覆盖前者
 
 向量检索（后台「记忆」页的 `vectorEnabled`）需要一个**只监听 127.0.0.1** 的
 OpenAI 兼容 embeddings 服务：模型 `Xenova/bge-small-zh-v1.5`、**512 维**、输出已
-L2 归一化，默认端口 `17861`。它与现有 9 个容器无关（独立进程）；插件的 HTTP 闸门
+L2 归一化，默认端口 `8801`。它与现有 9 个容器无关（独立进程）；插件的 HTTP 闸门
 默认拦截私网地址，但"运维在配置里填的地址"是显式放行的两类之一——插件永远不拿
 消息里的文本拼地址。
 
@@ -1134,7 +1134,7 @@ After=network-online.target
 Type=simple
 User=root
 WorkingDirectory=/opt/embed-server
-Environment=EMBED_PORT=17861
+Environment=EMBED_PORT=8801
 # 首次运行要下模型；能直连 huggingface 就不动这行，否则走镜像：
 # Environment=HF_ENDPOINT=https://hf-mirror.com
 ExecStart=/usr/bin/node embed-server.mjs
@@ -1151,7 +1151,7 @@ systemctl daemon-reload
 systemctl enable --now channel-qq-embed
 journalctl -u channel-qq-embed -n 50      # 首次看模型下载进度
 # 确认只监听本机（必须是 127.0.0.1，不是 0.0.0.0）：
-ss -ltnp | grep 17861
+ss -ltnp | grep 8801
 ```
 
 首次把模型下下来之后，**断网也能用**（模型在本地磁盘上）。
@@ -1159,7 +1159,7 @@ ss -ltnp | grep 17861
 ### 13.2 验证
 
 ```bash
-curl -s http://127.0.0.1:17861/v1/embeddings \
+curl -s http://127.0.0.1:8801/v1/embeddings \
   -H 'content-type: application/json' \
   -d '{"input":"你好"}' | head -c 200
 # 期望 JSON：{"object":"list","model":"Xenova/bge-small-zh-v1.5","data":[{"object":"embedding","index":0,"embedding":[...]}]}

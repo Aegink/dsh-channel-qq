@@ -46,7 +46,7 @@ export interface RetrieveOptions {
   readonly text: string
   /** 当前时刻（注入，R8）。 */
   readonly now: number
-  /** 当前房间（`scope='room'` 的记录只有同房间才参与）。 */
+  /** 当前房间（`scope='room'` 的记录只有同房间才参与）；`null` = 不按房间过滤。 */
   readonly room: string | null
   /** 主人的昵称/QQ 号：提到时抬高他的记录。 */
   readonly aliases?: readonly string[]
@@ -309,7 +309,8 @@ export class MemoryRetriever {
     range: { from: number; to: number } | null,
   ): boolean {
     if (!isRetrievable(record, now)) return false
-    if (record.scope === 'room' && record.room !== undefined && record.room !== room) return false
+    // `room === null` 是"不按房间过滤"（深召回工具用）：自动注入永远传具体房间。
+    if (room !== null && record.scope === 'room' && record.room !== undefined && record.room !== room) return false
     if (roomOnly && record.scope === 'room' && record.room !== room) return false
     if (range !== null && (record.validFrom > range.to || record.validFrom < range.from)) return false
     return true

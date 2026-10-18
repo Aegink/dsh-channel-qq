@@ -19,13 +19,14 @@
 | 检索 | `core/memory/{score,select,query}.ts` + `features/memory/retriever.ts` | 相关性 × 重要性 × 新近度；零相关性不注入；注入预算 600 字 |
 | 存储 | `features/memory/store.ts` | `knowledge/records.jsonl`（追加式，定期压缩） |
 | 向量 | `features/memory/vector-store.ts` | `knowledge/vec.bin` + `vec-index.json`，分片 + 暴力余弦，不引原生依赖 |
-| 夜间任务 | `features/memory/nightly.ts` | 八个 job，挂在事件书上（见下表） |
+| 夜间任务 | `features/memory/nightly.ts` | 九个 job，挂在事件书上（见下表） |
 | 审核 | 后台「记忆」页 | 候选通过/忽略、冲突裁定、MEMORY.md 迁移 |
 
 ## 夜间任务（事件书 `core/schedule/event-book.ts`）
 
 | 时间 | job | 说明 |
 |---|---|---|
+| 03:50 | `memory.chunks` | 工作区 md（`memory/`、`knowledge/`、`learning/`）切 600 字块入索引，幂等；旧块归档不删 |
 | 04:20 | `memory.diary-extract` | **昨天**的日记 → 结构化记录（当天凌晨跑，当天日记还没写完） |
 | 04:40 | `memory.session-split` | 昨天的会话原件 → 回合块 → 记录 |
 | 05:00 | `memory.reflect` | 高重要度记录 → 反思（产出候选，等审核） |
@@ -80,7 +81,9 @@ KB 的 0.28 建立在**一次返回 6 块**上。
 - 自动注入继续用结构化记录（短、带出处与时间）；
 - 真要提升自动注入的召回，方向是**更短的事实**（抽取管线）而不是更长的块。
 
-`memory.chunks` 任务与块索引已实现（03:50，幂等、旧块归档），作为深召回的后备数据源。
+块索引已实现（`memory.chunks`，03:50，幂等、旧块归档），并由 **`qq_memory_search`**
+暴露给模型：一次返回 3–8 条原文块 + 出处（文件与行号），跨房间、不占每回合注入预算。
+`memory.v2` 关着时这个工具返回「深召回未启用」而不是报错。
 
 ## 已知限制
 

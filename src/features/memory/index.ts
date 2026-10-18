@@ -41,14 +41,17 @@ export const memoryPlugin: SubPlugin = {
   watches: [
     'memory.v2', 'memory.threshold', 'memory.maxRecords', 'memory.maxChars',
     'memory.vectorEnabled', 'memory.vectorUrl', 'memory.vectorDim', 'memory.vectorTimeoutMs', 'memory.vectorWeight',
+    'memory.extractorUrl', 'memory.extractorModel', 'memory.extractorApiKey',
   ],
   async apply(host) {
     const workspacePath = host.config.workspacePath
     const store = new KnowledgeStore(host.dshHome, workspacePath, host.log)
     await store.load()
-    // One resolver, so "the extractor is misconfigured" is decided in exactly
-    // one place and logged once rather than at every call site.
-    const route = resolveExtractorRoute()
+    // 抽取器的三项可以从后台「记忆」页填（留空回退环境变量）。仍然只解析一次：
+    // "抽取器没配好"只在一处判定、只记一行日志。
+    const m = host.config.memory
+    const extractor = { baseUrl: m.extractorUrl, model: m.extractorModel, apiKey: m.extractorApiKey }
+    const route = resolveExtractorRoute(extractor)
     if (route === null) {
       host.log('knowledge: extractor not configured (set CHANNEL_QQ_EXTRACTOR_BASE_URL and CHANNEL_QQ_EXTRACTOR_MODEL to enable)')
     }
@@ -64,7 +67,7 @@ export const memoryPlugin: SubPlugin = {
     // 那种"看起来坏了"的结果清楚）。向量重建要的嵌入器在 v2 装配时才建，
     // 所以这里用取值函数，注册发生在装配之前也不会读到 undefined。
     const nightlyState: { store: MemoryStore | null; embed: EmbedPort | null } = { store: null, embed: null }
-    const nightlyRoute = resolveExtractorRoute()
+    const nightlyRoute = resolveExtractorRoute(extractor)
     const offNightly = registerNightlyJobs({
       store: () => nightlyState.store,
       legacy: store,
@@ -91,6 +94,7 @@ export const memoryPlugin: SubPlugin = {
     }
 
     registerPendingResource(host, nightlyState)
+    registerStatsResource(host, nightlyState)
     registerLegacyResources(host, store, workspacePath)
 
     // 卸载时把八个 job 从注册表摘掉（同名重挂是"后者生效"，留着会让旧实例的
@@ -151,6 +155,33 @@ async function attachMemoryV2(
       },
     })
     return got.evidence
+  })
+  provideMemorySearch(host, retriever, renderTime)
+}
+
+/**
+ * 深召回（`qq_memory_search`）：一次给 5–8 条**原文块**，愿意多花上下文换命中率。
+ * 与自动注入的区别就在预算：这里 6000 字、同主题不限；注入仍然是 600 字/8 条短事实。
+ */
+function provideMemorySearch(host: SubHost, retriever: MemoryRetriever, renderTime: (at: number) => string): void {
+  host.provide('memorySearch', async (query: string, limit?: number) => {
+    const k = Math.max(3, Math.min(8, Math.trunc(limit ?? 8) || 8))
+    const got = await retriever.retrieve({
+      text: query,
+      room: null, // 深召回跨房间：群记忆与私聊记忆都要能翻到
+      now: Date.now(),
+      budget: { threshold: 0.2, maxRecords: k, maxChars: 6000, maxPerTopic: k },
+      weights: { relevance: 1, importance: 0.3, recency: 0.2 },
+    })
+    // 块优先：深召回要的是"原文在哪"，短事实由 recall 负责。
+    const picked = [...got.picked].sort((x, y) => Number(y.tags.includes('chunk')) - Number(x.tags.includes('chunk')))
+    return picked.map((r) => ({
+      content: r.content,
+      kind: r.kind,
+      source: `${r.source.file ?? r.source.room ?? ''}${r.source.line === undefined ? '' : `#L${r.source.line}`}`,
+      date: renderTime(r.validFrom),
+      chunk: r.tags.includes('chunk'),
+    }))
   })
 }
 
@@ -229,6 +260,47 @@ function registerPendingResource(host: SubHost, nightly: { store: MemoryStore | 
       migrate: () => runMigration(host, storeOf()),
     },
   })
+}
+
+/**
+ * 「索引状态」卡的数据面：结构记录数、原文块数、向量条数。
+ *
+ * 这些东西以前只存在于日志里——而「块索引到底建了没有」「向量索引是不是空的」
+ * 恰恰决定了 `qq_memory_search` 好不好用，所以必须有地方能一眼看到。
+ * `memory.v2` 关着时返回 `enabled: false`，页面照常显示"关着"。
+ */
+function registerStatsResource(host: SubHost, nightly: { store: MemoryStore | null }): void {
+  host.registerResource('memory-stats', {
+    label: '记忆索引状态',
+    list: async () => {
+      const store = nightly.store
+      if (store === null) return { enabled: false, note: 'memory.v2 关着（深召回也不可用）' }
+      const all = store.all()
+      const chunks = all.filter((r) => r.tags.includes('chunk'))
+      const active = all.filter((r) => r.status === 'active')
+      const vectors = await countVectors(store.dir, host.config.memory.vectorDim)
+      return {
+        enabled: true,
+        records: all.length,
+        active: active.length,
+        chunks: chunks.length,
+        chunkActive: chunks.filter((r) => r.status === 'active').length,
+        vectors,
+        vectorEnabled: host.config.memory.vectorEnabled,
+        storeFile: store.file,
+      }
+    },
+  })
+}
+
+/** 向量索引里有多少条（清单缺失/维度不符都算 0——那是"还没建"而不是故障）。 */
+async function countVectors(dir: string, dim: number): Promise<number> {
+  const raw = await fs.readFile(path.join(dir, VEC_MANIFEST_NAME), 'utf-8').catch(() => '')
+  if (raw === '') return 0
+  try {
+    const parsed = JSON.parse(raw) as { dim?: number; entries?: Record<string, unknown> }
+    return parsed.dim === dim ? Object.keys(parsed.entries ?? {}).length : 0
+  } catch { return 0 }
 }
 
 /**

@@ -71,3 +71,21 @@ export interface EmbedPort {
    */
   embed(texts: readonly string[]): Promise<readonly Float32Array[] | null>
 }
+
+/** 深召回的一条命中（`qq_memory_search`）：原文块或结构化记忆 + 出处。 */
+export interface MemorySearchHit {
+  readonly content: string
+  readonly kind: string
+  /** 出处（文件/房间 + 行号）；没有时为空串。 */
+  readonly source: string
+  readonly date: string
+  readonly chunk: boolean
+}
+
+/**
+ * 深召回：一次给 5–8 条长文本（主要是原文块）。
+ *
+ * 与 `MemoryService.recall` 的区别：recall 是"短事实、进注入预算"，深召回是
+ * **agent 主动搜**、愿意多花上下文换命中率（实测块检索 recall 明显高于句子）。
+ */
+export type MemorySearch = (query: string, limit?: number) => Promise<readonly MemorySearchHit[]>

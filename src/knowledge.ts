@@ -137,11 +137,22 @@ export interface ExtractorRoute {
  * key the harness itself already holds — so reusing the same gateway needs one
  * variable (the model), not two.
  */
-export function resolveExtractorRoute(env: NodeJS.ProcessEnv = process.env): ExtractorRoute | null {
-  const baseUrl = (env.CHANNEL_QQ_EXTRACTOR_BASE_URL ?? '').trim()
-  const model = (env.CHANNEL_QQ_EXTRACTOR_MODEL ?? '').trim()
+/** 配置层（后台「记忆」页）覆盖：非空的项优先于环境变量，空串继续回退。 */
+export interface ExtractorRouteOverride {
+  readonly baseUrl?: string
+  readonly model?: string
+  readonly apiKey?: string
+}
+
+export function resolveExtractorRoute(
+  override: ExtractorRouteOverride = {},
+  env: NodeJS.ProcessEnv = process.env,
+): ExtractorRoute | null {
+  const pick = (value: string | undefined, fallback: string | undefined): string => (value ?? '').trim() || (fallback ?? '').trim()
+  const baseUrl = pick(override.baseUrl, env.CHANNEL_QQ_EXTRACTOR_BASE_URL)
+  const model = pick(override.model, env.CHANNEL_QQ_EXTRACTOR_MODEL)
   if (baseUrl === '' || model === '') return null
-  const apiKey = (env.CHANNEL_QQ_EXTRACTOR_API_KEY ?? env.DSH_LLM_API_KEY ?? '').trim()
+  const apiKey = pick(override.apiKey, env.CHANNEL_QQ_EXTRACTOR_API_KEY ?? env.DSH_LLM_API_KEY)
   return { baseUrl: baseUrl.replace(/\/+$/, ''), apiKey, model }
 }
 

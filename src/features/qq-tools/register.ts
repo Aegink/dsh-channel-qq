@@ -25,7 +25,7 @@ import type { OutboundQueue } from '../../outbound.js'
 import type { EmojiLibrary } from '../../emoji-library.js'
 import type { SentLog, SentLogHub } from '../../sent-log.js'
 import type { KnowledgeStore } from '../../knowledge.js'
-import type { MemoryService } from '../../ports/memory.js'
+import type { MemorySearch, MemoryService } from '../../ports/memory.js'
 import { registerSpecs, type ToolHost, type ToolSpec } from '../../adapters/dsh-host/tools.js'
 import {
   decideToolCall, policyEnabled,
@@ -67,6 +67,7 @@ export interface RegisterToolsArgs {
   readonly sentLogHub?: SentLogHub
   readonly knowledge?: KnowledgeStore
   readonly memory?: MemoryService
+  readonly memorySearch?: MemorySearch
   readonly extract?: (source: string, text: string) => Promise<unknown>
 }
 
@@ -115,6 +116,7 @@ function toolDeps(args: RegisterToolsArgs): QQToolDeps {
     sentLogHub: args.sentLogHub,
     knowledge: args.knowledge,
     memory: args.memory,
+    memorySearch: args.memorySearch,
     extract: args.extract,
     knownGroups,
     assertDangerous,
@@ -188,6 +190,7 @@ const REGISTRATION_ORDER: readonly string[] = [
   'qq_send_like',
   'qq_recall_memory',
   'qq_memorize_fact',
+  'qq_memory_search',
   'qq_send_sticker',
 ]
 
@@ -231,9 +234,10 @@ export function registerQQTools(
   knowledge?: KnowledgeStore,
   extract?: (source: string, text: string) => Promise<unknown>,
   memory?: MemoryService,
+  memorySearch?: MemorySearch,
   sentLogHub?: SentLogHub,
 ): () => void {
-  const deps = toolDeps({ ctx, config, api, out, log, library, affection, sentLog, sentLogHub, knowledge, extract, memory })
+  const deps = toolDeps({ ctx, config, api, out, log, library, affection, sentLog, sentLogHub, knowledge, extract, memory, memorySearch })
   const specs = allSpecs(deps)
   // tools.v2 打开时换面：旧 spec 全被收编、只上宿主 17 个合并工具。
   if (toolsV2Enabled(config)) return registerMergedSurface({ ctx, specs, log })

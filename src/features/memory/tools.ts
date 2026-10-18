@@ -175,6 +175,28 @@ function qqMemorizeFact(deps: QQToolDeps): ToolSpec {
       }
 }
 
+/** `qq_memory_search` — 深召回：在日记/知识库的**原文块**里搜，带出处。 */
+function qqMemorySearch(deps: QQToolDeps): ToolSpec {
+  const search = deps.memorySearch
+  return {
+    name: 'qq_memory_search',
+    description: '深召回：在日记与知识库的原文块里搜（返回文件与行号），一次 5–8 条。问"以前记过什么""上次怎么弄的""翻翻笔记"时用它；日常寒暄不要用。',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: '自然语言查询' },
+        limit: { type: 'number', description: '返回条数（默认 8，最多 8）' },
+      },
+      required: ['query'],
+    },
+    run: async (args) => {
+      if (search === undefined) return { note: '深召回未启用（需要 memory.v2 与块索引）' }
+      const hits = await search(String(args.query ?? ''), Number(args.limit ?? 8))
+      return { count: hits.length, results: hits.map((h) => ({ content: h.content, source: h.source, date: h.date, chunk: h.chunk })) }
+    },
+  }
+}
+
 /** 组装这一组工具。 */
 export function memoryTools(deps: QQToolDeps): ToolSpec[] {
   return [
@@ -182,5 +204,6 @@ export function memoryTools(deps: QQToolDeps): ToolSpec[] {
     extractKnowledge(deps),
     qqRecallMemory(deps),
     qqMemorizeFact(deps),
+    qqMemorySearch(deps),
   ]
 }

@@ -27,7 +27,7 @@ export const qqToolsPlugin: SubPlugin = {
     const { store: knowledge, extract } = host.need('knowledge')
     return registerQQTools(
       host.bridge.toolHost(), config, api, out, host.log, library, affection, sentLog, knowledge, extract,
-      host.get('memory'), sentLogHub,
+      host.get('memory'), host.get('memorySearch'), sentLogHub,
     )
   },
 }

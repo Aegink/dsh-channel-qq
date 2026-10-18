@@ -1153,6 +1153,26 @@
   }
 }
 {
+  "name": "qq_memory_search",
+  "description": "深召回：在日记与知识库的原文块里搜（返回文件与行号），一次 5–8 条。问\"以前记过什么\"\"上次怎么弄的\"\"翻翻笔记\"时用它；日常寒暄不要用。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "自然语言查询"
+      },
+      "limit": {
+        "type": "number",
+        "description": "返回条数（默认 8，最多 8）"
+      }
+    },
+    "required": [
+      "query"
+    ]
+  }
+}
+{
   "name": "qq_send_sticker",
   "description": "【表情包快捷调用】按情绪/语义/文件名直接发一张收藏的表情包：搜索+发送一步到位。拿不准氛围就先 qq_search_emojis 看清楚再决定。",
   "parameters": {

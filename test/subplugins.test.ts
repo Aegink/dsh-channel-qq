@@ -126,6 +126,7 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
     ['memory', [
       'memory.v2', 'memory.threshold', 'memory.maxRecords', 'memory.maxChars',
       'memory.vectorEnabled', 'memory.vectorUrl', 'memory.vectorDim', 'memory.vectorTimeoutMs', 'memory.vectorWeight',
+      'memory.extractorUrl', 'memory.extractorModel', 'memory.extractorApiKey',
     ]],
     ['affection', ['affectionPort']],
     // P6f：事件书开关或书改了都要重挂（实现选型与书的校验都在装配期完成）。
