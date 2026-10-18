@@ -1,0 +1,51 @@
+{
+  "name": "dsh-channel-qq",
+  "version": "0.1.0",
+  "description": "QQ channel plugin for DeepSeek Harness (OneBot v11 / NapCat): tools, memory, proactive events, admin panel.",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "imports": {
+    "#lib/*": "./lib/*"
+  },
+  "scripts": {
+    "build": "npm run build:admin && tsc -p tsconfig.json",
+    "build:admin": "node scripts/build-admin-html.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:tests": "tsc -p tsconfig.test.json",
+    "test": "npm run typecheck:tests && node --test \"lib-test/test/*.test.js\"",
+    "check:layers": "node scripts/check-layers.mjs",
+    "check:size": "node scripts/check-size.mjs",
+    "check:admin": "node scripts/build-admin-html.mjs --check",
+    "audit": "node deploy/static-audit.mjs",
+    "verify": "npm run check:admin && npm run check:syntax && npm run typecheck && npm test && npm run check:layers && npm run check:size",
+    "probe:admin": "node scripts/probe-admin-layout.mjs",
+    "eval": "node eval/run.mjs",
+    "check:syntax": "node scripts/check-syntax.mjs"
+  },
+  "dependencies": {
+    "silk-wasm": "^3.7.1",
+    "ws": "^8.18.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-llm": "*"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5-alpha.2",
+    "@deepseek-ai/dsh-attachment": "0.2.1-alpha.2",
+    "@deepseek-ai/dsh-llm": "0.2.1-alpha.2",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.14",
+    "typescript": "^5.9.3"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,50 @@
+# dsh-channel-qq bundle patch: the QQ channel over OneBot v11.
+# Applied as one layer above the profile's bundle stack; rows here only
+# declare defaults. Deployment-specific values (connection URL, token,
+# primary group, workspace path) belong in the profile's own cordis.patch.yml
+# user layer, which replaces a row's whole `config`.
+#
+# The plugin deliberately ships no access-control or moderation stack of its
+# own: inbound gating is limited to trigger policy (mention/keyword/probability),
+# and every agent-side capability stays under the harness's default
+# permission/sandbox presets.
+- insert:
+    - id: channel-qq
+      name: dsh-channel-qq
+      config:
+        connection:
+          mode: forward
+          url: ws://127.0.0.1:3001
+        selfId: 10000
+        admins: []
+        primaryGroup: null
+        requireMention: true
+        talkValue: 0.6
+        workspacePath: null
+        agentPreset: standard
+        permissionPreset: workspace-write
+        rateLimitMs: 300
+        maxMessageLength: 4000
+        segmentation:
+          enabled: true
+          minLength: 8
+          maxSegments: 8
+          removeTrailingPeriod: true
+        batching:
+          windowMs: 20000
+          maxMessages: 20
+          maxChars: 4000
+        keywordTriggers: []
+        keywordReactions: []
+        morningReport:
+          enabled: true
+          weatherLocation: null
+          scheduleFile: null
+        cruises: []
+        emoji:
+          steal: true
+          autoSend: false
+          autoSendProbability: 0.3
+          dir: null
+          registeredDir: null
+        debug: false

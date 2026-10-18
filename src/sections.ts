@@ -1,0 +1,60 @@
+/** 子插件的装载表（P5.1）：顺序 = 装配顺序 = 工具注册顺序 = start 顺序。
+ *
+ * 这张表的顺序同时被三件事钉住，别随手调：
+ *   - **工具面顺序**：qq-tools 之后按 links → meme → voice → quotes →
+ *     reminders → rss → imagegen → flood → learn 注册——那是模型看到的工具
+ *     清单顺序（提示词内容），golden 快照钉着它；
+ *   - **start 顺序**：platform（连 QQ）→ inbound（重挂历史会话）→ proactive
+ *     （调度器）→ admin（开面板），与原 `Service.init` 的后半段一一对应；
+ *   - **服务依赖**：前面的插件 `provide`，后面的 `requires` 取（persona 最先；
+ *     qq-tools 要 platform / emoji / affection / sentLog / knowledge 五件套，
+ *     分别在 platform / stickers / affection / inbound / memory 里提供）。
+ *
+ * 热重载声明（watches）与旧 `applyEffects` 的副作用清单一一对应，见
+ * `test/subplugins.test.ts` 的表锁。
+ */
+
+import { adminPlugin } from './features/admin/index.js'
+import { affectionPlugin } from './features/affection/index.js'
+import { floodPlugin } from './features/flood/index.js'
+import { imagegenPlugin } from './features/imagegen/index.js'
+import { inboundPlugin } from './features/inbound/index.js'
+import { learnPlugin } from './features/learn/index.js'
+import { linksPlugin } from './features/links/index.js'
+import { memePlugin } from './features/meme/index.js'
+import { memoryPlugin } from './features/memory/index.js'
+import { musicPlugin } from './features/music/index.js'
+import { observersPlugin } from './features/observers/index.js'
+import { personaPlugin } from './features/persona/index.js'
+import { platformPlugin } from './features/platform/index.js'
+import { proactivePlugin } from './features/proactive/index.js'
+import { qqToolsPlugin } from './features/qq-tools/index.js'
+import { quotesPlugin } from './features/quotes/index.js'
+import { remindersPlugin } from './features/reminders/index.js'
+import { rssPlugin } from './features/rss/index.js'
+import { stickersPlugin } from './features/stickers/index.js'
+import { voicePlugin } from './features/voice/index.js'
+import type { SubPlugin } from './features/plugin-kit.js'
+
+export const SECTION_PLUGINS: readonly SubPlugin[] = [
+  personaPlugin,
+  observersPlugin,
+  platformPlugin,
+  inboundPlugin,
+  stickersPlugin,
+  memoryPlugin,
+  affectionPlugin,
+  qqToolsPlugin,
+  linksPlugin,
+  memePlugin,
+  voicePlugin,
+  quotesPlugin,
+  remindersPlugin,
+  rssPlugin,
+  imagegenPlugin,
+  floodPlugin,
+  learnPlugin,
+  musicPlugin,
+  proactivePlugin,
+  adminPlugin,
+]

@@ -1,0 +1,6 @@
+【私聊消息】
+【这是私聊】对方 QQ ADMIN_QQ。要发言必须用 qq_send_text / qq_reply_quote，且 isGroup=false、target=ADMIN_QQ；不要发到任何群里。
+[当前消息 · 需要回应]
+<untrusted source="qq" room="dm:ADMIN_QQ">
+14:31 学弟(ADMIN_QQ) #9100 [@咱]：在么，帮我看下这个报错
+</untrusted>

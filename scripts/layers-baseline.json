@@ -1,0 +1,12 @@
+{
+  "note": "宿主包 import 的允许集合（棘轮：只能删，不能悄悄加）。见 scripts/check-layers.mjs。",
+  "updatedAt": "2026-10-16",
+  "hostImporters": [
+    "src/adapters/dsh-host/agent.ts",
+    "src/adapters/dsh-host/agents.ts",
+    "src/adapters/dsh-host/services.ts",
+    "src/emoji-library.ts",
+    "src/plugin.ts",
+    "src/services.ts"
+  ]
+}

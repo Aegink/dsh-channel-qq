@@ -1,0 +1,9 @@
+── qq-dm-ADMIN_QQ [followup] images=0
+（当前时段：下午）
+【这是私聊】对方 QQ ADMIN_QQ。要发言必须用 qq_send_text / qq_reply_quote，且 isGroup=false、target=ADMIN_QQ；不要发到任何群里。
+【主动找学弟】测试用提示词。
+
+── qq-group-PRIMARY_GROUP [followup] images=0
+（当前时段：下午）
+【这是群聊】群号 PRIMARY_GROUP。要发言必须用 qq_send_text / qq_reply_quote，且 isGroup=true、target=PRIMARY_GROUP；不要发到私聊。
+【主动巡逻】测试用提示词。

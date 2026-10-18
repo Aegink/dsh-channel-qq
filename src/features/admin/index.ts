@@ -1,0 +1,258 @@
+/** 后端子插件（P5.1/P5.5）：管理面板的生命周期、状态快照、预设与会话管理。
+ *
+ * 面板本体在 `src/admin.ts`（HTTP 面、密码门禁、配置管线）——这里只做三件事：
+ *   - 装配：把 `AdminDeps` 从服务袋与桥里接出来。资源表是**活对象**：每个功能
+ *     子插件自己 `registerResource`（P5.3 之后这里不再认识任何 store）；
+ *   - 热重载：`admin.port/host/enabled/password` 改了就地 `relisten()`（对齐旧
+ *     `applyEffects` 的 admin 分支）。`admin.host` "重启才彻底生效"的语义在
+ *     `admin.ts` 的 `touchedRestartPaths` 里，没动；
+ *   - 工具数：直读 `adapters/dsh-host/tools.ts` 的注册表（P5.5 修 B11——旧实现
+ *     去日志尾巴里数 `registered N/M tools`，日志一封顶数字就漂）。
+ */
+
+import { promises as fs } from 'node:fs'
+import * as path from 'node:path'
+import { AdminServer, type AdminDeps } from '../../admin.js'
+import { WorkspaceFiles } from '../../workspace-files.js'
+import { sessionDir, encodeSegment } from '../../paths.js'
+import { formatLocalStamp } from '../../core/schedule/stamp.js'
+import { registeredToolCount } from '../../adapters/dsh-host/tools.js'
+import type { SubHost, SubPlugin } from '../plugin-kit.js'
+
+/** host → 实例：apply 建、start 启、reload 重绑、dispose 收，四处拿同一个对象。 */
+const servers = new WeakMap<SubHost, AdminServer>()
+
+/** Tail of `channel-qq.log`, newest last. */
+async function readLogTail(host: SubHost, lines: number): Promise<string[]> {
+  try {
+    const raw = await fs.readFile(path.join(host.dshHome, 'channel-qq.log'), 'utf-8')
+    return raw.split('\n').filter((line) => line !== '').slice(-lines)
+  } catch {
+    return []
+  }
+}
+
+/** Live snapshot for the admin panel's overview tab（工具数直读注册表）。 */
+export async function buildStatus(host: SubHost, startedAt: number): Promise<Record<string, unknown>> {
+  const { config } = host
+  const parts = host.get('platform')
+  const client = parts?.client ?? null
+  const platform = parts?.platform ?? null
+  const connected = platform?.isConnected() === true
+  const raw = platform !== null && connected ? await platform.api.getGroupList().catch(() => null) : null
+  const groups = Array.isArray(raw) ? raw as Array<{ group_id?: number; group_name?: string }> : []
+  const emoji = host.get('emoji')
+  const flood = host.get('flood')
+  const learn = host.get('learn')
+  return {
+    qqConnected: connected,
+    selfId: client?.selfId ?? config.selfId,
+    connection: `${config.connection.mode} · ${config.connection.url}`,
+    groups: connected ? groups.length : '未连接',
+    groupList: groups.slice(0, 30).map((g) => `${g.group_id ?? '?'} ${g.group_name ?? ''}`.trim()),
+    primaryGroup: config.primaryGroup,
+    master: config.admins[0] ?? null,
+    workspace: config.workspacePath,
+    tools: registeredToolCount(),
+    uptimeSec: Math.round((Date.now() - startedAt) / 1000),
+    emojiIndexed: emoji?.library.list(100000).length ?? 0,
+    quotes: host.get('quotes')?.stats().total ?? 0,
+    pendingReminders: host.get('reminders')?.list(1000).filter((r) => !r.fired).length ?? 0,
+    rssFeeds: config.rss.feeds.filter((f) => f.enabled).length,
+    floodTracked: flood?.stats().tracked ?? 0,
+    floodTriggered: flood?.stats().triggered ?? 0,
+    learnedPhrases: learn?.stats().tracked ?? 0,
+    linkResolve: config.linkResolve.enabled
+      ? (config.linkResolve.autoGroups.length > 0 ? `自动出卡：${config.linkResolve.autoGroups.join(',')}` : '仅工具调用')
+      : '已关闭',
+    tts: config.tts.enabled ? config.tts.voice : '已关闭',
+    imageGen: config.imageGen.enabled ? `${config.imageGen.provider}/${config.imageGen.model}` : '已关闭',
+  }
+}
+
+/**
+ * Adapter over the harness's `agentPresets` registry（文案与旧 `presetAdmin` 一字不差）。
+ *
+ * The registry is read-only by design; "editing the persona" goes through the
+ * workspace files and `select` (which runs the panel's own applyConfigPatch so it
+ * is persisted like any other setting).
+ */
+function presetAdmin(host: SubHost): NonNullable<AdminDeps['presets']> {
+  const registry = host.bridge.presetRegistry()
+  return {
+    current: () => host.config.agentPreset,
+    list: async () => {
+      if (registry === undefined) throw new Error('预设注册表不可用')
+      return (await registry.list()).map((preset) => ({
+        id: preset.id,
+        name: preset.name,
+        description: preset.description,
+        broken: preset.broken,
+      }))
+    },
+    doc: async (id) => {
+      if (registry === undefined) throw new Error('预设注册表不可用')
+      const document = await registry.readDocument(id)
+      return {
+        id: document.agentPreset,
+        content: document.content,
+        name: document.name,
+        description: document.description,
+      }
+    },
+    select: async (id) => {
+      if (registry === undefined) throw new Error('预设注册表不可用')
+      const wanted = id.trim()
+      if (wanted === '') throw new Error('没有选择预设')
+      // Resolving first turns "typo" into a clear error instead of a preset that
+      // silently fails to mount on the next message.
+      try {
+        await registry.resolve(wanted)
+      } catch {
+        const available = (await registry.list().catch(() => [])).map((preset) => preset.id)
+        throw new Error(`没有名为「${wanted}」的预设。可用的有：${available.join('、')}`)
+      }
+      const before = host.config.agentPreset
+      if (before === wanted) return `已经在用「${wanted}」了`
+      const result = await servers.get(host)?.applyConfigPatch({ agentPreset: wanted })
+      return `预设「${before}」→「${wanted}」。对**新建**会话生效；已有会话要立刻生效，请用下面的「重建会话」。${result?.note ?? ''}`
+    },
+  }
+}
+
+/** 列出落盘的 `qq-*` 会话目录（后台「重建会话」页）。 */
+async function sessionList(host: SubHost): Promise<Array<{ room: string; sessionId: string; files: number; bytes: number; mtime: number }>> {
+  const projectDir = path.dirname(sessionDir(host.config.workspacePath ?? undefined, 'placeholder'))
+  const names = await fs.readdir(projectDir).catch(() => [] as string[])
+  const sessions: Array<{ room: string; sessionId: string; files: number; bytes: number; mtime: number }> = []
+  for (const name of names) {
+    const full = path.join(projectDir, name)
+    const stat = await fs.stat(full).catch(() => null)
+    if (stat === null || !stat.isDirectory()) continue
+    const files = await fs.readdir(full).catch(() => [] as string[])
+    let bytes = 0
+    let mtime = stat.mtimeMs
+    for (const file of files) {
+      const info = await fs.stat(path.join(full, file)).catch(() => null)
+      if (info !== null && info.isFile()) {
+        bytes += info.size
+        mtime = Math.max(mtime, info.mtimeMs)
+      }
+    }
+    sessions.push({
+      room: name.startsWith('qq-') ? name.slice(3) : name,
+      sessionId: name,
+      files: files.length,
+      bytes,
+      mtime,
+    })
+  }
+  sessions.sort((a, b) => b.mtime - a.mtime)
+  return sessions
+}
+
+/** 拆掉一个会话（活 agent / 内存记录 / 历史文件移到备份），让新指令从下一轮生效。 */
+async function sessionRebuild(host: SubHost, room: string): Promise<{ room: string; removed: number; note: string }> {
+  const clean = room.trim()
+  if (clean === '') throw new Error('没有指定会话')
+  const sessionId = `qq-${clean}`
+  const notes: string[] = []
+
+  const agents = host.bridge.agentRegistry()
+  const wasLive = agents?.get(sessionId) !== undefined
+
+  // Tear the live agent down through the *bridge's own handle*：注册表的 get()
+  // 返回的裸 Agent 拿不到 dispose，直接移走历史会让运行中的 agent 每轮 ENOENT。
+  const registry = host.get('inbound')?.registry ?? null
+  const dropped = registry !== null && await registry.dispose(clean)
+  if (dropped) notes.push('已释放运行中的 agent')
+  if (registry?.forget(clean) === true) notes.push('已清掉会话内存记录')
+
+  if (agents?.get(sessionId) !== undefined) {
+    notes.push(wasLive
+      ? '这个会话的 dispose 能力不在本插件手里（是别的持有者创建的），历史文件保持不动——移走会让运行中的 agent 每轮都报 ENOENT。请重启插件后再重建。'
+      : '注册表里仍挂着该会话，历史文件保持不动，请重启插件后再重建。')
+    host.log(`admin: rebuilt session ${sessionId} REFUSED (agent still live) :: ${notes.join('; ')}`)
+    return { room: clean, removed: 0, note: notes.join('；') }
+  }
+
+  const dir = sessionDir(host.config.workspacePath ?? undefined, sessionId)
+  const exists = await fs.stat(dir).catch(() => null)
+  let removed = 0
+  if (exists !== null) {
+    const stamp = formatLocalStamp(new Date()).replace(/[:.]/g, '-')
+    const backup = path.join(host.dshHome, 'channel-qq', 'backups', `session-${stamp}-${encodeSegment(sessionId)}`)
+    await fs.mkdir(path.dirname(backup), { recursive: true })
+    await fs.rename(dir, backup)
+    removed = 1
+    notes.push(`历史已移到备份：${backup}`)
+  } else {
+    notes.push('没有找到该会话的历史文件')
+  }
+  host.log(`admin: rebuilt session ${sessionId} :: ${notes.join('; ')}`)
+  return { room: clean, removed, note: notes.join('；') }
+}
+
+/** 面板依赖的装配（status/readLog/prompt/applyEffects/resources/files/presets/sessions）。 */
+function adminDeps(host: SubHost, startedAt: number): AdminDeps {
+  return {
+    config: host.config,
+    dshHome: host.dshHome,
+    log: host.log,
+    status: async () => await buildStatus(host, startedAt),
+    readLog: async (lines: number) => await readLogTail(host, lines),
+    prompt: async (text: string) => {
+      const inbound = host.get('inbound')
+      if (inbound === undefined) throw new Error('channel not ready')
+      await inbound.turns.adminPrompt(text)
+      return { submitted: text.slice(0, 80) }
+    },
+    applyEffects: async (patch: Record<string, unknown>) => await host.reloadSections(patch),
+    resources: host.resources,
+    files: new WorkspaceFiles(
+      () => host.config.workspacePath,
+      path.join(host.dshHome, 'channel-qq', 'backups'),
+      host.log,
+    ),
+    presets: presetAdmin(host),
+    sessions: {
+      list: async () => await sessionList(host),
+      rebuild: async (room: string) => await sessionRebuild(host, room),
+    },
+    providers: host.bridge.providersSurface(),
+  }
+}
+
+export const adminPlugin: SubPlugin = {
+  name: 'admin',
+  // 与旧 `applyEffects` 的 admin 分支一一对应：这四把旋钮动了才重绑监听。
+  watches: ['admin.port', 'admin.host', 'admin.enabled', 'admin.password'],
+  requires: ['platform', 'inbound'],
+  apply(host) {
+    const server = new AdminServer(adminDeps(host, Date.now()))
+    servers.set(host, server)
+    return () => {
+      const current = servers.get(host)
+      servers.delete(host)
+      current?.stop()
+    }
+  },
+  async start(host) {
+    const server = servers.get(host)
+    if (server === undefined) return
+    try {
+      await server.start()
+    } catch (error) {
+      // A busy port must not take the whole channel down; the QQ side is the
+      // product, the panel is an accessory.（失败后从表里摘掉 = 旧实现把
+      // `this.admin` 置 null：后续 relisten 不再发生。）
+      host.log(`admin panel failed to start: ${error instanceof Error ? error.message : String(error)}`)
+      servers.delete(host)
+    }
+  },
+  async reload(host) {
+    const server = servers.get(host)
+    if (server === undefined) return []
+    return [await server.relisten()]
+  },
+}

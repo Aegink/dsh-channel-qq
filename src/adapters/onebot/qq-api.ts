@@ -1,0 +1,192 @@
+/** OneBot v11 动作门面的**实现**（类型在 `ports/platform.ts`）。
+ *
+ * 为什么要有这一层：全仓原来有 **75 处** `client.call('字符串动作名', { 松散参数 })`，
+ * 返回值靠 `as { file?: string }` 这类断言猜。代价有三个：
+ *
+ *   1. **换协议不可能评估**。`R8` 里讨论过换 NapCat 版本或换 SnowLuma——
+ *      要判断能不能换，第一个问题就是"我们到底用了哪些动作、各自的参数与返回
+ *      是什么形状"。散在 12 个文件里的字符串回答不了这个问题，一张方法表可以。
+ *   2. **拼错动作名只会在运行时暴露**，而且是在群里发消息的那条路径上。
+ *   3. **没法造假件测**。有门面之后，测试只要实现这个接口，就能在没有 QQ、
+ *      没有 WebSocket 的情况下跑完整条业务路径。
+ *
+ * 设计取舍：
+ *   - 门面**只做形状**，不做策略（不做重试、限速、窗口校验——那些在出站层与守卫里）；
+ *   - 参数与返回值都按 OneBot v11 的名义类型声明，**不吞失败**：`call()` 本来就
+ *     在 `status !== 'ok'` 时抛错，门面沿用这个语义；
+ *   - 返回类型尽量窄（`{ file?: string; url?: string }` 这种），把 `as` 断言
+ *     收进 `ports/platform.ts` 那一个文件——[05 §6](refactor-plan/05-模块详细设计.md)
+ *     的迁移判据是"adapters 之外零字符串动作名"；
+ *   - 类型描述的是**各动作的 `data` 形状**，不是 OneBot 的应答信封：
+ *     `OneBotClient.call()` 成功时解析 `payload.data`、失败时 reject
+ *     （`onebot.ts` 的 `handleFrame`）。这一点写错过，代价见 B13——读
+ *     `result.data.message_id` 多读了一层，于是 sent-log 里 50 条记录的
+ *     `messageId` 全是 null。
+ *
+ * 覆盖范围：当前用到的 34 个动作。宿主自带的动作（如 `get_status`）不走这里。
+ */
+
+import type { OneBotClient } from '../../onebot.js'
+import type {
+  ActionAck, EssenceEntry, FileEntry, FileUrl, FetchedMessage, FriendInfo,
+  GroupInfo, GroupMemberInfo, ImageFile, QQApi, RecordFile, SendResult,
+} from '../../ports/platform.js'
+
+// 类型从端口转发出来，调用方既可以 import 端口，也可以继续从这里拿。
+export type {
+  ActionAck, EssenceEntry, FileEntry, FileUrl, FetchedMessage, FriendInfo,
+  GroupInfo, GroupMemberInfo, ImageFile, QQApi, RecordFile, SendResult,
+}
+
+/** 把字符串动作名与松散参数收敛到一个地方。 */
+
+/** 统一转发的签名；超时与错误语义与 `OneBotClient.call` 一致。 */
+type Call = <T>(action: string, params?: Record<string, unknown>, timeoutMs?: number) => Promise<T>
+
+type MessageSlice = Pick<
+  QQApi,
+  | 'sendGroupMessage' | 'sendPrivateMessage' | 'sendTo' | 'getMessage' | 'deleteMessage'
+  | 'getImage' | 'getRecord' | 'getFile' | 'sendLike'
+>
+
+type GroupSlice = Pick<
+  QQApi,
+  | 'getGroupList' | 'getGroupInfo' | 'getGroupMemberInfo' | 'getFriendList' | 'groupPoke' | 'setGroupCard'
+  | 'setGroupBan' | 'setGroupKick' | 'setGroupWholeBan' | 'setGroupAdmin'
+  | 'setEssence' | 'deleteEssence' | 'getEssenceList'
+>
+
+type FileSlice = Pick<
+  QQApi,
+  | 'getGroupRootFiles' | 'getGroupFilesByFolder' | 'getGroupFileUrl' | 'uploadGroupFile'
+  | 'createGroupFileFolder' | 'moveGroupFile' | 'renameGroupFile' | 'deleteGroupFile'
+  | 'getPrivateFileUrl' | 'uploadPrivateFile'
+>
+
+type VoiceSlice = Pick<QQApi, 'canSendRecord' | 'getAiRecord' | 'sendGroupAiRecord'>
+
+/** 消息收发与"取一个东西"。 */
+function messageActions(call: Call): MessageSlice {
+  return {
+    sendGroupMessage: (groupId, message) => call<SendResult>('send_group_msg', { group_id: groupId, message }),
+    sendPrivateMessage: (userId, message) => call<SendResult>('send_private_msg', { user_id: userId, message }),
+    sendTo: (isGroup, target, message) => (isGroup
+      ? call<SendResult>('send_group_msg', { group_id: target, message })
+      : call<SendResult>('send_private_msg', { user_id: target, message })),
+    getMessage: (messageId) => call<FetchedMessage>('get_msg', { message_id: messageId }, 8_000),
+    deleteMessage: (messageId) => call<ActionAck>('delete_msg', { message_id: messageId }),
+    getImage: (file) => call<ImageFile>('get_image', { file }, 15_000),
+    getRecord: (messageId, outFormat) => call<RecordFile>(
+      'get_record',
+      { message_id: messageId, ...(outFormat === undefined ? {} : { out_format: outFormat }) },
+      30_000,
+    ),
+    getFile: (fileId) => call<RecordFile>('get_file', { file_id: fileId }, 20_000),
+    // 不钳制上限：clamp 到 10 是 tools.ts 的业务规则，门面只做转发。
+    sendLike: (userId, times) => call<ActionAck>('send_like', { user_id: userId, times: times ?? 1 }),
+  }
+}
+
+/** 群/好友信息、群管理、群精华。 */
+function groupActions(call: Call): GroupSlice {
+  return {
+    getGroupList: () => call<GroupInfo[]>('get_group_list', {}, 8_000),
+    getGroupInfo: (groupId) => call<GroupInfo>('get_group_info', { group_id: groupId, no_cache: false }, 8_000),
+    getGroupMemberInfo: (groupId, userId) =>
+      call<GroupMemberInfo>('get_group_member_info', { group_id: groupId, user_id: userId, no_cache: false }),
+    getFriendList: () => call<FriendInfo[]>('get_friend_list', {}, 8_000),
+    groupPoke: (groupId, userId) => call<ActionAck>('group_poke', { group_id: groupId, user_id: userId }),
+    setGroupCard: (groupId, userId, card) =>
+      call<ActionAck>('set_group_card', { group_id: groupId, user_id: userId, card }),
+
+    setGroupBan: (groupId, userId, durationSeconds) =>
+      call<ActionAck>('set_group_ban', { group_id: groupId, user_id: userId, duration: durationSeconds }),
+    setGroupKick: (groupId, userId, rejectAddRequest) => call<ActionAck>('set_group_kick', {
+      group_id: groupId, user_id: userId, reject_add_request: rejectAddRequest === true,
+    }),
+    setGroupWholeBan: (groupId, enable) =>
+      call<ActionAck>('set_group_whole_ban', { group_id: groupId, enable }),
+    setGroupAdmin: (groupId, userId, enable) =>
+      call<ActionAck>('set_group_admin', { group_id: groupId, user_id: userId, enable }),
+
+    setEssence: (messageId) => call<ActionAck>('set_essence_msg', { message_id: messageId }),
+    deleteEssence: (messageId) => call<ActionAck>('delete_essence_msg', { message_id: messageId }),
+    getEssenceList: (groupId) => call<EssenceEntry[]>('get_essence_msg_list', { group_id: groupId }),
+  }
+}
+
+/**
+ * 群文件与私聊文件。
+ *
+ * 这一组是**最容易写错的一组**：`folder_id` 不叫 `folder`、建文件夹的键是
+ * `folder_name`、移动/重命名要带"当前目录"、好几个 id 线上传的是字符串。
+ * 下面每一行都是照线上既有调用抄的，`test/qq-api.test.ts` 逐条钉住。
+ */
+function fileActions(call: Call): FileSlice {
+  return {
+    getGroupRootFiles: (groupId) =>
+      call<{ files?: FileEntry[]; folders?: FileEntry[] }>('get_group_root_files', { group_id: groupId }),
+    getGroupFilesByFolder: (groupId, folderId) =>
+      call<{ files?: FileEntry[]; folders?: FileEntry[] }>(
+        'get_group_files_by_folder', { group_id: groupId, folder_id: folderId },
+      ),
+    getGroupFileUrl: (groupId, fileId, busid) => call<FileUrl>(
+      'get_group_file_url', { group_id: groupId, file_id: fileId, ...(busid === undefined ? {} : { busid }) },
+    ),
+    uploadGroupFile: (groupId, file, name, folderId) => call<ActionAck>(
+      'upload_group_file',
+      { group_id: groupId, file, name, ...(folderId === undefined ? {} : { folder_id: folderId }) },
+      120_000,
+    ),
+    createGroupFileFolder: (groupId, folderName, parentId) => call<ActionAck>(
+      'create_group_file_folder',
+      { group_id: groupId, folder_name: folderName, parent_id: parentId ?? '/' },
+    ),
+    moveGroupFile: (groupId, fileId, currentParentDirectory, targetParentDirectory) => call<ActionAck>(
+      'move_group_file',
+      {
+        group_id: String(groupId),
+        file_id: String(fileId),
+        current_parent_directory: currentParentDirectory,
+        target_parent_directory: targetParentDirectory,
+      },
+    ),
+    renameGroupFile: (groupId, fileId, currentParentDirectory, newName) => call<ActionAck>(
+      'rename_group_file',
+      {
+        group_id: String(groupId),
+        file_id: String(fileId),
+        current_parent_directory: currentParentDirectory,
+        new_name: newName,
+      },
+    ),
+    deleteGroupFile: (groupId, fileId) =>
+      call<ActionAck>('delete_group_file', { group_id: groupId, file_id: String(fileId) }),
+
+    getPrivateFileUrl: (fileId) => call<FileUrl>('get_private_file_url', { file_id: String(fileId) }),
+    uploadPrivateFile: (userId, file, name) =>
+      call<ActionAck>('upload_private_file', { user_id: userId, file, name }, 120_000),
+  }
+}
+
+/** AI 语音（NapCat 扩展）。 */
+function voiceActions(call: Call): VoiceSlice {
+  const aiRecord = (groupId: number, character: string, text: string): Record<string, unknown> =>
+    ({ character: String(character), group_id: String(groupId), text: String(text) })
+  return {
+    canSendRecord: () => call<{ yes?: boolean }>('can_send_record', {}),
+    getAiRecord: (groupId, character, text) => call<RecordFile>('get_ai_record', aiRecord(groupId, character, text), 60_000),
+    sendGroupAiRecord: (groupId, character, text) =>
+      call<SendResult>('send_group_ai_record', aiRecord(groupId, character, text), 60_000),
+  }
+}
+
+export function createQQApi(client: OneBotClient): QQApi {
+  const call: Call = (action, params = {}, timeoutMs) => client.call(action, params, timeoutMs) as never
+  return {
+    ...messageActions(call),
+    ...groupActions(call),
+    ...fileActions(call),
+    ...voiceActions(call),
+  }
+}

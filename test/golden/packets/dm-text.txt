@@ -1,0 +1,5 @@
+── qq-dm-ADMIN_QQ [followup] images=0
+14:31 学弟(ADMIN_QQ) #9100 [@咱]：在么，帮我看下这个报错
+（图见附件）
+【这是私聊】对方 QQ ADMIN_QQ。要发言必须用 qq_send_text / qq_reply_quote，且 isGroup=false、target=ADMIN_QQ；不要发到任何群里。
+（要发言就按上面这行给的参数发；没有要说的话就不调用任何发送工具。）
