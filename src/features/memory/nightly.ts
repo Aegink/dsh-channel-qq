@@ -32,6 +32,7 @@ import type { EmbedPort } from '../../ports/memory.js'
 import { registerJob, type JobContext, type JobHandler, type JobOutcome } from '../proactive/jobs.js'
 import { rebuildMemoryVectors } from './rebuild.js'
 import { chunksOfDay } from './session-split.js'
+import { indexWorkspaceChunks } from './chunks.js'
 import type { MemoryStore } from './store.js'
 import {
   appendArchive, findNearDuplicate, readDiary, toNewRecord, writeDigestFile,
@@ -88,6 +89,7 @@ export function registerNightlyJobs(deps: NightlyDeps): () => void {
     return await run(deps, store, ctx)
   }
   const offs = [
+    registerJob('memory.chunks', withStore(indexChunks)),
     registerJob('memory.diary-extract', withStore(diaryExtract)),
     registerJob('memory.session-split', withStore(sessionSplit)),
     registerJob('memory.reflect', withStore(reflect)),
@@ -212,6 +214,23 @@ async function contradictions(deps: NightlyDeps, store: MemoryStore): Promise<Jo
 }
 
 /** 06:05 遗忘与归档：R < 0.05 且没被钉住的记录转 archived，正文进归档文件。 */
+/** 03:50 原文分块：把工作区 md 切成 600 字块记录（块覆盖行多，命中面比句子大）。 */
+async function indexChunks(deps: NightlyDeps, store: MemoryStore, ctx: JobContext): Promise<JobOutcome> {
+  const workspace = deps.workspace()
+  if (workspace === null || workspace === '') return { skipped: 'no-workspace' }
+  let n = 0
+  const got = await indexWorkspaceChunks(store, {
+    workspace,
+    now: ctx.now.getTime(),
+    // 块的 id 由"文件 + 序号"决定，roll 只影响 makeRecord 的兜底 id，这里给可重放的序列。
+    roll: () => ((n++ % 997) / 997),
+    log: deps.log,
+  })
+  if (got.files === 0) return { skipped: 'no-markdown' }
+  return { note: `原文分块：${got.files} 个文件 / ${got.chunks} 块（归档 ${got.archived}）` }
+}
+
+/** 06:05 遗忘归档：R < 0.05 且没被钉住的 → archived，并追加到 `.jsonl.gz`。 */
 async function forget(deps: NightlyDeps, store: MemoryStore, ctx: JobContext): Promise<JobOutcome> {
   const now = ctx.now.getTime()
   const { archive } = splitForArchive(store.all(), now)

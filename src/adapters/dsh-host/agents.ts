@@ -20,6 +20,7 @@ import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { resolveSessionsRoot } from '../../paths.js'
+import { resolveDshHome } from '../../paths.js'
 import type {
   AgentGateway, AgentSession, DeliverMode, PromptContent, SessionSpec,
 } from '../../ports/agent-gateway.js'
@@ -158,11 +159,45 @@ class DshAgentGateway implements AgentGateway {
         installModelOverride(raw.ctx, route)
       }
       this.log(`resumed session ${sessionId} (route ${route.provider}/${route.model})`)
-      return this.finish({ agent: raw }, sessionId, workspace, spec)
+      const resumed = await this.finish({ agent: raw }, sessionId, workspace, spec)
+      await this.consumeSeed(String(sessionId), resumed)
+      return resumed
     }
 
     const handle = await this.createOrResume(sessionId, createOptions, spec, route)
-    return this.finish(handle, sessionId, workspace, spec)
+    const created = await this.finish(handle, sessionId, workspace, spec)
+    await this.consumeSeed(String(sessionId), created)
+    return created
+  }
+
+  /**
+   * 消费"会话换血"留下的种子：注入到下一轮上下文里，然后删掉文件。
+   *
+   * 为什么是 inject 而不是 followup：换血之后不该由插件主动开一轮对话；种子只是
+   * 告诉模型"上一段上下文清空了、人格与长期记忆还在"，等主人说话时它自然带上。
+   * 文件读完即删，避免下次重启重复注入（孤儿种子）。
+   */
+  private async consumeSeed(sessionId: string, session: AgentSession): Promise<void> {
+    const file = path.join(resolveDshHome(), 'channel-qq', `session-seed-${sessionId}.json`)
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(await fs.readFile(file, 'utf-8'))
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException | null)?.code !== 'ENOENT') {
+        this.log(`session seed read failed for ${sessionId}: ${String(error)}`)
+      }
+      return
+    }
+    try {
+      await fs.unlink(file)
+      const seed = (parsed as { seed?: unknown } | null)?.seed
+      if (typeof seed === 'string' && seed.trim() !== '') {
+        session.deliver([{ type: 'text', text: seed }], 'inject')
+        this.log(`session-reset seed injected into ${sessionId}`)
+      }
+    } catch (error) {
+      this.log(`session seed inject failed for ${sessionId}: ${String(error)}`)
+    }
   }
 
   /** 创建；id 已存在就走"恢复它"的重试链。 */

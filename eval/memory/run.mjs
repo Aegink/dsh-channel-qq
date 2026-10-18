@@ -66,6 +66,8 @@ function parseCli() {
       json: { type: 'boolean', default: false },
       /** 本机 embed 服务地址（如 http://127.0.0.1:8801/v1）；给了就跑向量+关键词混合。 */
       vectors: { type: 'string' },
+      /** 用"原文分块"当语料（600 字块），而不是句子级记录。 */
+      chunks: { type: 'boolean', default: false },
     },
   })
   return {
@@ -75,6 +77,7 @@ function parseCli() {
     enforce: values.enforce === true,
     json: values.json === true,
     vectors: values.vectors ?? null,
+    chunks: values.chunks === true,
   }
 }
 
@@ -136,11 +139,31 @@ async function main() {
   }
   const workDir = await mkdtemp(path.join(tmpdir(), 'qq-mem-eval-'))
   try {
-    const corpus = await buildCorpus({ dir: cli.corpus, workDir }).catch((error) => {
-      console.error(`语料读不了（${cli.corpus}）：${error instanceof Error ? error.message : String(error)}`)
-      console.error('语料不进仓库；拉取办法见 eval/memory/README.md')
-      process.exit(2)
-    })
+    let corpus
+    if (cli.chunks) {
+      const { MemoryStore } = await loadCore('features/memory/store.js')
+      const { indexWorkspaceChunks } = await loadCore('features/memory/chunks.js')
+      const store = new MemoryStore({ workspacePath: cli.corpus, dshHome: workDir, log: () => {} })
+      await store.load()
+      let n = 0
+      const built = await indexWorkspaceChunks(store, {
+        workspace: cli.corpus, now: NOW, roll: () => ((n++ % 997) / 997), log: (m) => console.error(m),
+      })
+      const spans = new Map()
+      for (const record of store.all()) {
+        const file = record.source.file
+        if (typeof file !== 'string' || typeof record.source.line !== 'number') continue
+        const lines = record.content.split('\n').length
+        spans.set(record.id, { file, start: record.source.line, end: record.source.line + lines - 1 })
+      }
+      corpus = { store, spans, files: built.files, segments: built.chunks }
+    } else {
+      corpus = await buildCorpus({ dir: cli.corpus, workDir }).catch((error) => {
+        console.error(`语料读不了（${cli.corpus}）：${error instanceof Error ? error.message : String(error)}`)
+        console.error('语料不进仓库；拉取办法见 eval/memory/README.md')
+        process.exit(2)
+      })
+    }
 
     // 向量路径（`--vectors`）：给全部语料建一份内存索引，再让真实的 Retriever 跑。
     let retriever = null

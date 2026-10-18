@@ -337,6 +337,8 @@ const HEARTBEAT_EVENT: BookEvent = {
 
 /** 夜间巩固的八条 job 事件（时间表来自 09 §6.2；`job` 名在 `features/memory/nightly.ts` 注册）。 */
 const NIGHTLY_EVENTS: readonly BookEvent[] = [
+  // 先建块索引：后面的抽取/反思都从"原文块"里找依据。
+  ['memory.chunks', '03:50'],
   ['memory.diary-extract', '04:20'],
   ['memory.session-split', '04:40'],
   ['memory.reflect', '05:10'],

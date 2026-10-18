@@ -313,6 +313,23 @@
           "script": null
         },
         {
+          "id": "memory.chunks",
+          "enabled": true,
+          "kind": "job",
+          "trigger": {
+            "type": "window",
+            "from": "03:50",
+            "to": "04:29"
+          },
+          "quietHours": [],
+          "target": null,
+          "template": null,
+          "materials": [],
+          "requires": [],
+          "job": "memory.chunks",
+          "script": null
+        },
+        {
           "id": "memory.diary-extract",
           "enabled": true,
           "kind": "job",

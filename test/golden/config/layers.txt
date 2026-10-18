@@ -316,6 +316,23 @@ override = {}
      "script": null
     },
     {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
+     "script": null
+    },
+    {
      "id": "memory.diary-extract",
      "enabled": true,
      "kind": "job",
@@ -798,6 +815,23 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
      "script": null
     },
     {
@@ -1284,6 +1318,23 @@ override = {"batching":{"windowMs":20000}}
      "script": null
     },
     {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
+     "script": null
+    },
+    {
      "id": "memory.diary-extract",
      "enabled": true,
      "kind": "job",
@@ -1764,6 +1815,23 @@ override = {"admin":{"port":8790}}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
      "script": null
     },
     {
@@ -2250,6 +2318,23 @@ override = {"imageGen":{"model":"flux"}}
      "script": null
     },
     {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
+     "script": null
+    },
+    {
      "id": "memory.diary-extract",
      "enabled": true,
      "kind": "job",
@@ -2733,6 +2818,23 @@ override = {"tts":{"voice":"b"}}
      "script": null
     },
     {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
+     "script": null
+    },
+    {
      "id": "memory.diary-extract",
      "enabled": true,
      "kind": "job",
@@ -3213,6 +3315,23 @@ override = {"flood":{"windowSec":30}}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
      "script": null
     },
     {
@@ -3706,6 +3825,23 @@ override = {}
      "script": null
     },
     {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
+     "script": null
+    },
+    {
      "id": "memory.diary-extract",
      "enabled": true,
      "kind": "job",
@@ -4186,6 +4322,23 @@ override = {"keywordTriggers":[]}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
      "script": null
     },
     {
@@ -4679,6 +4832,23 @@ override = {"rss":{"pollIntervalMin":5}}
      "script": null
     },
     {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
+     "script": null
+    },
+    {
      "id": "memory.diary-extract",
      "enabled": true,
      "kind": "job",
@@ -5159,6 +5329,23 @@ override = {"groupEnabled":false}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
      "script": null
     },
     {
@@ -5645,6 +5832,23 @@ override = {}
      "script": null
     },
     {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
+     "script": null
+    },
+    {
      "id": "memory.diary-extract",
      "enabled": true,
      "kind": "job",
@@ -6125,6 +6329,23 @@ override = {"groupEnabled":true}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
      "script": null
     },
     {
@@ -6611,6 +6832,23 @@ override = {"admin":{"host":"127.0.0.1"}}
      "script": null
     },
     {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
+     "script": null
+    },
+    {
      "id": "memory.diary-extract",
      "enabled": true,
      "kind": "job",
@@ -7094,6 +7332,23 @@ override = {}
      "script": null
     },
     {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
+     "script": null
+    },
+    {
      "id": "memory.diary-extract",
      "enabled": true,
      "kind": "job",
@@ -7574,6 +7829,23 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory.chunks",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "03:50",
+      "to": "04:29"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.chunks",
      "script": null
     },
     {
