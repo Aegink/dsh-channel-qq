@@ -62,3 +62,7 @@ eval/memory/.cache/
 
 # 本地调研缓存（GitHub / Docker Hub 快照等）
 .cache/
+
+# 运维排查时临时导出的截图 / 二维码（不要进仓库）
+.tmp-*
+.qq-login-qr.png

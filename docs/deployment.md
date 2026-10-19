@@ -154,18 +154,28 @@ docker compose -f deploy/snowluma/compose.yaml up -d
   重启会重新生成**，登录后先改密。VNC 密码在容器的 `/app/data/config/vnc-password`。
 - **QQ 未登录时 3001 不会在容器内真正监听**（宿主映射在、listener 没有）——插件侧
   表现为每 60s 一次 `dialling`，属正常，扫码后自动恢复。
-- **登录态与「自动登录」**：扫码成功后 QQ 会把自动登录账号写进全局配置
-  `~/.config/QQ/global/nt_data/mmkv/nt_mmkv_global_misc` 的 `kAutoLoginUid`（等于当前 UID
-  即已启用，为空即未勾）。**2026-10-19 线上实测该键已置位**（`kAutoLoginUid =
-  u_u_…`，对应 uin 1000000001），`auth/login.enc` 也在。
-  两个状态卷 `qq-client-config` / `qq-client-data` 与 `qq-gateway-data` 都用固定卷名，
-  所以 **`docker restart` 不需要重新扫码**（日常已验证）。保留卷的 `up -d` 重建理论上同样
-  能自动登录（`kAutoLoginUid` 与 `login.enc` 都在卷里、`machine-id` 也持久化），
-  但**未做过破坏性实测**——真要重建时请守在 noVNC 前，失败就扫码。
-  仍会丢登录态的三种情况：删卷、换卷名、QQ 服务端判定会话失效（会自己弹二维码）。
-  首次扫码时请确认「自动登录」是勾上的——没勾的话 `kAutoLoginUid` 为空，重建就要再扫。
-- **SnowLuma 自己没有「自动登录」开关**：它只负责起 QQ 并在 `[Hook]` 里等
-  `login detected`。能不能免扫码完全由 QQ 的 `kAutoLoginUid` 决定，别去 WebUI 里找。
+- **「自动登录」必须在扫码页当场勾上，别去猜配置文件**：2026-10-19 实测——
+  全局配置 `~/.config/QQ/global/nt_data/mmkv/nt_mmkv_global_misc` 里
+  `kAutoLoginUid` 非空 **并不代表**「自动登录」已启用：该键当时已指向当前账号，
+  但扫码页上的勾选框仍是空的，`docker restart` 后 QQ 照样停在登录页
+  （`[Hook] awaiting login` 一直不结束，3000/3001 不监听）。
+  勾选框的真实状态在 QQ 的登录记录库 `global/nt_db/login.db`（加密），读不出来。
+  **判断方法只有一个：重启一次看能不能自己进**。
+- **实测有效的流程**：在 noVNC 里把扫码页的「自动登录」勾上（蓝色对勾），再扫码。
+  之后 `docker restart snowluma` → `[Hook] login identity discovered`（约 5 秒）
+  → `login detected`（约 60 秒）→ 3000/3001 重新监听，全程无需扫码。
+  这次实测后 `kAutoLoginUid` 没变，所以别拿它当开关的判据。
+- **登录态存在哪**：三个固定卷名的卷（`qq-client-config` 存 `.config/QQ` 与
+  `auth/login.enc`，`qq-client-data` 存 `.local/share`，`qq-gateway-data` 存 `machine-id`
+  与 OneBot 配置）。只要不删卷、不改卷名，`docker restart` 乃至保留卷的 `up -d`
+  重建都不会丢登录态；QQ 服务端判会话失效时会自己弹新的二维码。
+- **SnowLuma 自己没有「自动登录」开关**：它只负责起 QQ，然后在 `[Hook]` 里等
+  `login detected`。免不免扫码完全由 QQ 客户端决定，WebUI 里没有这个选项。
+- **无头勾选**：镜像里没有 xdotool，`deploy/snowluma/xclick.py` 用 python3 + libXtst
+  发 X11 点击。1920x1080 下「自动登录」勾选框约 `(935,670)`、「刷新」约 `(958,578)`：
+  `docker cp deploy/snowluma/xclick.py snowluma:/tmp/ && docker exec snowluma python3 -I /tmp/xclick.py :1 935 670`
+  点完用 `ffmpeg -f x11grab -video_size 1920x1080 -i :1 -frames:v 1 /tmp/s.png` 截图确认。
+  扫码页的二维码同样可用这条命令截出来（约 2 分钟过期）。
 - 回滚：`docker stop snowluma && docker start napcat`。
 
 ### 4.5.1 NapCat（备选 / 回滚）
