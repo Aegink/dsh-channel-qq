@@ -414,6 +414,9 @@ node deploy/pack-release.mjs                  # 构建 + 打包 + 生成 MANIFES
 服务器侧：
 
 ```bash
+# 宿主机没有系统 node 时（本项目用 /opt/node22），一定要带上 PATH：
+# 发布闸门会在新目录里跑测试，其中有用例要 spawn `node`。
+export PATH=/opt/node22/bin:$PATH
 node deploy/release.mjs install /root/release.tar.gz   # 解到新目录 → 逐文件 sha256 验签 → 冒烟 → 切换 → 重启
 node deploy/release.mjs list                            # 有哪些版本、当前是哪个
 node deploy/release.mjs rollback                        # 回上一版（也可 --to <版本>）
