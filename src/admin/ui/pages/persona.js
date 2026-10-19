@@ -49,8 +49,17 @@ function render(h) {
   view.appendChild(buildPresetsCard())
   view.appendChild(buildSessionsCard())
   // 人格预设 / 权限预设等配置项由 schema 生成表单（这一页同样不手写字段）。
-  form = createConfigForm({ pageKey: 'persona' })
-  view.appendChild(form.node)
+  // **表单渲染失败不能连累上面三块**：卡片已经进 DOM 了，若这里抛异常，
+  // 后面的加载器一行都不会跑，页面就永远停在「读取中…」（2026-10-20 线上复现）。
+  try {
+    form = createConfigForm({ pageKey: 'persona' })
+    view.appendChild(form.node)
+  } catch (error) {
+    view.appendChild(el('div', { class: 'notice' }, [
+      icon('alert'),
+      el('div', { text: `配置表单渲染失败：${error?.message ?? String(error)}（其余区块不受影响）` }),
+    ]))
+  }
 
   void loadFileTree('')
   void loadPresets()

@@ -32,11 +32,17 @@ export async function api(path, opts = {}) {
   // 这里只在写请求上带，让"谁在写"在服务端日志里一眼可辨。
   if (method !== 'GET' && method !== 'HEAD') headers['x-requested-with'] = 'dsh-admin'
   if (token !== '') headers.authorization = `Bearer ${token}`
+  // 必须有超时：服务重启/网络黑洞时 fetch 可以挂很久，页面的「读取中…」就永远不结束。
+  // 超时后按 status=0 走统一的错误分支，用户能看到原因并点刷新重试。
+  const timeoutMs = Number(opts.timeoutMs ?? 30_000)
+  const controller = typeof AbortController === 'function' ? new AbortController() : null
+  const timer = controller !== null ? setTimeout(() => controller.abort(), timeoutMs) : null
   try {
     const res = await fetch(path, {
       method,
       headers,
       credentials: 'same-origin',
+      ...controller !== null ? { signal: controller.signal } : {},
       body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
     })
     const text = await res.text()
@@ -50,7 +56,12 @@ export async function api(path, opts = {}) {
     }
     return { status: res.status, body }
   } catch (error) {
+    if (error && (error.name === 'AbortError' || error.code === 20)) {
+      return { status: 0, body: { error: `请求超时（${Math.round(timeoutMs / 1000)} 秒）：服务可能正在重启，稍后重试` } }
+    }
     return { status: 0, body: { error: `请求失败：${error && error.message ? error.message : String(error)}` } }
+  } finally {
+    if (timer !== null) clearTimeout(timer)
   }
 }
 

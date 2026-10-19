@@ -48,13 +48,19 @@ if (chrome === undefined) {
 }
 
 const BACKEND_PORT = Number(flag('--port') ?? process.env.PROBE_ADMIN_PORT ?? 8792)
-const PASSWORD = 'probe-admin-password'
+const PASSWORD = process.env.PROBE_PASSWORD ?? 'probe-admin-password'
 const WIDTHS = [360, 414, 768, 1280]
 const INTERACT_WIDTHS = new Set([360, 1280])
 
 // ── 1) 一次性后端（真实 AdminServer + 真实 UI 包 + 假插件世界）──────────────
-const { startLocalAdmin } = await import(new URL('../deploy/admin-local.mjs', import.meta.url).href)
-const backend = await startLocalAdmin({ port: BACKEND_PORT, password: PASSWORD, verbose: argv.includes('--verbose') })
+// PROBE_BACKEND：指到一台**已有**的 AdminServer（只读巡检用）。
+// 注意：交互档会改配置，远端巡检必须同时设 PROBE_READONLY=1。
+const REMOTE_BACKEND = process.env.PROBE_BACKEND ?? ''
+const READONLY = process.env.PROBE_READONLY === '1'
+const backend = REMOTE_BACKEND !== ''
+  ? { base: REMOTE_BACKEND, stop: async () => {} }
+  : await (await import(new URL('../deploy/admin-local.mjs', import.meta.url).href))
+      .startLocalAdmin({ port: BACKEND_PORT, password: PASSWORD, verbose: argv.includes('--verbose') })
 
 // ── 2) 页面服务器：src/admin/ui/** 原样送出 + /api/* 反代 ────────────────────
 const files = new Map()
@@ -209,7 +215,7 @@ const BODY_SCRIPT = String.raw`<pre id="__probe" style="display:none"></pre>
     }
 
     var probeWidth = typeof window.__PROBE_WIDTH__ === 'number' ? window.__PROBE_WIDTH__ : innerWidth;
-    out.interactions.interact = probeWidth === 360 || probeWidth === 1280;
+    out.interactions.interact = !window.__PROBE_READONLY__ && (probeWidth === 360 || probeWidth === 1280);
 
     if (out.interactions.interact) {
       // ── 主题（切一次看变化，再点两下回到跟随系统）───────────────────────
@@ -383,7 +389,7 @@ const server = createServer((req, res) => {
     // 每个宽度把自己的目标宽度塞进查询串：设备缩放会让 innerWidth ≠ --window-size，
     // 交互档位（360/1280）不能再靠 innerWidth 猜。
     const probeWidth = Number(new URL(url, 'http://127.0.0.1').searchParams.get('w') ?? '0')
-    const widthTag = probeWidth > 0 ? `<script>window.__PROBE_WIDTH__=${probeWidth};</script>` : ''
+    const widthTag = (probeWidth > 0 ? `<script>window.__PROBE_WIDTH__=${probeWidth};</script>` : '') + `<script>window.__PROBE_READONLY__=${READONLY};</script>`
     body = files.get('index.html').replace('</head>', widthTag + HEAD_SCRIPT + '\n</head>').replace('</body>', BODY_SCRIPT + '\n</body>')
     type = 'text/html; charset=utf-8'
   } else if (url.startsWith('/ui/')) {
@@ -448,7 +454,7 @@ for (const width of WIDTHS) {
       '--disable-component-update',
       `--user-data-dir=${profile}`,
       `--window-size=${width},900`,
-      // 虚拟时间预算要覆盖：登录 + 26 页 × 380ms + 交互 ≈ 15s 虚拟秒。
+      // 虚拟时间预算要覆盖：登录 + 27 页 × 380ms + 交互 ≈ 15s 虚拟秒。
       '--virtual-time-budget=40000',
       '--dump-dom',
       `${PAGE}/?w=${width}`,
@@ -476,7 +482,7 @@ for (const width of WIDTHS) {
 
   const where = (msg) => problems.push(`${width}px: ${msg}`)
   if (!report.login.loginShown || !report.login.appHidden) where('初始没有显示登录页或应用没有隐藏')
-  if (report.navCount !== 26) where(`导航有 ${report.navCount} 项（应为 26）`)
+  if (report.navCount !== 27) where(`导航有 ${report.navCount} 项（应为 27）`)
   if (report.schemaError) where('拉取 /api/schema 失败：' + report.schemaError)
 
   for (const rt of report.routes) {
