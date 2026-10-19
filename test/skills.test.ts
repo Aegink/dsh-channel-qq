@@ -18,6 +18,7 @@ import {
   promoteStaged, readSkillBody, removeSkill, scanSkills, stageSkill, writeSkill,
 } from '../src/features/skills/store.js'
 import { skillGestureName } from '../src/adapters/dsh-host/skills.js'
+import { SkillStats } from '../src/features/skills/stats.js'
 
 const viewer = (over: Partial<SkillViewer> = {}): SkillViewer => ({
   room: 'group-100', userId: null, isAdmin: false, admins: [1], ...over,
@@ -172,4 +173,21 @@ test('触发：/名字 在全文任意位置都能认出来（组包会在前面
   // 路径与分数不是触发
   assert.equal(skillGestureName('看看 /usr/bin 和 5/8'), null)
   assert.equal(skillGestureName('/Demo_Skill'), null)
+})
+
+test('使用计数：加载与触发分开记，重新实例化后还在', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'dsh-stats-'))
+  const file = path.join(dir, 'stats.json')
+  try {
+    const stats = new SkillStats(file, () => {})
+    await stats.record('demo', 'load')
+    await stats.record('demo', 'load')
+    await stats.record('demo', 'trigger')
+    const again = new SkillStats(file, () => {})
+    const all = await again.all()
+    assert.equal(all.demo?.loads, 2)
+    assert.equal(all.demo?.triggers, 1)
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true })
+  }
 })

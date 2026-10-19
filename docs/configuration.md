@@ -100,3 +100,10 @@ cordis.patch.yml（部署级）
 
 系统回合（巡逻、早报）没有"谁在看"的概念，只看得见 `all`。
 
+后台列表会显示每个技能被加载 / 被触发过几次，计数写在
+`<dshHome>/channel-qq/skills-stats.json`（不写回 `SKILL.md`，否则每用一次都会
+改正文、让目录签名抖动）。
+
+导入支持三种：粘贴全文、单文件 URL（GitHub blob 链接自动换成 raw）、GitHub
+目录（`…/tree/<ref>/<path>`，递归下载，最多 200 个文件）。三种都先落 `.staging`。
+

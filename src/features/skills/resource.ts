@@ -12,6 +12,7 @@ import {
   promoteStaged, readSkillBody, removeSkill, safeJoin, scanSkills, stageSkill, writeSkill,
   type SkillEntry,
 } from './store.js'
+import type { SkillStats } from './stats.js'
 
 /** 后台一条技能（不含正文，正文按需 `read`）。 */
 function summarize(entry: SkillEntry): Record<string, unknown> {
@@ -63,7 +64,12 @@ export interface SkillResourceDeps {
   readonly root: string
   readonly config: () => SkillsConfig
   readonly log: (line: string) => void
+  /** 使用计数（可选：后台仍能工作，只是不显示次数）。 */
+  readonly stats?: SkillStats
 }
+
+/** GitHub 目录链接。 */
+const GITHUB_TREE = /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+?)\/?$/
 
 /** 多文件导入：先落待审区。 */
 function importFiles(deps: SkillResourceDeps, files: Array<{ path?: unknown; content?: unknown }>): Promise<SkillEntry> {
@@ -98,10 +104,48 @@ async function saveSkill(
   return entry
 }
 
-/** 从 URL 拉一份 SKILL.md 到待审区。 */
+/** GitHub 目录导入：递归列文件并逐个下载（只支持公开仓库，最多 200 个文件）。 */
+async function importGithubDir(deps: SkillResourceDeps, owner: string, repo: string, ref: string, dir: string): Promise<SkillEntry> {
+  const files: Array<{ path: string; content: string }> = []
+  let total = 0
+  const walk = async (relative: string): Promise<void> => {
+    const api = `https://api.github.com/repos/${owner}/${repo}/contents/${relative}?ref=${ref}`
+    const response = await systemHttp.request(api, {
+      headers: { accept: 'application/vnd.github+json', 'user-agent': 'dsh-channel-qq/skills' },
+      timeoutMs: 20_000,
+      limit: 1024 * 1024,
+    })
+    if (!response.ok) throw new Error(`GitHub 目录读取失败 HTTP ${response.status}`)
+    const entries = JSON.parse(response.text()) as Array<{ type?: string; name?: string; path?: string; size?: number; download_url?: string }>
+    for (const entry of entries) {
+      if (entry.type === 'dir') { await walk(entry.path ?? relative); continue }
+      if (entry.type !== 'file' || typeof entry.download_url !== 'string' || entry.download_url === '') continue
+      if (files.length >= 200) throw new Error('目录里文件过多（上限 200）')
+      const file = await systemHttp.request(entry.download_url, { timeoutMs: 20_000, limit: deps.config().maxImportBytes })
+      if (!file.ok) throw new Error(`下载 ${entry.path} 失败 HTTP ${file.status}`)
+      const content = file.text()
+      total += Buffer.byteLength(content, 'utf8')
+      if (total > deps.config().maxImportBytes) throw new Error('导入包超过大小上限')
+      // 去掉仓库里技能目录之上的前缀，staging 里从 SKILL.md 开始。
+      const prefix = dir === '' ? '' : `${dir}/`
+      const path = (entry.path ?? '').startsWith(prefix) ? (entry.path ?? '').slice(prefix.length) : (entry.name ?? '')
+      files.push({ path, content })
+    }
+  }
+  await walk(dir)
+  const entry = await stageSkill(deps.root, files)
+  deps.log(`skills: staged ${entry.name} from github ${owner}/${repo}/${dir}`)
+  return entry
+}
+
+/** 从 URL 拉一份 SKILL.md（或 GitHub 目录）到待审区。 */
 async function importUrl(deps: SkillResourceDeps, url: string): Promise<SkillEntry> {
   if (!deps.config().allowImport) throw new Error('导入已在配置里关闭')
   if (!/^https?:\/\//.test(url)) throw new Error('只支持 http(s) 链接')
+  const tree = GITHUB_TREE.exec(url)
+  if (tree !== null) {
+    return await importGithubDir(deps, tree[1] ?? '', tree[2] ?? '', tree[3] ?? '', tree[4] ?? '')
+  }
   const response = await systemHttp.request(rawUrlOf(url), {
     headers: { accept: 'text/plain, text/markdown, */*', 'user-agent': 'dsh-channel-qq/skills' },
     timeoutMs: 20_000,
@@ -173,12 +217,15 @@ export function skillsResource(deps: SkillResourceDeps): AdminResource {
 
   return {
     label: '技能',
-    list: async () => ({
-      root: deps.root,
-      allowScripts: deps.config().allowScripts,
-      allowImport: deps.config().allowImport,
-      skills: (await scan()).map(summarize),
-    }),
+    list: async () => {
+      const uses = deps.stats === undefined ? {} : await deps.stats.all()
+      return {
+        root: deps.root,
+        allowScripts: deps.config().allowScripts,
+        allowImport: deps.config().allowImport,
+        skills: (await scan()).map((entry) => ({ ...summarize(entry), uses: uses[entry.name] ?? null })),
+      }
+    },
     create: async (body) => {
       const record = body as Record<string, unknown>
       if (Array.isArray(record.files)) {

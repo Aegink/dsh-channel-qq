@@ -10,9 +10,11 @@
  */
 
 import { promises as fs } from 'node:fs'
+import * as path from 'node:path'
 import { registerSpecs } from '../../adapters/dsh-host/tools.js'
 import { readSkillBody, scanSkills, skillsRoot, type SkillEntry } from './store.js'
 import { skillsResource } from './resource.js'
+import { SkillStats } from './stats.js'
 import { skillTools, visibleEntries } from './tools.js'
 import { viewerOf } from './viewer.js'
 import type { SubPlugin } from '../plugin-kit.js'
@@ -31,6 +33,7 @@ function buildProvider(
   entries: () => Promise<readonly SkillEntry[]>,
   root: string,
   scriptsAllowed: (entry: SkillEntry) => boolean,
+  stats: SkillStats,
 ): HostSkillProviderSpec {
   return {
     name: 'channel-qq-skills',
@@ -47,7 +50,9 @@ function buildProvider(
       const entry = (await entries()).find((item) => item.name === name)
       if (entry === undefined || entry.error !== '') return null
       const body = await readSkillBody(root, name, 'bundle')
-      return body === null ? null : withResources(entry, root, scriptsAllowed(entry))
+      if (body === null) return null
+      void stats.record(name, 'load')
+      return withResources(entry, root, scriptsAllowed(entry))
     },
     // 宿主对目录做缓存；这份签名变化时适配器会让缓存失效（后台写完/手工改文件都能生效）。
     signature: async () => (await entries())
@@ -62,6 +67,7 @@ function buildTrigger(
   root: string,
   scriptsAllowed: (entry: SkillEntry) => boolean,
   admins: () => readonly number[],
+  stats: SkillStats,
 ): SkillTriggerHandler {
   return async ({ sessionId, text }) => {
     // 全文找 `/(名字)`（组包会在用户文字前拼房间指令，不能只认开头）。
@@ -71,6 +77,7 @@ function buildTrigger(
     const viewer = viewerOf(sessionId, admins())
     const entry = visibleEntries(await entries(), viewer).find((item) => item.name === name)
     if (entry === undefined) return null
+    void stats.record(name, 'trigger')
     return { name, content: withResources(entry, root, scriptsAllowed(entry)) }
   }
 }
@@ -85,10 +92,12 @@ export const skillsPlugin: SubPlugin = {
     const scriptsAllowed = (entry: SkillEntry): boolean =>
       config.allowScripts && entry.policy !== null && entry.policy.allowScripts
     const entries = async (): Promise<readonly SkillEntry[]> => await scanSkills(root)
+    const stats = new SkillStats(path.join(host.dshHome, 'channel-qq', 'skills-stats.json'), host.log)
     host.registerResource('skills', skillsResource({
       root,
       config: () => host.config.skills as SkillsConfig,
       log: host.log,
+      stats,
     }))
     if (!config.enabled) {
       host.log(`skills: 已关闭（仓库 ${root} 仍可在后台管理）`)
@@ -96,8 +105,8 @@ export const skillsPlugin: SubPlugin = {
     }
     const skillHost = host.bridge.skillsHost?.()
     const stop = skillHost?.install(
-      buildProvider(entries, root, scriptsAllowed),
-      buildTrigger(entries, root, scriptsAllowed, () => host.config.admins),
+      buildProvider(entries, root, scriptsAllowed, stats),
+      buildTrigger(entries, root, scriptsAllowed, () => host.config.admins, stats),
       host.log,
     )
     const stopTools = registerSpecs(host.bridge.toolHost(), skillTools({
@@ -105,6 +114,7 @@ export const skillsPlugin: SubPlugin = {
       scriptsAllowed,
       resourceDir: root,
       admins: () => host.config.admins,
+      onLoad: (name) => { void stats.record(name, 'load') },
       log: host.log,
     }), host.log, 'skills')
     host.log(`skills: 已挂载（仓库 ${root}，${(await entries()).length} 个技能）`)

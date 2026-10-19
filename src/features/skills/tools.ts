@@ -21,6 +21,8 @@ export interface SkillToolDeps {
   readonly resourceDir: string
   /** 现取管理员名单（可见范围里的「仅管理员」要用）。 */
   readonly admins: () => readonly number[]
+  /** 加载成功后的计数回调（后台「技能」页看使用次数）。 */
+  readonly onLoad?: (name: string) => void
   readonly log: (line: string) => void
 }
 
@@ -103,6 +105,7 @@ export function skillTools(deps: SkillToolDeps): ToolSpec[] {
         throw new Error(`当前房间没有可用的技能 "${name}"（先用 action=list 看有哪些）`)
       }
       deps.log(`skills: load ${name}`)
+      deps.onLoad?.(name)
       return { name: entry.name, content: renderLoad(entry, deps) }
     },
   }]
