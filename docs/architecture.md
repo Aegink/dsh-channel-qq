@@ -19,7 +19,7 @@ src/
 ## 一条消息的旅程
 
 ```
-NapCat（OneBot v11 WS）
+SnowLuma（OneBot v11 WS）
    │  event
    ▼
 adapters/onebot        解析帧、心跳、重连
@@ -32,7 +32,7 @@ app/conversation/turns 攒批 / 安静窗口 / 概率门 → 提交给宿主 age
    ▼
 dsh agent（模型 + 工具）
    ▼
-features/qq-tools      工具调用 → QQApi → NapCat
+features/qq-tools      工具调用 → QQApi → SnowLuma
    ▼
 app/outbound           分句、去重、速率限制、失败重试
 ```

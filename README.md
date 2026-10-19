@@ -5,7 +5,8 @@
 [![Node](https://img.shields.io/badge/node-%E2%89%A522-brightgreen.svg)](package.json)
 
 把 QQ 接入 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的渠道插件。
-通过 **OneBot v11**（协议端用 [NapCat](https://github.com/NapNeko/NapCatQQ)）收发消息，
+通过 **OneBot v11**（协议端默认用 [SnowLuma](https://github.com/SnowLuma/SnowLuma)，
+NapCat 仍可作回滚方案）收发消息，
 以 cordis `Service` 形式挂进 dsh，提供工具面、长期记忆、主动行为与管理后台。
 
 > 非官方项目，与腾讯 / QQ 无隶属关系。协议端属于非官方实现，**账号风控、掉线、

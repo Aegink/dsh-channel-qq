@@ -134,7 +134,33 @@ dsh plugin --profile web add link:/srv/dsh/dsh-channel-qq
 
 环境变量：`DSH_HOME`（默认 `~/.dsh`）、`TAOTOKEN_API_KEY`（知识提取）、`KUGOU_API_BASE`、`STT_PROXY`、`GROQ_API_KEY`。
 
-### 4.5 部署 NapCatQQ
+### 4.5 部署协议端：SnowLuma（默认）
+
+> 2026-10-19 起项目默认协议端是 **SnowLuma**（Docker 镜像内置 Linux QQ + noVNC）。
+> 下面 4.5.1 的 NapCat 方案保留作**回滚**与离线参考。
+
+用仓库里的 compose 模板：
+
+```bash
+docker compose -f deploy/snowluma/compose.yaml up -d
+```
+
+- OneBot WS 在 **3001**（容器内 `wsServers[0]`，`role: Universal`）；**accessToken 必须与
+  插件配置一致**，否则插件握手会被拒。首次启动后改
+  `/app/data/config/onebot.json` 再 `docker restart snowluma`。
+- WebUI `127.0.0.1:5099`、noVNC `127.0.0.1:6081` 都只发布到本机，远程用 SSH 隧道：
+  `ssh -p <端口> -L 5099:127.0.0.1:5099 -L 6081:127.0.0.1:6081 root@<host>`
+- 初始 WebUI 口令在 `docker logs snowluma` 的 `initial credentials` 一行；**没改密码就
+  重启会重新生成**，登录后先改密。VNC 密码在容器的 `/app/data/config/vnc-password`。
+- **QQ 未登录时 3001 不会在容器内真正监听**（宿主映射在、listener 没有）——插件侧
+  表现为每 60s 一次 `dialling`，属正常，扫码后自动恢复。
+- **重建容器（`docker rm` / 改 compose 后 `up -d`）= 要重新扫码**：QQ 的「自动登录」默认没勾，
+  容器一重建就回到登录窗口。日常重启请用 `docker restart snowluma`（进程重启，登录态保留）。
+  首次扫码时建议勾上「自动登录」。
+- 回滚：`docker stop snowluma && docker start napcat`。
+
+### 4.5.1 NapCat（备选 / 回滚）
+
 
 **Linux / Docker（推荐）**【调研】
 ```bash

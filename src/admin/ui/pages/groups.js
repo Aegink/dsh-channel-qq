@@ -91,26 +91,30 @@ function roomsCard() {
   const box = el('div', { class: 'stack' })
   card.body.appendChild(box)
 
+  // managed 作为卡片作用域的草稿状态，避免每次 paint() 被 reset
+  let managed = JSON.parse(JSON.stringify(Array.isArray(state.config?.rooms) ? state.config.rooms : []))
+  let isDirty = false
+
   const paint = () => {
     box.textContent = ''
-    const managed = JSON.parse(JSON.stringify(Array.isArray(state.config?.rooms) ? state.config.rooms : []))
     const groups = Array.isArray(state.status?.groupsDetail) ? state.status.groupsDetail : []
-    const dirty = { value: false }
-    const note = el('div', { class: 'inline-note', text: '' })
+    const note = el('div', { class: isDirty ? 'inline-note warn' : 'inline-note', text: isDirty ? '有未保存的改动' : '' })
     const saveBtn = button('保存', 'primary', 'check')
-    saveBtn.disabled = true
+    saveBtn.disabled = !isDirty
+
     const onChange = () => {
-      dirty.value = true
-      saveBtn.disabled = false
-      note.className = 'inline-note warn'
-      note.textContent = '有未保存的改动'
+      isDirty = true
+      paint()
     }
+
     saveBtn.addEventListener('click', async () => {
       saveBtn.disabled = true
       const res = await api('/api/config', { method: 'POST', body: { patch: { rooms: managed }, baseVersion: state.configVersion, section: 'groups' } })
       if (res.status !== 200) { toast(`保存失败：${errText(res)}`, 'bad', 9000); saveBtn.disabled = false; return }
       toast('群覆盖已保存（下一次消息生效）', 'ok', 6000)
+      isDirty = false
       await loadSnapshot()
+      managed = JSON.parse(JSON.stringify(Array.isArray(state.config?.rooms) ? state.config.rooms : []))
       paint()
     })
 
@@ -125,7 +129,7 @@ function roomsCard() {
     const add = (id) => {
       if (managed.some((r) => r.id === id)) { toast(`群 ${id} 已在列表里`, 'warn', 3000); return }
       managed.push({ id, enabled: null, requireMention: null, talkValue: null })
-      onChange()
+      isDirty = true
       paint()
     }
 
@@ -169,7 +173,12 @@ function roomsCard() {
   }
 
   paint()
-  globalThis.__dshGroupsRepaint = paint
+  globalThis.__dshGroupsRepaint = () => {
+    if (!isDirty) {
+      managed = JSON.parse(JSON.stringify(Array.isArray(state.config?.rooms) ? state.config.rooms : []))
+      paint()
+    }
+  }
   return card.node
 }
 
