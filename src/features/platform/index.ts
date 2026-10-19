@@ -11,6 +11,8 @@
 import { OneBotClient } from '../../onebot.js'
 import { platformOf } from '../../adapters/onebot/platform.js'
 import { OutboundQueue } from '../../outbound.js'
+import { createHealthProbe } from './probe.js'
+import { systemClock } from '../../ports/clock.js'
 import type { SubPlugin } from '../plugin-kit.js'
 
 export const platformPlugin: SubPlugin = {
@@ -25,6 +27,14 @@ export const platformPlugin: SubPlugin = {
       host.log('QQ link ready')
     })
     host.provide('platform', { client, platform, api: platform.api, out })
+    // 发送侧探针：复用同一个 api 与连接状态，不产生任何消息。
+    host.provide('health', createHealthProbe({
+      api: platform.api,
+      connected: () => client.isConnected(),
+      lastActivityAt: () => client.lastActivityAt(),
+      selfId: () => client.selfId ?? (Number.isFinite(config.selfId) ? config.selfId : null),
+      now: () => systemClock.now(),
+    }))
     return () => { client.stop() }
   },
   // 与原实现一致：client.start() 在全部装配完成之后、scheduler/admin 之前。

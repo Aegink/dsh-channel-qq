@@ -131,6 +131,14 @@ export interface QQApi {
   getFile(fileId: string): Promise<RecordFile>
   /** 给某人点赞。 */
   sendLike(userId: number, times?: number): Promise<ActionAck>
+  /**
+   * OneBot `get_status`：一次**不产生消息**的往返，返回实现侧的健康标志。
+   *
+   * 为什么健康探针用它：端口探活只能证明"有东西在监听"，证明不了"消息发得出去"
+   * （2026-10-19 事故：端口通了六个多小时，一条消息都发不出去）。`get_status`
+   * 走的是同一条协议链路，能落在地上就说明这条链路还活着。
+   */
+  getStatus(): Promise<{ online?: boolean; good?: boolean }>
 
   // ── 群信息 ────────────────────────────────────────────────────────────
   getGroupList(): Promise<GroupInfo[]>

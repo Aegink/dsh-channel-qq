@@ -19,6 +19,7 @@ import type { LogSink } from './ports/logger.js'
 import { createAgentGateway } from './adapters/dsh-host/agents.js'
 import { createProvidersSurface } from './adapters/dsh-host/providers.js'
 import { agentRegistry, installToolGate, presetRegistry } from './adapters/dsh-host/services.js'
+import { installSkills } from './adapters/dsh-host/skills.js'
 import { guardTemplateKey, policyEnabled } from './app/policy/tool-policy.js'
 import { toolsV2Enabled } from './features/tools-v2/index.js'
 import { SendSignatureGuard } from './core/guards/output-signatures.js'
@@ -173,6 +174,11 @@ export class ChannelQQ extends Service {
       agentGateway: () => (this.gateway ??= createAgentGateway(this.ctx, this.log)),
       presetRegistry: () => presetRegistry(this.ctx),
       agentRegistry: () => agentRegistry(this.ctx),
+      // 技能：provider 注册与 `/name` 触发都在适配器里接宿主；
+      // 宿主没装 skill 服务时 install 返回 undefined，技能功能降级但后台不挂。
+      skillsHost: () => ({
+        install: (provider, trigger, log) => installSkills(this.ctx, provider, trigger, log),
+      }),
       providersSurface: () => createProvidersSurface({
         // settings / credentials 用 get（可选查询）：宿主没装这两个服务时整页降级，
         // 但不能拦启动——属性访问（ctx.settings）要求先 inject，没声明会直接抛

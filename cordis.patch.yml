@@ -41,6 +41,14 @@
           weatherLocation: null
           scheduleFile: null
         cruises: []
+        # 技能仓库：默认落在 <dshHome>/channel-qq/skills（后台「技能」页管理）。
+        # 可见范围不在这里——它写在每个 SKILL.md 的 metadata 里。
+        skills:
+          enabled: true
+          dir: ""
+          allowScripts: false
+          allowImport: true
+          maxImportBytes: 2097152
         emoji:
           steal: true
           autoSend: false

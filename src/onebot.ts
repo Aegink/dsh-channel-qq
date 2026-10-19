@@ -85,6 +85,17 @@ export class OneBotClient extends EventEmitter {
     return this.ws?.readyState === WebSocket.OPEN
   }
 
+  /**
+   * 最近一次收到任何帧的时间（Unix ms）。
+   *
+   * 健康探针用它回答"链路还活着吗"的接收侧：`isConnected()` 只看 socket 状态，
+   * 而 NapCat 的登录态假活时 socket 照样是 OPEN（2026-10-19 事故）。心跳/事件
+   * 帧都会刷新这个值，所以它可以作为一个廉价的旁证（不替代 `get_status` 往返）。
+   */
+  lastActivityAt(): number {
+    return this.lastPongAt
+  }
+
   /** One OneBot API call; resolves with `data` on ok, rejects on failure or timeout. */
   async call(action: string, params: Record<string, unknown> = {}, timeoutMs = 30_000): Promise<unknown> {
     // Brief reconnect grace: a dropped socket usually comes back within a few

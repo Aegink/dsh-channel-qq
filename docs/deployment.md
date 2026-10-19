@@ -206,6 +206,8 @@ docker run -d --name napcat --restart=always \
 3. 群内 @ 机器人一句 → 应回复。
 4. `curl -H 'Authorization: Bearer <token>'` 连 `ws://127.0.0.1:3001` 跑一次 `get_login_info`（仓库里有现成脚本 `napcat-alive.mjs`，改 token/群号即可）。
 5. 好感动看板：`ssh -L 8789:127.0.0.1:8789` 后本机访问 `http://127.0.0.1:8789/?key=<启动日志里的 token>`。
+6. 发送侧探针：`curl -fsS http://127.0.0.1:8790/api/healthz` → 200 且 `"ok":true`；
+   非本机来源一律 403。详细判据见 §6.6。
 
 ### 4.7 远程访问 dsh Web UI【文档】
 
@@ -303,6 +305,39 @@ $ ~2000 字符的 SSH 命令                  成功
 # 临时（重启失效）：
 sysctl -w net.ipv4.tcp_mtu_probing=1
 # 永久：写 /etc/sysctl.d/99-dsh-mtu.conf 后 sysctl --system
+```
+
+### 6.6 发送侧健康探测（`/api/healthz`）
+
+**问题**：端口通 ≠ 消息发得出去。2026-10-19 的事故里 3000/3001 一直能连、
+日志里没有异常，但 06:00–12:50 一条消息都发不出去——端口探活和连接日志都
+回答不了"发送侧还活着吗"。
+
+**做法**：后台 HTTP 面上加一条只读路由 `/api/healthz`，内部对 OneBot 做一次
+`get_status` 往返（**不产生任何消息**），并附上 socket 状态与最近收帧时间。
+
+```bash
+curl -fsS http://127.0.0.1:8790/api/healthz | jq .
+# { "ok": true, "connected": true, "online": true, "good": true,
+#   "latencyMs": 12, "lastActivityAt": ..., "selfId": 1000000001, "detail": "" }
+```
+
+- 探测通过 → 200；失败 → 503（`detail` 给出原因：socket 未连接 / `get_status`
+  失败 / `online=false` / `good=false`）。脚本用 `curl -fsS` 一把判断。
+- **门禁是来源地址**：只接受 loopback。面板即使被显式绑到 `0.0.0.0`，这条路由
+  对公网仍然 403。
+- 探针**不会**"发一条消息试试"：那会打扰人；而且一条消息送达只能证明那一刻通，
+  证明不了链路稳定（同一天两次踩过）。判"恢复"仍然看 `dialling/reconnecting`
+  循环有没有停。
+
+运维脚本里最小的用法：
+
+```bash
+if curl -fsS --max-time 8 http://127.0.0.1:8790/api/healthz >/dev/null; then
+  echo "🟢 发送侧探针通过"
+else
+  echo "🔴 发送侧不通（先看 detail，再决定是查登录态还是扫码）"
+fi
 ```
 
 ---
@@ -428,7 +463,7 @@ commit 看**为什么改**。服务器刻意不留 `.git`（产物里没有，�
      `admin.port/host/enabled/password` → 重新监听（先绑新端口再放旧端口；
      同端口改 host 则先释放再重试 12 次，失败自动回滚到原监听，**绝不把运营者锁在门外**）；
      `connection.*`/`accessToken` → `OneBotClient.reconnect()` 就地换传输，
-     不重建客户端（89 个工具和 bridge 都持有这个实例）；
+     不重建客户端（90 个工具和 bridge 都持有这个实例）；
      `emoji.*` → 重读表情索引；`affectionPort` → 重新监听悬浮窗。
      保存响应里带 `effects: string[]`，逐条说明实际做了什么，运营者不用猜。
 - 页面是单文件、免构建的原生 JS；配置表单由 schema 生成（含 `keywordReactions`、
@@ -443,7 +478,7 @@ commit 看**为什么改**。服务器刻意不留 `.git`（产物里没有，�
 
 ### 8.5 功能模块与工具数
 
-插件注册 **89 个工具**（核心 58 + 各功能模块 31，取自 `channel-qq.log` 的
+插件注册 **90 个工具**（核心 58 + 各功能模块 32，取自 `channel-qq.log` 的
 `registered N QQ tools` / `registered N/M tools` 行）：
 
 | 模块 | 文件 | 工具 |

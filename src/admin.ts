@@ -45,9 +45,10 @@ import {
   type ChangeEntry, type Json,
 } from './admin/config-engine.js'
 import { routeReadData, routeWriteData, routeWriteMisc, type DataRouteEnv } from './admin/routes-data.js'
+import { serveHealthRoute } from './admin/health.js'
 import { routeProviders } from './admin/providers.js'
 import type { AdminDeps, ConfigPatchOptions, ConfigPatchResult } from './admin/types.js'
-import { buildNote, envFlag, isPlainObject, lineCount, messageOf, publicChange, statusOf, summaryOf, toJson } from './admin/util.js'
+import { buildNote, envFlag, isPlainObject, lineCount, messageOf, publicChange, statusOf, summaryOf, toJson, clientIpOf } from './admin/util.js'
 import { atomicWriteFile } from './adapters/fs-store/atomic.js'
 
 export { HASH_ENV, PASSWORD_ENV } from './admin/auth.js'
@@ -359,12 +360,7 @@ export class AdminServer {
     return true
   }
 
-  private clientIp(req: http.IncomingMessage): string {
-    return req.socket.remoteAddress ?? 'unknown'
-  }
-
-  private async audit(ip: string, method: string, reqPath: string, action: string, summary: string, result: 'ok' | 'error' = 'ok'): Promise<void> {
-    await this.auditLog.append({ ip, method, path: reqPath, action, summary, result })
+  private async audit(ip: string, method: string, reqPath: string, action: string, summary: string, result: 'ok' | 'error' = 'ok'): Promise<void> {    await this.auditLog.append({ ip, method, path: reqPath, action, summary, result })
   }
 
   // ── static assets ───────────────────────────────────────────────────────
@@ -590,7 +586,7 @@ export class AdminServer {
       json: (res, status, body) => this.json(res, status, body),
       readBody: (req) => this.readBody(req),
       audit: (ip, method, reqPath, action, summary, result = 'ok') => this.audit(ip, method, reqPath, action, summary, result),
-      clientIp: (req) => this.clientIp(req),
+      clientIp: (req) => clientIpOf(req),
     }
   }
 
@@ -602,7 +598,7 @@ export class AdminServer {
       return true
     }
     if (route === '/api/login' && req.method === 'POST') {
-      const ip = this.clientIp(req)
+      const ip = clientIpOf(req)
       if (this.guard.blocked(ip)) {
         this.json(res, 429, { error: '尝试次数过多，请 5 分钟后再试' })
         return true
@@ -634,7 +630,7 @@ export class AdminServer {
   /** Session-gated account routes: revoke-all and password change. */
   private async routeAccount(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
     const route = url.pathname
-    const ip = this.clientIp(req)
+    const ip = clientIpOf(req)
     if (route === '/api/logout-all' && req.method === 'POST') {
       this.sessions.revokeAll()
       res.setHeader('set-cookie', clearCookieHeader())
@@ -737,7 +733,7 @@ export class AdminServer {
 
   private async routeWriteConfig(req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
     const route = url.pathname
-    const ip = this.clientIp(req)
+    const ip = clientIpOf(req)
     if (route === '/api/config' && req.method === 'POST') {
       const body = await this.readBody(req)
       const patch = isPlainObject(body.patch) ? body.patch : body
@@ -800,6 +796,8 @@ export class AdminServer {
       return
     }
     if (await this.routePublic(req, res, url)) return
+    if (await serveHealthRoute(this.deps.health, req, res, route, clientIpOf(req),
+      (status, body) => this.json(res, status, body))) return
     if (!await this.authGate(req, res, url)) return
     if (route === '/api/events') {
       this.hub.add(req, res)

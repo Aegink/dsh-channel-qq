@@ -39,11 +39,17 @@ export interface ToolHost {
   readonly tools?: { register(definition: Record<string, unknown>): () => void }
 }
 
+/** 一次工具调用的只读上下文（宿主 `exec` 里我们用到的那一点）。 */
+export interface ToolRunContext {
+  /** `exec.agent.id`：我们的 QQ 会话形如 `qq-group-<群号>`；没有会话时为 undefined。 */
+  readonly agentId?: string
+}
+
 export interface ToolSpec {
   name: string
   description: string
   parameters: Record<string, unknown>
-  run: (args: Record<string, unknown>) => Promise<unknown> | unknown
+  run: (args: Record<string, unknown>, context?: ToolRunContext) => Promise<unknown> | unknown
 }
 
 /**
@@ -86,8 +92,9 @@ export function registerSpecs(ctx: ToolHost, specs: ToolSpec[], log: (line: stri
           schema: { type: 'object' },
           render: (_args: unknown, value: unknown) => [{ type: 'text', text: JSON.stringify(value) }],
         },
-        async execute(args: unknown) {
-          const value = await spec.run((args ?? {}) as Record<string, unknown>)
+        async execute(args: unknown, exec?: { readonly agent?: { readonly id?: string } }) {
+          const context: ToolRunContext = exec?.agent?.id === undefined ? {} : { agentId: exec.agent.id }
+          const value = await spec.run((args ?? {}) as Record<string, unknown>, context)
           if (value === undefined || value === null) return { ok: true }
           // Prune anything a strict JSON encoder cannot round-trip, or the
           // harness rejects the whole call as "not lossless JSON".

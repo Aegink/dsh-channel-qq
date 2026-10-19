@@ -30,7 +30,7 @@ export interface AdminPage {
 export const ADMIN_PAGES: readonly AdminPage[] = [
   { key: 'overview', kind: 'overview', title: '概览', icon: 'grid', blurb: '状态总览 · 关键指标 · 快捷操作 · 最近错误' },
 
-  // ── 模块（17 个）────────────────────────────────────────────────────────
+  // ── 模块（18 个）────────────────────────────────────────────────────────
   { key: 'connection', kind: 'module', group: '接入与消息', title: '连接与账号', icon: 'plug', blurb: 'OneBot 连接 · 机器人身份 · 工作区 · 访问令牌' },
   { key: 'groups', kind: 'module', group: '接入与消息', title: '群聊与房间', icon: 'chat', blurb: '群总开关 · @才回 / 概率 / 唤醒词 / 群聊模型' },
   { key: 'messages', kind: 'module', group: '接入与消息', title: '消息与回复', icon: 'mail', blurb: '分段与长度 · 攒批窗口 · 实时注入 · 上下文预算' },
@@ -48,6 +48,7 @@ export const ADMIN_PAGES: readonly AdminPage[] = [
   { key: 'memory', kind: 'module', group: '行为与记忆', title: '记忆', icon: 'brain', blurb: '记忆库 · 知识条目 · 日记' },
   { key: 'persona', kind: 'module', group: '智能体', title: '人格', icon: 'mask', blurb: '人格文件（AGENTS.md/MEMORY.md）· 预设 · 会话重建' },
   { key: 'tools', kind: 'module', group: '智能体', title: '工具与策略', icon: 'toolbox', blurb: '工具清单 · 高危群管开关 · 指令注入' },
+  { key: 'skills', kind: 'module', group: '智能体', title: '技能', icon: 'book', blurb: '技能库 · 可见范围 · 导入与待审' },
 
   // ── 系统（7 个）────────────────────────────────────────────────────────
   { key: 'logs', kind: 'system', group: '系统', title: '日志', icon: 'filetext', blurb: '实时跟随 · 级别与模块过滤 · 错误聚合' },

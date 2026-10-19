@@ -2,6 +2,21 @@
 
 ### 新增
 
+- **技能系统（P0–P2）**：磁盘上的 Agent Skills 目录包（`<dshHome>/channel-qq/skills`），
+  接进宿主的 `skill` 目录与 `/名字` 触发；新增 `qq_skill` 工具按房间列出/加载
+- 技能可见范围：`all` / `dm` / `groups` / `rooms` / `none`，可叠加「仅管理员」与停用；
+  **每次加载/触发现算**，改完下一回合生效。宿主目录只收全局可见的技能，受限技能
+  走 `qq_skill`，避免描述泄露到每个房间
+- 后台「技能」页：列表（含待审与坏文件原因）、新建/编辑、启停、删除、URL/粘贴导入；
+  导入一律先进 `.staging` 待审区，确认后才转正
+- 技能脚本：`skills.allowScripts`（全局）+ `channel-qq.scripts`（单个技能）双开关
+- **发送侧健康探测**：后台只读路由 `/api/healthz`（仅 loopback），内部一次
+  `get_status` 往返、不产生消息；返回 socket 状态、online/good、延迟与最近收帧时间
+
+### 修复
+
+- 技能仓库默认放在 `dshHome` 而不是工作区：工作区对模型可写，而技能正文会进系统
+  提示——放在那里等于给注入留一条持久化后门
 - `qq_memory_search`：深召回工具——在工作区 md 的 600 字原文块里搜，一次 3–8 条，
   带文件与行号出处、跨房间（`memory.v2` 关着时返回「未启用」而不是报错）
 - 夜间 `memory.chunks`（03:50）：工作区 `memory/`、`knowledge/`、`learning/` 的 md

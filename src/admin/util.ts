@@ -12,6 +12,11 @@ export function envFlag(name: string): boolean {
   return (process.env[name] ?? '').trim() === '1'
 }
 
+/** 请求来源地址（审计与 healthz 门禁用；代理头不可信，只看 socket）。 */
+export function clientIpOf(req: { readonly socket: { readonly remoteAddress?: string } }): string {
+  return req.socket.remoteAddress ?? 'unknown'
+}
+
 export function isPlainObject(value: unknown): value is Json {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

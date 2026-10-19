@@ -146,6 +146,13 @@ override = {}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
  },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -654,6 +661,13 @@ override = {}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
  },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -1159,6 +1173,13 @@ override = {"batching":{"windowMs":20000}}
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
+ },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
  },
  "eventMonitor": {
   "enabled": true,
@@ -1666,6 +1687,13 @@ override = {"admin":{"port":8790}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
  },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -2171,6 +2199,13 @@ override = {"imageGen":{"model":"flux"}}
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
+ },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
  },
  "eventMonitor": {
   "enabled": true,
@@ -2678,6 +2713,13 @@ override = {"tts":{"voice":"b"}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
  },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -3183,6 +3225,13 @@ override = {"flood":{"windowSec":30}}
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
+ },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
  },
  "eventMonitor": {
   "enabled": true,
@@ -3697,6 +3746,13 @@ override = {}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
  },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -4202,6 +4258,13 @@ override = {"keywordTriggers":[]}
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
+ },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
  },
  "eventMonitor": {
   "enabled": true,
@@ -4716,6 +4779,13 @@ override = {"rss":{"pollIntervalMin":5}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
  },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -5221,6 +5291,13 @@ override = {"groupEnabled":false}
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
+ },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
  },
  "eventMonitor": {
   "enabled": true,
@@ -5728,6 +5805,13 @@ override = {}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
  },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -6233,6 +6317,13 @@ override = {"groupEnabled":true}
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
+ },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
  },
  "eventMonitor": {
   "enabled": true,
@@ -6740,6 +6831,13 @@ override = {"admin":{"host":"127.0.0.1"}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
  },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -7246,6 +7344,13 @@ override = {}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
  },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
+ },
  "eventMonitor": {
   "enabled": true,
   "kinds": [
@@ -7751,6 +7856,13 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000"
+ },
+ "skills": {
+  "enabled": true,
+  "dir": "",
+  "allowScripts": false,
+  "allowImport": true,
+  "maxImportBytes": 2097152
  },
  "eventMonitor": {
   "enabled": true,

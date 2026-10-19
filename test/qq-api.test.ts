@@ -56,6 +56,10 @@ test('消息类动作的参数形状', async () => {
   assert.deepEqual(await wireOf((a) => a.getFile('fid-1')), {
     action: 'get_file', params: { file_id: 'fid-1' },
   })
+  // 健康探针：不产生消息的往返（传参为空）。
+  assert.deepEqual(await wireOf((a) => a.getStatus()), {
+    action: 'get_status', params: {},
+  })
 })
 
 test('get_record：out_format 只在给定时才出现', async () => {
@@ -185,18 +189,18 @@ test('sendTo：一个三元收口成一个方法，两个方向都钉住', async
   })
 })
 
-/** 门面上的全部方法名（消息 9 + 群 13 + 文件 10 + 语音 3 = 35 个，对应 34 个动作）。 */
+/** 门面上的全部方法名（消息 10 + 群 13 + 文件 10 + 语音 3 = 36 个，对应 35 个动作）。 */
 const ALL_METHODS = [
   'canSendRecord', 'createGroupFileFolder', 'deleteEssence', 'deleteGroupFile', 'deleteMessage',
   'getAiRecord', 'getEssenceList', 'getFile', 'getFriendList', 'getGroupFileUrl',
-  'getGroupFilesByFolder', 'getGroupInfo', 'getGroupList', 'getGroupMemberInfo',
+  'getGroupFilesByFolder', 'getGroupInfo', 'getGroupList', 'getGroupMemberInfo', 'getStatus',
   'getGroupRootFiles', 'getImage', 'getMessage', 'getPrivateFileUrl', 'getRecord', 'groupPoke',
   'moveGroupFile', 'renameGroupFile', 'sendGroupAiRecord', 'sendGroupMessage', 'sendLike',
   'sendPrivateMessage', 'sendTo', 'setEssence', 'setGroupAdmin', 'setGroupBan', 'setGroupCard',
   'setGroupKick', 'setGroupWholeBan', 'uploadGroupFile', 'uploadPrivateFile',
 ].sort()
 
-test('门面就是这张表：34 个动作 / 35 个方法，多一个少一个都失败', async () => {
+test('门面就是这张表：35 个动作 / 36 个方法，多一个少一个都失败', async () => {
   const { api } = recorder()
   // 这一条防的是"加了方法但没在这组用例里钉住 wire 形状"——
   // 上一组用例按动作逐个断言参数，方法名在这条里对齐。

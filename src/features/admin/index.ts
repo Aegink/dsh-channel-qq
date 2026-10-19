@@ -230,6 +230,12 @@ function adminDeps(host: SubHost, startedAt: number): AdminDeps {
       rebuild: async (room: string) => await sessionRebuild(host, room),
     },
     providers: host.bridge.providersSurface(),
+    // 发送侧探针：platform 提供；没有时这条路由回答 503（脚本据此判未知）。
+    health: () => {
+      const probe = host.get('health')
+      if (probe === undefined) throw new Error('健康探测未就绪（platform 未挂载）')
+      return probe.check()
+    },
   }
 }
 

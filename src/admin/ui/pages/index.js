@@ -21,6 +21,7 @@ import groups from './groups.js'
 import memory from './memory.js'
 import music from './music.js'
 import providers from './providers.js'
+import skills from './skills.js'
 import { createModulePage } from './module.js'
 
 /** 通用模块页（描述表在 module.js；persona / tools 有各自的自定义实现）。 */
@@ -44,6 +45,7 @@ const pages = {
   memory,
   music,
   providers,
+  skills,
 }
 
 for (const key of GENERIC_MODULES) pages[key] = createModulePage(key)

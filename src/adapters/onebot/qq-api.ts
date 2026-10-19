@@ -46,7 +46,7 @@ type Call = <T>(action: string, params?: Record<string, unknown>, timeoutMs?: nu
 type MessageSlice = Pick<
   QQApi,
   | 'sendGroupMessage' | 'sendPrivateMessage' | 'sendTo' | 'getMessage' | 'deleteMessage'
-  | 'getImage' | 'getRecord' | 'getFile' | 'sendLike'
+  | 'getImage' | 'getRecord' | 'getFile' | 'sendLike' | 'getStatus'
 >
 
 type GroupSlice = Pick<
@@ -84,6 +84,8 @@ function messageActions(call: Call): MessageSlice {
     getFile: (fileId) => call<RecordFile>('get_file', { file_id: fileId }, 20_000),
     // 不钳制上限：clamp 到 10 是 tools.ts 的业务规则，门面只做转发。
     sendLike: (userId, times) => call<ActionAck>('send_like', { user_id: userId, times: times ?? 1 }),
+    // 健康探针专用：短超时——探针本身就是"现在还能不能通"，卡 30 秒没有意义。
+    getStatus: () => call<{ online?: boolean; good?: boolean }>('get_status', {}, 5_000),
   }
 }
 

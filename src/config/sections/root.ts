@@ -107,6 +107,7 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
   ['learn', section('口癖学习', 'learn')],
   ['memory', section('记忆', 'memory')],
   ['music', section('音乐', 'music')],
+  ['skills', section('技能', 'skills')],
   ['eventMonitor', section('群事件', 'eventMonitor')],
   ['context', section('上下文', 'context')],
   ['turn', section('回合', 'turn')],

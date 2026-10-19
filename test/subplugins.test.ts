@@ -114,7 +114,7 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
   assert.deepEqual(SECTION_PLUGINS.map((p) => p.name), [
     'persona', 'observers', 'platform', 'inbound', 'stickers', 'memory', 'affection',
     'qq-tools', 'links', 'meme', 'voice', 'quotes', 'reminders', 'rss', 'imagegen',
-    'flood', 'learn', 'music', 'proactive', 'admin',
+    'flood', 'learn', 'music', 'skills', 'proactive', 'admin',
   ])
   const watched = SECTION_PLUGINS
     .filter((p) => p.watches !== '*' && p.watches.length > 0)
@@ -131,6 +131,8 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
     ['affection', ['affectionPort']],
     ['qq-tools', ['tools.v2', 'memory.v2']],
     // P6f：事件书开关或书改了都要重挂（实现选型与书的校验都在装配期完成）。
+    // 技能：段开关/目录/脚本/导入四个旋钮变了要重挂 provider（可见范围在技能自己身上，不需要）。
+    ['skills', ['skills']],
     ['proactive', ['proactive']],
     ['admin', ['admin.port', 'admin.host', 'admin.enabled', 'admin.password']],
   ])

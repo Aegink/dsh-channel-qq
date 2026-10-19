@@ -310,7 +310,6 @@ export interface ContextV2Config {
 export interface TurnConfig {
   maxSteps: { dm: number; group: number; system: number }
 }
-
 // 三个开关型段（policy / tools / proactive）的形状在本体处，见 switches.ts 的注记。
 export interface QQChannelConfig extends SwitchSections {
   connection: ConnectionConfig
@@ -362,6 +361,7 @@ export interface QQChannelConfig extends SwitchSections {
   learn: LearnConfig
   memory: MemoryConfig
   music: import('./config/sections/music.js').MusicConfig
+  skills: import('./config/sections/skills.js').SkillsConfig
   eventMonitor: EventMonitorConfig
   contextBudget: ContextBudgetConfig
   context: ContextV2Config

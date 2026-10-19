@@ -53,6 +53,11 @@ export interface AdminDeps {
   }
   /** 模型供应商管理（宿主 settings / agentDefaultModel / credentials 的接入面）。 */
   providers?: ProvidersSurface
+  /**
+   * 发送侧健康探测（`/api/healthz`）。**不产生消息**：内部是一次 `get_status`
+   * 往返。给运维脚本（state.sh）用，所以这条路由不走登录门禁——只接受本机请求。
+   */
+  health?: () => Promise<unknown>
 }
 
 /** Options for {@link AdminServer.applyConfigPatch}. */
