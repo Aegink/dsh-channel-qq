@@ -7,10 +7,13 @@
 #   2) 编辑容器内 /app/data/config/onebot.json，把 wsServers[0].accessToken 改成
 #      与插件配置的 accessToken 一致（插件用 Authorization: Bearer 握手）；
 #   3) 浏览器走 SSH 隧道访问 5099（WebUI）或 6081（noVNC，VNC 密码在
-#      /app/data/config/vnc-password），扫码登录 QQ（勾「自动登录」）。
+#      /app/data/config/vnc-password），扫码登录 QQ（**确认勾上「自动登录」**）。
 #
-# 注意：`docker restart` 保留登录态；`docker rm` / 改本文件后 `up -d` 重建容器
-# 会让 QQ 回到登录窗口 —— 需要重新扫码。
+# 登录态：QQ 的自动登录开关落在 ~/.config/QQ/global/nt_data/mmkv/nt_mmkv_global_misc
+# 的 `kAutoLoginUid` 键（非空 = 已启用）。下面三个卷都用固定名，因此
+# `docker restart` **不需要重新扫码**；保留卷的 `up -d` 重建理论上同样能自动登录，
+# 但未做破坏性实测，重建时请守在 noVNC 前。删卷/换卷名/QQ 服务端会话失效才一定要再扫。
+# SnowLuma 自身没有自动登录开关，它只起 QQ 并在 [Hook] 里等 `login detected`。
 #
 # 端口一律只发布到 127.0.0.1：WebUI/noVNC 都是控制面，不该公网可达。
 services:
