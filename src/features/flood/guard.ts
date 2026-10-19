@@ -127,7 +127,9 @@ export class FloodGuard {
     this.cooldowns.set(key, now + Math.max(1_000, flood.muteSeconds * 1000))
     this.triggered += 1
     const repeatedCount = fresh.filter((entry) => entry.weight === 2).length
-    const note = `${flood.windowSec}秒内 ${count} 条（其中复读 ${repeatedCount} 条，阈值 ${flood.maxMessages}）`
+    // 注意 count 是**加权**后的数（复读按 2 计），与发了几条不是一回事；
+    // 只报加权数会让主人照着回执调阈值时越调越偏（2026-10-19 排查）。
+    const note = `${flood.windowSec}秒内 ${fresh.length} 条（复读 ${repeatedCount} 条按双倍计，加权 ${count}；阈值 ${flood.maxMessages}）`
     this.log(`flood: group ${groupId} user ${userId} 触发（${note}）`)
     return { triggered: true, userId, count, action: flood.action, note }
   }

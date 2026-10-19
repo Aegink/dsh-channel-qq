@@ -239,6 +239,17 @@ export class EmojiLibrary {
     return hits.slice(0, limit)
   }
 
+  /**
+   * 全库随机一张（兜底用）。
+   *
+   * 不能用 `list(200)` 再随机：那只会在"最新 200 张"里挑，库大了等于永远
+   * 只发最近收的（2026-10-19 排查）。
+   */
+  random(): EmojiIndexEntry | undefined {
+    const all = [...this.index.values()]
+    return all.length === 0 ? undefined : all[Math.floor(Math.random() * all.length)]
+  }
+
   /** All indexed entries (bounded), newest first — the fallback listing. */
   list(limit = 40): EmojiIndexEntry[] {
     return [...this.index.values()].sort((a, b) => b.addedAt - a.addedAt).slice(0, limit)

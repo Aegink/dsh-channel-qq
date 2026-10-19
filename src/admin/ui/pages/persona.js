@@ -565,7 +565,7 @@ async function rebuildSession(room, btn) {
   btn.disabled = false
   if (res.status !== 200) { toast(`重建失败：${errText(res)}`, 'bad'); return }
   const note = res.body?.note ?? `已重建 ${room} 的会话`
-  const removed = res.body?.removed !== undefined ? `（移除 ${res.body.removed} 个会话文件）` : ''
+  const removed = res.body?.files !== undefined ? `（移动 ${res.body.files} 个会话文件到备份）` : ''
   toast(note + removed, 'ok', 7000)
   void loadSessions()
   void loadSnapshot()

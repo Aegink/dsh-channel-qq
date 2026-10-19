@@ -101,6 +101,8 @@ export class LearnStore {
   private persistedKeys = new Set<string>()
   /** 有变化才写盘（每 5 分钟一次的 flush 不该空转）。 */
   private dirty = false
+  /** 读盘失败过：此后拒绝写盘，绝不拿空内存覆盖一份读不懂的文件。 */
+  private loadFailed = false
   private readonly store: JsonStore<unknown>
   private readonly log: (line: string) => void
 
@@ -136,8 +138,13 @@ export class LearnStore {
         if (item === null || typeof item !== 'object') continue
         const record = item as Record<string, unknown>
         const text = typeof record.text === 'string' ? record.text.trim() : ''
-        const groupId = Number(record.groupId)
-        if (text === '' || !Number.isFinite(groupId)) continue
+        // `Number(null)` 是 0，而 0 会被当成"合法的群号"——真实群号不可能是 0。
+        // 缺失/为空的 groupId 直接跳过（2026-10-19 排查）。
+        const rawGroup = record.groupId
+        if (typeof rawGroup !== 'number' && typeof rawGroup !== 'string') continue
+        if (typeof rawGroup === 'string' && rawGroup.trim() === '') continue
+        const groupId = Number(rawGroup)
+        if (text === '' || !Number.isFinite(groupId) || groupId <= 0) continue
         const count = Number(record.count)
         const first = Number(record.first)
         const last = Number(record.last)
@@ -157,14 +164,17 @@ export class LearnStore {
       this.log(parsed === null
         ? 'learn: 没有可读的短语库，从零开始'
         : `learn: 载入 ${this.entries.size} 条口癖候选（${this.file}）`)
-    } catch {
-      this.log('learn: 没有可读的短语库，从零开始')
+    } catch (error) {
+      this.loadFailed = true
+      this.log(`learn: 短语库读取失败（本次运行不会写盘，避免覆盖原文件）：${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
   /** 写盘：只写"够格的"（已落盘过 或 count >= 2），按 count 从高到低截断。 */
   async save(): Promise<void> {
     if (!this.dirty) return
+    // 读盘失败过就别写：内存是空的，写出去等于把原文件抹成 []。
+    if (this.loadFailed) return
     const keep = [...this.entries.entries()]
       .filter(([key, phrase]) => this.persistedKeys.has(key) || phrase.count >= 2)
       .sort((a, b) => b[1].count - a[1].count)

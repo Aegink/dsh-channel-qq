@@ -119,3 +119,24 @@ test('命令归一化后相同即同一条：空白差异不影响授权', () =>
   const result = consumeRequest(approved, 'tok', 'systemctl restart dsh', 1001, digest)
   assert.equal(result.ok, true)
 })
+
+test('分级：等价变形不能绕过 L3（长选项、命令前转义）', () => {
+  // 2026-10-19 排查：这两种写法当时被判成 L0（直接执行），而 `rm -r -f /` 是 L3。
+  assert.equal(classify('rm --recursive --force /').level, 'L3')
+  assert.equal(classify(String.fromCharCode(92) + 'rm -rf /').level, 'L3')
+  // 普通命令不受影响
+  assert.equal(classify('ls -la').level, 'L0')
+})
+
+test('审计：批准/拒绝会记下是谁做的', () => {
+  const req = createRequest('systemctl restart dsh', { id: 'appr-audit', now: 1000, digest })
+  const approved = approveRequest(req, 'tok', 1000, undefined, 'dm-42')
+  assert.equal(approved.approvedBy, 'dm-42')
+  const denied = denyRequest(createRequest('systemctl restart dsh', { id: 'appr-audit2', now: 1000, digest }), 'dm-43')
+  assert.equal(denied.deniedBy, 'dm-43')
+})
+
+test('审计：申请人写进请求', () => {
+  const req = createRequest('ls', { id: 'appr-req', now: 1000, digest, requestedBy: 'dm-7' })
+  assert.equal(req.requestedBy, 'dm-7')
+})

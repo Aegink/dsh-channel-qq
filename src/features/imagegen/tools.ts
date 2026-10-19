@@ -21,13 +21,18 @@ interface ImageTarget {
   id: number
 }
 
-/** 解析发送目标：优先工具参数，其次配置主群。 */
+/**
+ * 解析发送目标：优先工具参数；**只有明确说"发群"时**才回落到配置的主群。
+ *
+ * 为什么不再无条件回落：模型在私聊里省略 target 时，旧逻辑会发进主群——
+ * 私聊内容串到群里（2026-10-19 排查）。宁可报错让它补 target，也不猜。
+ */
 function resolveTarget(args: Record<string, unknown>, config: QQChannelConfig): ImageTarget {
   const raw = typeof args.target === 'number' ? args.target : Number.parseInt(String(args.target ?? ''), 10)
   const isGroup = args.isGroup !== false
   if (Number.isFinite(raw) && raw > 0) return { isGroup, id: raw }
-  if (config.primaryGroup !== null) return { isGroup: true, id: config.primaryGroup }
-  throw new Error('没指定 target，配置里也没有 primaryGroup。请在参数里给 target（群号）。')
+  if (args.isGroup === true && config.primaryGroup !== null) return { isGroup: true, id: config.primaryGroup }
+  throw new Error('没指定 target：请给出 target（群号或好友 QQ 号）并明确 isGroup。省略 target 只会在 isGroup=true 时回落到主群。')
 }
 
 /** 三个 spec 共享的接线：注册时构造一次，闭包写法与原来一致。 */
@@ -53,7 +58,7 @@ function qqGenerateImage(deps: ImageGenToolDeps): ToolSpec {
     parameters: params({
       prompt: { type: 'string', description: '绘图提示词，建议英文，写清主体/风格/氛围' },
       isGroup: { type: 'boolean', description: '发到群聊还是私聊，默认群聊' },
-      target: { type: 'number', description: '群号或好友QQ号，省略时用配置里的主群' },
+      target: { type: 'number', description: '群号或好友QQ号；省略时仅在 isGroup=true 下回落到主群（私聊请务必给出 target）' },
     }, ['prompt']),
     run: async (args) => {
       const off = disabled()

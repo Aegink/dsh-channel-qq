@@ -69,6 +69,45 @@ function buildDefaults(): QQChannelConfig {
  *   - **非对象一律跳过**。原来 `admin: "nope"` 会被当成字符索引铺开
  *     （`{"0":"n","1":"o",…}`），那是 bug 不是行为。
  */
+/**
+ * 按 schema 把"存进去的值"归一成运行时该有的类型。
+ *
+ * 为什么必须有：后台/手改的 JSON 里数字常常是字符串（`"145335503"`），而消费方
+ * 全是 `chatId === primaryGroup` 这类**严格比较**——类型不对不会报错，只会静默失效
+ * （2026-10-19 排查：主群号存成字符串，于是偷表情包、主群专用回复、按群覆盖全恒假）。
+ *
+ * 只在"能无损转换"时动手：数字串 → 数字、`"true"/"false"` → 布尔、数字数组里的
+ * 数字串 → 数字。其余原样返回——绝不把一个错值改造成另一种错值。
+ */
+function coerceValue(spec: FieldSpec, value: unknown): unknown {
+  if (value === null || value === undefined) return value
+  if (spec.kind === 'number') {
+    if (typeof value === 'number') return value
+    if (typeof value === 'string' && value.trim() !== '') {
+      const parsed = Number(value)
+      return Number.isFinite(parsed) ? parsed : value
+    }
+    return value
+  }
+  if (spec.kind === 'boolean') {
+    if (typeof value === 'boolean') return value
+    if (value === 'true') return true
+    if (value === 'false') return false
+    return value
+  }
+  if (spec.kind === 'list' && spec.itemsKind === 'number' && Array.isArray(value)) {
+    return value.map((item: unknown) => {
+      if (typeof item === 'number') return item
+      if (typeof item === 'string' && item.trim() !== '') {
+        const parsed = Number(item)
+        return Number.isFinite(parsed) ? parsed : item
+      }
+      return item
+    })
+  }
+  return value
+}
+
 function mergeFields<T extends object>(
   base: T,
   ...layers: Array<Partial<T> | null | undefined>
@@ -106,7 +145,14 @@ export function resolveConfig(
       const base = asRecord(DEFAULT_CONFIG)[key]
       const patchLayer = asLayer(asRecord(patch ?? {})[key])
       const overrideLayer = asLayer(asRecord(override ?? {})[key])
-      record[key] = mergeFields(base as object, patchLayer, overrideLayer)
+      const merged = mergeFields(base as object, patchLayer, overrideLayer) as Record<string, unknown>
+      const group = groupOf(SCHEMA, spec.group)
+      if (group !== undefined) {
+        for (const [field, fieldSpec] of Object.entries(group.fields)) {
+          if (field in merged) merged[field] = coerceValue(fieldSpec, merged[field])
+        }
+      }
+      record[key] = merged
       continue
     }
     const fromOverride = asRecord(override ?? {})[key]
@@ -119,7 +165,7 @@ export function resolveConfig(
       continue
     }
     const value = fromOverride ?? fromPatch
-    if (value !== undefined) { record[key] = value; continue }
+    if (value !== undefined) { record[key] = coerceValue(spec, value); continue }
     if (spec.default === NO_DEFAULT) delete record[key]
     else record[key] = spec.default
   }

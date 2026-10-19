@@ -13,6 +13,8 @@ export interface CommandContext {
   readonly isGroup: boolean
   readonly admins: readonly number[]
   readonly dir?: string
+  /** 审计日志（谁申请、谁批准）。缺省时静默。 */
+  readonly log?: (line: string) => void
 }
 
 export type CommandResult = { handled: true; reply: string } | { handled: false }
@@ -28,7 +30,9 @@ export async function handleAdminCommand(text: string, userId: number, ctx: Comm
   const verb = match[1]!
   const arg = (match[2] ?? '').trim()
 
-  if (ctx.isGroup) return { handled: true, reply: '「待批 / 申请 / 批准 / 拒绝」只认管理员私聊。' }
+  // 群里**完全静默**：回复一句"只认私聊"等于告诉任何群友"这台机器有审批后门"，
+  // 还能被拿来刷屏（2026-10-19 排查）。
+  if (ctx.isGroup) return NOT_MINE
   if (!ctx.admins.includes(userId)) return { handled: true, reply: '无权操作。' }
 
   try {
@@ -40,7 +44,8 @@ export async function handleAdminCommand(text: string, userId: number, ctx: Comm
     }
     if (verb === '申请') {
       if (arg === '') return { handled: true, reply: '用法：申请 <命令原文>' }
-      const req = await requestCommand(arg, ctx.dir)
+      const req = await requestCommand(arg, ctx.dir, Date.now(), `dm-${userId}`)
+      ctx.log?.(`approval: ${req.id} requested by dm-${userId} [${req.level}] ${req.command}`)
       return {
         handled: true,
         reply: `已提交：${describeRequest(req)}\n批准：批准 ${req.id}`,
@@ -48,12 +53,14 @@ export async function handleAdminCommand(text: string, userId: number, ctx: Comm
     }
     if (verb === '批准') {
       if (arg === '') return { handled: true, reply: '用法：批准 <请求号>' }
-      const req = await approveById(arg, ctx.dir)
+      const req = await approveById(arg, ctx.dir, Date.now(), `dm-${userId}`)
+      ctx.log?.(`approval: ${req.id} approved by dm-${userId} [${req.level}] ${req.command}`)
       return { handled: true, reply: `已批准并排队执行：${describeRequest(req)}` }
     }
     if (verb === '拒绝') {
       if (arg === '') return { handled: true, reply: '用法：拒绝 <请求号>' }
-      const req = await denyById(arg, ctx.dir)
+      const req = await denyById(arg, ctx.dir, `dm-${userId}`)
+      ctx.log?.(`approval: ${req.id} denied by dm-${userId}`)
       return { handled: true, reply: `已拒绝：${describeRequest(req)}` }
     }
   } catch (error) {

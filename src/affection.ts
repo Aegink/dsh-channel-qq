@@ -78,6 +78,10 @@ export class AffectionStore {
 
   /** Book one score change (rises AND falls); stage is never touched here. */
   async book(delta: number, reason: string): Promise<AffectionState> {
+    // NaN 会一路穿透 clamp（Math.min(30, NaN) 还是 NaN），把 score 写成 NaN；
+    // JSON.stringify 再把它变成 null，重启后 `typeof score === 'number'` 不成立，
+    // **整份状态（分数 + 全部事件史）被丢弃**（2026-10-19 排查）。入口直接拒绝。
+    if (!Number.isFinite(delta)) throw new Error(`好感度变化必须是数字（收到 ${String(delta)}）`)
     const clamped = Math.max(-30, Math.min(30, delta))
     this.state.score = Math.max(0, Math.min(100, this.state.score + clamped))
     this.state.events.push({ time: Date.now(), delta: clamped, reason: reason.slice(0, 120) })
@@ -142,8 +146,14 @@ export class AffectionStore {
       const names = await fsp.readdir(sentFile).catch(() => [] as string[])
       for (const n of names) {
         if (!n.startsWith('sent-') || !n.endsWith('.json')) continue
-        const entries = JSON.parse(await fsp.readFile(path.join(sentFile, n), 'utf-8')) as unknown[]
-        out[n.replace('sent-', '').replace('.json', '')] = entries.slice(-30)
+        // 单个坏文件（写了一半、被手工改坏）只跳过它自己：一个房间的日志坏了
+        // 不该让整块「最近发过什么」都打不开（2026-10-19 排查）。
+        try {
+          const entries = JSON.parse(await fsp.readFile(path.join(sentFile, n), 'utf-8')) as unknown[]
+          out[n.replace('sent-', '').replace('.json', '')] = entries.slice(-30)
+        } catch (error) {
+          this.log(`trace: 跳过坏文件 ${n}：${error instanceof Error ? error.message : String(error)}`)
+        }
       }
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
       res.end(JSON.stringify(out))

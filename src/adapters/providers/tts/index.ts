@@ -78,6 +78,8 @@ export interface SynthesizeResult {
   voice: string
   /** 实际成功的后端（edge / baidu / google），auto 模式下可能不是首选那个。 */
   provider: string
+  /** 原文长度；超过上限被截断时才出现（调用方要把这件事告诉模型/主人）。 */
+  truncatedFrom?: number
 }
 
 /** 配置里可选的合成后端；auto = 先 edge，失败再回退百度/谷歌。 */
@@ -137,6 +139,7 @@ export async function synthesize(
 
   let body = text.trim()
   if (body === '') throw new Error('要念的文字是空的：text 不能为空。')
+  const originalLength = body.length
   if (body.length > MAX_TEXT_CHARS) {
     log(`文本过长（${body.length} 字），已截断到 ${MAX_TEXT_CHARS} 字`)
     body = body.slice(0, MAX_TEXT_CHARS)
@@ -169,7 +172,10 @@ export async function synthesize(
   const outFile = path.join(outDir, `tts_${used}_${Date.now()}.mp3`)
   await atomicWriteFile(outFile, audio)
   log(`tts → ${outFile} (${audio.length}B, voice=${voice}, provider=${used})`)
-  return { file: outFile, bytes: audio.length, voice, provider: used }
+  return {
+    file: outFile, bytes: audio.length, voice, provider: used,
+    ...(originalLength > MAX_TEXT_CHARS ? { truncatedFrom: originalLength } : {}),
+  }
 }
 
 /**

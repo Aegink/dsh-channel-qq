@@ -72,3 +72,25 @@ test('P2.7 配置解析：默认值本身就是一份可用配置', () => {
   assert.equal(resolved.groupAdmin.dangerous, false, '危险动作默认关闭')
   assert.equal(resolved.batching.windowMs, 20_000)
 })
+
+test('配置归一：字符串数字按 schema 变成数字（主群号/群号列表/概率）', () => {
+  // 2026-10-19 线上实证：admin-config.json 里 primaryGroup 是字符串 "145335503"，
+  // 而消费方全是 `chatId === primaryGroup` 的严格比较 ⇒ 偷表情包、主群专用回复、
+  // 按群覆盖全部恒假且完全静默。
+  const config = resolveConfig({}, {
+    primaryGroup: '145335503' as never,
+    talkValue: '0.5' as never,
+    linkResolve: { autoGroups: ['123', '456'] as never },
+  } as never)
+  assert.equal(config.primaryGroup, 145335503)
+  assert.equal(typeof config.primaryGroup, 'number')
+  assert.equal(config.talkValue, 0.5)
+  assert.deepEqual(config.linkResolve.autoGroups, [123, 456])
+  assert.equal(typeof config.linkResolve.autoGroups[0], 'number')
+})
+
+test('配置归一：转换不了的值原样保留，不把错值改造成另一种错值', () => {
+  const config = resolveConfig({}, { primaryGroup: '不是数字' as never, talkValue: 'abc' as never } as never)
+  assert.equal(config.primaryGroup, '不是数字')
+  assert.equal(config.talkValue, 'abc')
+})

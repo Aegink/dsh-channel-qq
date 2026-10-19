@@ -100,7 +100,11 @@ function qqTtsSave(config: QQChannelConfig, log: (line: string) => void, provide
       const text = asText(args.text)
       if (text === '') throw new Error('text 不能为空：请给要念的文字。')
       const result = await synthesize(text, buildOptions(config, log, args), provider)
-      return { ok: true, file: result.file, bytes: result.bytes, voice: result.voice, provider: result.provider }
+      return {
+        ok: true, file: result.file, bytes: result.bytes, voice: result.voice, provider: result.provider,
+        // 截断必须告诉模型：否则它以为整段都念了（2026-10-19 排查）。
+        ...(result.truncatedFrom === undefined ? {} : { note: `原文 ${result.truncatedFrom} 字，超过上限只念了前 800 字` }),
+      }
     },
   }
 }

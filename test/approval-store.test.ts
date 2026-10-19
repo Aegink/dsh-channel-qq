@@ -44,19 +44,21 @@ test('L3 申请直接拒绝（连请求都建不出来）', withDir(async (dir) 
   await assert.rejects(() => store.requestCommand('rm -rf /', dir), /L3 永不执行/)
 }))
 
-test('回执：写入后取出即删除（不重复转发）', withDir(async (dir) => {
+test('回执：先列出、发送成功后才删（失败不会丢）', withDir(async (dir) => {
   await store.writeResult({ id: 'appr-1', command: 'ls', ok: true, exitCode: 0, output: 'ok', finishedAt: 1 }, dir)
-  const first = await store.takeResults(dir)
+  const first = await store.listResults(dir)
   assert.equal(first.length, 1)
-  const second = await store.takeResults(dir)
-  assert.equal(second.length, 0)
+  // 没删之前重复读仍在（旧实现"读即删"，发送失败就永久丢失）
+  assert.equal((await store.listResults(dir)).length, 1)
+  await store.removeResult('appr-1', dir)
+  assert.equal((await store.listResults(dir)).length, 0)
 }))
 
-test('IM 命令：只认管理员私聊；待批/申请/批准/拒绝 的动作正确', withDir(async (dir) => {
+test('IM 命令：群里完全静默（不回、不执行）；私聊里动作正确', withDir(async (dir) => {
   const admins = [42]
   const group = await handleAdminCommand('待批', 42, { isGroup: true, admins, dir })
-  assert.equal(group.handled, true)
-  if (group.handled) assert.match(group.reply, /只认管理员私聊/)
+  // 回复一句「只认私聊」等于告诉任何群友这里有审批后门，还能被拿来刷屏。
+  assert.equal(group.handled, false)
 
   const stranger = await handleAdminCommand('待批', 7, { isGroup: false, admins, dir })
   if (stranger.handled) assert.match(stranger.reply, /无权操作/)
@@ -80,4 +82,14 @@ test('IM 命令：只认管理员私聊；待批/申请/批准/拒绝 的动作�
 
   const notMine = await handleAdminCommand('今天吃啥', 42, { isGroup: false, admins, dir })
   assert.equal(notMine.handled, false)
+}))
+
+test('并发批准：同一个请求只能成功一次（不会产生幽灵令牌）', withDir(async (dir) => {
+  const req = await store.requestCommand('systemctl restart dsh', dir)
+  const results = await Promise.allSettled([
+    store.approveById(req.id, dir, Date.now(), 'dm-1'),
+    store.approveById(req.id, dir, Date.now(), 'dm-2'),
+  ])
+  const ok = results.filter((r) => r.status === 'fulfilled')
+  assert.equal(ok.length, 1, '两次并发批准只能有一次成功')
 }))

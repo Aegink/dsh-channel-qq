@@ -59,6 +59,18 @@ function qqMakeMeme(config: QQChannelConfig, log: (line: string) => void): ToolS
   }
 }
 
+/**
+ * 发送目标：必须是正整数。`Number(undefined)` 是 NaN，NaN 一路进 outbound 队列
+ * 只会变成一条"发不出去"的静默失败（2026-10-19 排查）。
+ */
+function targetOf(args: Record<string, unknown>): number {
+  const raw = Number(args.target)
+  if (!Number.isFinite(raw) || raw <= 0 || !Number.isInteger(raw)) {
+    throw new Error(`target 必须是正整数（群号或好友 QQ 号），收到 ${String(args.target)}`)
+  }
+  return raw
+}
+
 /** `qq_send_meme` — 现场做一张并直接发到指定群或私聊。 */
 function qqSendMeme(config: QQChannelConfig, api: QQApi, out: OutboundQueue, log: (line: string) => void): ToolSpec {
   return {
@@ -84,7 +96,7 @@ function qqSendMeme(config: QQChannelConfig, api: QQApi, out: OutboundQueue, log
         log,
       })
       const message: OneBotMessageSegment[] = [{ type: 'image', data: { file: await napcatFileArg(result.file) } }]
-      const sent = await out.push(() => api.sendTo(args.isGroup === true, Number(args.target), message))
+      const sent = await out.push(() => api.sendTo(args.isGroup === true, targetOf(args), message))
       return { ok: true, result, sent }
     },
   }
@@ -116,7 +128,7 @@ function qqEmojiStickerText(config: QQChannelConfig, api: QQApi, out: OutboundQu
       })
       if (args.target === undefined || args.target === null) return { ok: true, result }
       const message: OneBotMessageSegment[] = [{ type: 'image', data: { file: await napcatFileArg(result.file) } }]
-      const sent = await out.push(() => api.sendTo(args.isGroup !== false, Number(args.target), message))
+      const sent = await out.push(() => api.sendTo(args.isGroup !== false, targetOf(args), message))
       return { ok: true, result, sent }
     },
   }

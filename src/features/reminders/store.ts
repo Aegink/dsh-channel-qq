@@ -160,6 +160,20 @@ export class ReminderStore {
     await this.save()
   }
 
+  /**
+   * 清理早已触发的一次性提醒（默认 7 天）。
+   *
+   * 不清理的话文件无界增长：每加一条一次性提醒就永久留一行（2026-10-19 排查）。
+   * 周期提醒（daily/weekly）永远 `fired=false`，不受影响。
+   */
+  async pruneFired(now = Date.now(), keepMs = 7 * DAY_MS): Promise<number> {
+    const before = this.items.length
+    this.items = this.items.filter((r) => !(r.fired && r.repeat === 'none' && (r.firedAt ?? r.at) < now - keepMs))
+    const removed = before - this.items.length
+    if (removed > 0) await this.save()
+    return removed
+  }
+
   /** 列表：未触发的优先，其次按到点时间从近到远。 */
   list(limit = 50): Reminder[] {
     return [...this.items]

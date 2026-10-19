@@ -66,7 +66,7 @@ function qqSavePrivateFile(deps: QQToolDeps): ToolSpec {
           const wsRoot = config.workspacePath ?? process.cwd()
           const dir = pathMod.join(wsRoot, 'downloads')
           await fsMod.mkdir(dir, { recursive: true })
-          const safeName = String(args.saveAs ?? `file_${Date.now()}`).replace(/[\\/:*?"<>|]/g, '_')
+          const safeName = String(args.saveAs ?? `file_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`).replace(/[\\/:*?"<>|]/g, '_')
           const target = pathMod.join(dir, safeName)
           await atomicWriteFile(target, bytes)
           return { saved: target, size: bytes.length }

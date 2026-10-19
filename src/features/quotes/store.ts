@@ -126,9 +126,20 @@ export class QuoteStore {
     this.log(`quotes: loaded ${String(this.quotes.length)} entr(ies)`)
   }
 
+  /**
+   * 落盘；**失败抛错**。
+   *
+   * 工具路径必须用它：旧实现把异常吞掉、只记一行日志，于是「存语录」在磁盘满/
+   * 权限错时会回 `ok:true` + 完整条目——用户以为存上了，其实没有（2026-10-19 排查）。
+   */
+  private async persist(): Promise<void> {
+    await this.store.save({ version: 1, quotes: this.quotes })
+  }
+
+  /** 尽力而为的落盘（自动收录、热度计数用）：失败只记日志，不影响主流程。 */
   async save(): Promise<void> {
     try {
-      await this.store.save({ version: 1, quotes: this.quotes })
+      await this.persist()
     } catch (error) {
       this.log(`quotes save failed: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -149,10 +160,12 @@ export class QuoteStore {
     const text = String(input.text ?? '').trim()
     if (text.length < MIN_TEXT_LEN) throw new Error(`语录太短了（至少 ${String(MIN_TEXT_LEN)} 个字），这种存下来也没梗。`)
     if (text.length > MAX_TEXT_LEN) throw new Error(`语录太长（最多 ${String(MAX_TEXT_LEN)} 个字），挑最精彩的那一句存。`)
-    const existing = this.quotes.find((q) => q.text === text)
+    // 按 (text, groupId) 去重：同一句话在不同群出现不该合并成一条——否则
+    // 「谁说的、在哪个群」会被第一次出现永久固定（2026-10-19 排查）。
+    const existing = this.quotes.find((q) => q.text === text && q.groupId === Number(input.groupId ?? 0))
     if (existing !== undefined) {
       existing.hits += 1
-      await this.save()
+      await this.persist()
       return existing
     }
     const entry: QuoteEntry = {
@@ -168,7 +181,7 @@ export class QuoteStore {
     }
     this.quotes.push(entry)
     while (this.quotes.length > MAX_QUOTES) this.quotes.splice(pickEvictionIndex(this.quotes), 1)
-    await this.save()
+    await this.persist()
     return entry
   }
 
@@ -220,7 +233,7 @@ export class QuoteStore {
     const before = this.quotes.length
     this.quotes = this.quotes.filter((q) => q.id !== id)
     if (this.quotes.length === before) return false
-    await this.save()
+    await this.persist()
     return true
   }
 

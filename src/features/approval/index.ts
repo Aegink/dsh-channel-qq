@@ -4,14 +4,19 @@
  * 这样既不用改子插件顺序，也不会动到工具面快照。
  */
 
-import { approvalDir, takeResults, type ExecResult } from './store.js'
+import { approvalDir, listResults, removeResult, type ExecResult } from './store.js'
 import { handleAdminCommand } from './commands.js'
 import type { SubHost } from '../plugin-kit.js'
 
-/** 造一个"私聊管理员命令"处理器；没启用审批的部署不装它。 */
-export function createAdminCommand(admins: readonly number[]): (text: string, userId: number) => Promise<string | null> {
+/**
+ * 造一个"私聊管理员命令"处理器；没启用审批的部署不装它。
+ *
+ * `admins` 是**取值函数**而不是快照：撤掉一个管理员后，他手里的「批准」
+ * 必须立刻失效（2026-10-19 排查：apply 时快照 ⇒ 撤权不生效）。
+ */
+export function createAdminCommand(admins: () => readonly number[], log?: (line: string) => void): (text: string, userId: number) => Promise<string | null> {
   return async (text: string, userId: number) => {
-    const result = await handleAdminCommand(text, userId, { isGroup: false, admins })
+    const result = await handleAdminCommand(text, userId, { isGroup: false, admins: admins(), log })
     return result.handled ? result.reply : null
   }
 }
@@ -38,15 +43,26 @@ export function startReceiptPoller(host: SubHost, everyMs = 20_000): () => void 
   let stopped = false
   const tick = async (): Promise<void> => {
     if (stopped) return
-    const results = await takeResults(approvalDir()).catch(() => [])
+    const results = await listResults(approvalDir()).catch(() => [])
     if (results.length === 0) return
-    const admin = host.config.admins[0]
+    // 回执发给**全部**管理员（批准权限就是按整张名单判的）；名单为空时
+    // 什么都不删，等有人被加回来再补发。
+    const admins = host.config.admins
     const parts = host.get('platform')
-    if (admin === undefined || parts === undefined) return
+    if (admins.length === 0 || parts === undefined) return
     for (const result of results) {
-      await parts.out.push(() => parts.api.sendPrivateMessage(admin, [{ type: 'text', data: { text: receiptText(result) } }]))
-        .catch((error: unknown) => host.log(`approval receipt send failed: ${String(error)}`))
-      host.log(`approval: receipt ${result.id} (${result.ok ? 'ok' : 'fail'}) delivered`)
+      let delivered = true
+      for (const admin of admins) {
+        try {
+          await parts.out.push(() => parts.api.sendPrivateMessage(admin, [{ type: 'text', data: { text: receiptText(result) } }]))
+        } catch (error) {
+          delivered = false
+          host.log(`approval receipt send failed (${result.id} → ${admin}): ${String(error)}`)
+        }
+      }
+      // **发成功才删**：旧实现先删后发，发送失败即永久丢失。
+      if (delivered) await removeResult(result.id, approvalDir())
+      host.log(`approval: receipt ${result.id} (${result.ok ? 'ok' : 'fail'}) ${delivered ? 'delivered' : 'kept for retry'}`)
     }
   }
   const timer = setInterval(() => { void tick() }, everyMs)

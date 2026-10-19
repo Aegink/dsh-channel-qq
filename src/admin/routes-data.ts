@@ -148,7 +148,7 @@ async function writeAuxRoute(env: DataRouteEnv, req: http.IncomingMessage, res: 
     if (env.deps.sessions === undefined) { env.json(res, 503, { error: '会话管理不可用' }); return true }
     const body = await env.readBody(req)
     const result = await env.deps.sessions.rebuild(String(body.room ?? ''))
-    await env.audit(ip, 'POST', route, 'session.rebuild', `重建会话 ${result.room}（移除 ${result.removed} 个文件）`)
+    await env.audit(ip, 'POST', route, 'session.rebuild', `重建会话 ${result.room}（移动 ${result.files} 个文件到备份）`)
     env.json(res, 200, { ok: true, ...result })
     return true
   }

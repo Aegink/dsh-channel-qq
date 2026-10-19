@@ -130,6 +130,9 @@ async function sessionList(host: SubHost): Promise<Array<{ room: string; session
   const names = await fs.readdir(projectDir).catch(() => [] as string[])
   const sessions: Array<{ room: string; sessionId: string; files: number; bytes: number; mtime: number }> = []
   for (const name of names) {
+    // **只列 QQ 房间会话**：项目目录里还躺着 Web/自动化会话（UUID 名），
+    // 把它们当房间列出来，点「重建」会拼成 `qq-<uuid>`——静默无效（2026-10-19 排查）。
+    if (!name.startsWith('qq-')) continue
     const full = path.join(projectDir, name)
     const stat = await fs.stat(full).catch(() => null)
     if (stat === null || !stat.isDirectory()) continue
@@ -144,7 +147,7 @@ async function sessionList(host: SubHost): Promise<Array<{ room: string; session
       }
     }
     sessions.push({
-      room: name.startsWith('qq-') ? name.slice(3) : name,
+      room: name.slice(3),
       sessionId: name,
       files: files.length,
       bytes,
@@ -156,8 +159,9 @@ async function sessionList(host: SubHost): Promise<Array<{ room: string; session
 }
 
 /** 拆掉一个会话（活 agent / 内存记录 / 历史文件移到备份），让新指令从下一轮生效。 */
-async function sessionRebuild(host: SubHost, room: string): Promise<{ room: string; removed: number; note: string }> {
-  const clean = room.trim()
+async function sessionRebuild(host: SubHost, room: string): Promise<{ room: string; moved: boolean; files: number; note: string }> {
+  // 允许调用方传 `group-123` 或 `qq-group-123`，统一成房间键。
+  const clean = room.trim().replace(/^qq-/, '')
   if (clean === '') throw new Error('没有指定会话')
   const sessionId = `qq-${clean}`
   const notes: string[] = []
@@ -177,24 +181,26 @@ async function sessionRebuild(host: SubHost, room: string): Promise<{ room: stri
       ? '这个会话的 dispose 能力不在本插件手里（是别的持有者创建的），历史文件保持不动——移走会让运行中的 agent 每轮都报 ENOENT。请重启插件后再重建。'
       : '注册表里仍挂着该会话，历史文件保持不动，请重启插件后再重建。')
     host.log(`admin: rebuilt session ${sessionId} REFUSED (agent still live) :: ${notes.join('; ')}`)
-    return { room: clean, removed: 0, note: notes.join('；') }
+    return { room: clean, moved: false, files: 0, note: notes.join('；') }
   }
 
   const dir = sessionDir(host.config.workspacePath ?? undefined, sessionId)
   const exists = await fs.stat(dir).catch(() => null)
-  let removed = 0
+  // `files` 是真的移走了几个文件；旧字段 `removed` 是个 0/1 标志，审计里被当成
+  // "文件数"读（2026-10-19 排查）。
+  let movedFiles = 0
   if (exists !== null) {
+    movedFiles = (await fs.readdir(dir).catch(() => [] as string[])).length
     const stamp = formatLocalStamp(new Date()).replace(/[:.]/g, '-')
     const backup = path.join(host.dshHome, 'channel-qq', 'backups', `session-${stamp}-${encodeSegment(sessionId)}`)
     await fs.mkdir(path.dirname(backup), { recursive: true })
     await fs.rename(dir, backup)
-    removed = 1
-    notes.push(`历史已移到备份：${backup}`)
+    notes.push(`历史已移到备份：${backup}（${movedFiles} 个文件）`)
   } else {
     notes.push('没有找到该会话的历史文件')
   }
   host.log(`admin: rebuilt session ${sessionId} :: ${notes.join('; ')}`)
-  return { room: clean, removed, note: notes.join('；') }
+  return { room: clean, moved: exists !== null, files: movedFiles, note: notes.join('；') }
 }
 
 /** 面板依赖的装配（status/readLog/prompt/applyEffects/resources/files/presets/sessions）。 */

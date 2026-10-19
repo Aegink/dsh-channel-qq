@@ -49,7 +49,7 @@ export interface AdminDeps {
   /** Persisted agent sessions: list them, or wipe one so it restarts clean. */
   sessions?: {
     list: () => Promise<Array<{ room: string; sessionId: string; files: number; bytes: number; mtime: number }>>
-    rebuild: (room: string) => Promise<{ room: string; removed: number; note: string }>
+    rebuild: (room: string) => Promise<{ room: string; moved: boolean; files: number; note: string }>
   }
   /** 模型供应商管理（宿主 settings / agentDefaultModel / credentials 的接入面）。 */
   providers?: ProvidersSurface

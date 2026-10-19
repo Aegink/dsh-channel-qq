@@ -58,8 +58,7 @@ function qqSendSticker(deps: QQToolDeps): ToolSpec {
           const query = String(args.query ?? '').trim()
           let hit: { file: string; source: string; desc: string; tags: string[]; score: number } | undefined = library.search(query, 1)[0]
           if (hit === undefined && args.fallbackRandom === true) {
-            const all = library.list(200)
-            const pick = all[Math.floor(Math.random() * all.length)]
+            const pick = library.random()
             if (pick !== undefined) hit = { file: pick.file, source: pick.source, desc: pick.desc, tags: pick.tags, score: 0 }
           }
           if (hit === undefined) {

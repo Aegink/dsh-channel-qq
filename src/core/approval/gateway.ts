@@ -40,6 +40,11 @@ export function normalizeCommand(raw: string): string {
   out = out.replace(/"([^"]*)"/g, (_m, inner: string) => inner.replace(/ /g, '\u0000'))
   // ${IFS} / $IFS 是切词符，等价于空格。
   out = out.replace(/\$\{?IFS\}?/g, ' ')
+  // 长选项与短选项等价：`rm --recursive --force /` 就是 `rm -r -f /`。
+  // 不归一的话分级表只认短选项，L3 会被判成 L0 直接执行（2026-10-19 排查）。
+  out = out.replace(/--recursive\b/g, '-r').replace(/--force\b/g, '-f')
+  // 命令前的反斜杠只是转义，不改变执行哪条命令：`\rm` 仍然是 `rm`。
+  out = out.replace(/^\s*\\(?=[A-Za-z])/, '')
   // 提权与环境前缀对"这条命令做什么"没有影响。
   out = out.replace(/^\s*(?:sudo|doas)\s+/, '')
   out = out.replace(/^\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)+/, '')
@@ -119,6 +124,10 @@ export interface ApprovalRequest {
   readonly createdAt: number
   readonly expiresAt: number
   readonly status: RequestStatus
+  /** 谁申请的 / 谁批准或拒绝的（审计用；缺省表示未记录）。 */
+  readonly requestedBy?: string
+  readonly approvedBy?: string
+  readonly deniedBy?: string
   /** 一次性令牌（approve 时写入；consume 后清空）。 */
   readonly token?: string
   readonly tokenExpiresAt?: number
@@ -130,6 +139,8 @@ export interface CreateOptions {
   readonly digest: (text: string) => string
   /** 申请有效期（默认 30 分钟）。 */
   readonly ttlMs?: number
+  /** 申请人标识（如 `dm-1000000002`）。 */
+  readonly requestedBy?: string
 }
 
 const DEFAULT_TTL_MS = 30 * 60_000
@@ -148,19 +159,20 @@ export function createRequest(raw: string, opts: CreateOptions): ApprovalRequest
     createdAt: opts.now,
     expiresAt: opts.now + (opts.ttlMs ?? DEFAULT_TTL_MS),
     status: 'pending',
+    ...(opts.requestedBy === undefined ? {} : { requestedBy: opts.requestedBy }),
   }
 }
 
 /** 批准：写入一次性令牌（默认 10 分钟有效）。已批准/已执行的不能再批。 */
-export function approveRequest(req: ApprovalRequest, token: string, now: number, ttlMs = 10 * 60_000): ApprovalRequest {
+export function approveRequest(req: ApprovalRequest, token: string, now: number, ttlMs = 10 * 60_000, by?: string): ApprovalRequest {
   if (req.status !== 'pending') throw new Error(`请求 ${req.id} 当前是 ${req.status}，不能再批准`)
   if (now > req.expiresAt) throw new Error(`请求 ${req.id} 已过期`)
-  return { ...req, status: 'approved', token, tokenExpiresAt: now + ttlMs }
+  return { ...req, status: 'approved', token, tokenExpiresAt: now + ttlMs, ...(by === undefined ? {} : { approvedBy: by }) }
 }
 
-export function denyRequest(req: ApprovalRequest): ApprovalRequest {
+export function denyRequest(req: ApprovalRequest, by?: string): ApprovalRequest {
   if (req.status !== 'pending') throw new Error(`请求 ${req.id} 当前是 ${req.status}，不能拒绝`)
-  return { ...req, status: 'denied' }
+  return { ...req, status: 'denied', ...(by === undefined ? {} : { deniedBy: by }) }
 }
 
 export type ConsumeFailure = 'not-approved' | 'bad-token' | 'token-expired' | 'hash-mismatch' | 'consumed' | 'request-expired'

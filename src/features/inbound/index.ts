@@ -329,7 +329,8 @@ export const inboundPlugin: SubPlugin = {
       },
       openSentLog: (room: string) => sentLogHub.for(room),
       // 审批网关（默认关；CHANNEL_QQ_APPROVAL=1 时生效）。命令先于 agent 处理、不经模型。
-      ...approvalEnabled() ? { adminCommand: createAdminCommand(config.admins) } : {},
+      // 传取值函数而不是 `config.admins`：撤掉管理员后必须立刻失效。
+      ...approvalEnabled() ? { adminCommand: createAdminCommand(() => host.config.admins, host.log) } : {},
     })
     host.provide('inbound', {
       registry: runtime.registry,

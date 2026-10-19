@@ -74,6 +74,10 @@ export type {
  */
 export function applyPatch(target: Json, patch: Json): void {
   for (const [key, value] of Object.entries(patch)) {
+    // 原型污染：`__proto__` / `constructor` / `prototype` 不是配置项，写进去会改到
+    // 所有对象的原型上。HTTP 面有 validatePatch 挡着，但这是 export 的公共函数
+    // （测试也直接调），必须在入口自己拒（2026-10-19 排查）。
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue
     const current = target[key] as unknown
     if (isPlainObject(value) && isPlainObject(current)) {
       applyPatch(current, value)
@@ -427,9 +431,9 @@ export class AdminServer {
     }
   }
 
-  private async persist(): Promise<void> {
+  private async persist(override: Json = this.override): Promise<void> {
     await fs.mkdir(path.dirname(this.overrideFile), { recursive: true })
-    await atomicWriteFile(this.overrideFile, JSON.stringify(this.override, null, 2))
+    await atomicWriteFile(this.overrideFile, JSON.stringify(override, null, 2))
   }
 
   private versionText(): string {
@@ -492,9 +496,18 @@ export class AdminServer {
     const { secretSet } = maskConfigForView(this.deps.config)
     const changes = computeChanges(this.deps.config, patch, undefined, secretSet)
     const restartRequired = restartPathsIn(changes)
+    // **先落盘、后改内存**。反过来的话，写盘失败时进程按新配置跑、磁盘还是旧的、
+    // 热重载也没跑——三方差且零日志，表现为"重启后设置自己变回去了"（2026-10-19 排查）。
+    const nextOverride: Json = JSON.parse(JSON.stringify(this.override)) as Json
+    applyPatch(nextOverride, patch)
+    try {
+      await this.persist(nextOverride)
+    } catch (error) {
+      this.deps.log(`admin: config persist FAILED, nothing applied :: ${messageOf(error)}`)
+      throw Object.assign(new Error(`配置写盘失败，本次修改未生效：${messageOf(error)}`), { status: 500 })
+    }
+    this.override = nextOverride
     applyPatch(toJson(this.deps.config), patch)
-    applyPatch(this.override, patch)
-    await this.persist()
     const effects: string[] = []
     if (this.deps.applyEffects !== undefined) {
       try {

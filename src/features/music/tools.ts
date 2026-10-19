@@ -70,7 +70,7 @@ function qqResolveMusic(deps: QQToolDeps): ToolSpec {
 
 /** `qq_send_music_card` — 在群/私聊里发一首歌（官方音乐卡片，网易云 songId）。最适合点歌展示。… */
 function qqSendMusicCard(deps: QQToolDeps): ToolSpec {
-  const { api } = deps
+  const { api, out } = deps
   return {
         name: 'qq_send_music_card',
         description: '在群/私聊里发一首歌（官方音乐卡片，网易云 songId）。最适合点歌展示。',
@@ -85,16 +85,17 @@ function qqSendMusicCard(deps: QQToolDeps): ToolSpec {
         },
         run: async (args) => {
           const segment: OneBotMessageSegment[] = [{ type: 'music', data: { type: '163', id: String(args.songId) } }]
-          return args.private === true
+          // 走限流队列：与 voice / imagegen 同一个契约（直连 api 会绕过发送间隔）。
+          return await out.push(() => (args.private === true
             ? api.sendPrivateMessage(Number(args.target), segment)
-            : api.sendGroupMessage(Number(args.target), segment)
+            : api.sendGroupMessage(Number(args.target), segment)))
         },
       }
 }
 
 /** `qq_send_music_voice` — 把一首歌下载后以语音形式发到群/私聊（卡片发不了时的降级，听感像发语音条）。… */
 function qqSendMusicVoice(deps: QQToolDeps): ToolSpec {
-  const { api } = deps
+  const { api, out } = deps
   return {
         name: 'qq_send_music_voice',
         description: '把一首歌下载后以语音形式发到群/私聊（卡片发不了时的降级，听感像发语音条）。',
@@ -122,11 +123,14 @@ function qqSendMusicVoice(deps: QQToolDeps): ToolSpec {
           const target = pathMod.join(tmpDir, `song_${Date.now()}.mp3`)
           await atomicWriteFile(target, Buffer.from(audio.bytes))
           const segment: OneBotMessageSegment[] = [{ type: 'record', data: { file: await napcatFileArg(target) } }]
-          const result = args.private === true
-            ? await api.sendPrivateMessage(Number(args.target), segment)
-            : await api.sendGroupMessage(Number(args.target), segment)
-          void fsMod.rm(target, { force: true }).catch(() => {})
-          return result
+          try {
+            return await out.push(() => (args.private === true
+              ? api.sendPrivateMessage(Number(args.target), segment)
+              : api.sendGroupMessage(Number(args.target), segment)))
+          } finally {
+            // 发送失败也要删：否则每次失败都在磁盘上留一份整首歌（voice/tts 就是这么做的）。
+            await fsMod.rm(target, { force: true }).catch(() => {})
+          }
         },
       }
 }
@@ -177,11 +181,24 @@ function qqMusicPlaylist(deps: QQToolDeps): ToolSpec {
         run: async (args) => {
           const fsMod = await import('node:fs/promises')
           const pathMod = await import('node:path')
-          const wsRoot = config.workspacePath ?? process.cwd()
+          // 与面板（features/music/index.ts）同一个文件；两边的兜底目录也必须一致，
+          // 否则没配 workspacePath 时面板和工具会各写一份（2026-10-19 排查）。
+          const wsRoot = config.workspacePath ?? pathMod.join(resolveDshHome(), 'channel-qq')
           const file = pathMod.join(wsRoot, 'music-playlist.json')
           type Song = { id: string; name: string; artists?: string; addedAt: number }
           let songs: Song[] = []
-          try { songs = JSON.parse(await fsMod.readFile(file, 'utf8')) as Song[] } catch { songs = [] }
+          try {
+            const parsed: unknown = JSON.parse(await fsMod.readFile(file, 'utf8'))
+            if (!Array.isArray(parsed)) throw new Error('内容不是数组')
+            songs = parsed as Song[]
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+              songs = []
+            } else {
+              // **读失败绝不能当成空歌单**：紧接着的写回会把用户整份歌单覆盖成 []。
+              throw new Error(`歌单读取失败（为避免覆盖原文件，本次未做任何修改）：${error instanceof Error ? error.message : String(error)}`)
+            }
+          }
           const action = String(args.action)
           if (action === 'add') {
             if (songs.some((s) => s.id === String(args.songId))) return { result: '歌单里已有这首', total: songs.length }
@@ -193,7 +210,8 @@ function qqMusicPlaylist(deps: QQToolDeps): ToolSpec {
           } else if (action !== 'list') {
             return { error: 'action 只能是 add/remove/list/clear' }
           }
-          await atomicWriteFile(file, JSON.stringify(songs, null, 1))
+          // list 是只读的：不重写文件（写回一次就多一次覆盖机会）。
+          if (action !== 'list') await atomicWriteFile(file, JSON.stringify(songs, null, 1))
           return { action, total: songs.length, songs: songs.slice(0, 30) }
         },
       }
@@ -267,7 +285,7 @@ function qqKugouSearch(deps: QQToolDeps): ToolSpec {
 
 /** `qq_kugou_send` — 发酷狗歌曲：默认发语音条（VIP歌需要先 qq_kugou_login）。quality 可选 auto/viper_t… */
 function qqKugouSend(deps: QQToolDeps): ToolSpec {
-  const { api } = deps
+  const { api, out } = deps
   return {
         name: 'qq_kugou_send',
         description: '发酷狗歌曲：默认发语音条（VIP歌需要先 qq_kugou_login）。quality 可选 auto/viper_tape/viper_clear/super/high/flac/320/128。',
@@ -294,11 +312,14 @@ function qqKugouSend(deps: QQToolDeps): ToolSpec {
           const target = pathMod.join(tmpDir, `kg_${Date.now()}.${resolved.extName}`)
           await atomicWriteFile(target, Buffer.from(audio.bytes))
           const segment: OneBotMessageSegment[] = [{ type: 'record', data: { file: await napcatFileArg(target) } }]
-          const result = (args.private === true
-            ? await api.sendPrivateMessage(Number(args.target), segment)
-            : await api.sendGroupMessage(Number(args.target), segment)) as Record<string, unknown>
-          void fsMod.rm(target, { force: true }).catch(() => {})
-          return { ...result, trial: resolved.trial, quality: String(args.quality ?? 'auto') }
+          try {
+            const result = (await out.push(() => (args.private === true
+              ? api.sendPrivateMessage(Number(args.target), segment)
+              : api.sendGroupMessage(Number(args.target), segment)))) as Record<string, unknown>
+            return { ...result, trial: resolved.trial, quality: String(args.quality ?? 'auto') }
+          } finally {
+            await fsMod.rm(target, { force: true }).catch(() => {})
+          }
         },
       }
 }

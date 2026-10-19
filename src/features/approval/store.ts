@@ -14,6 +14,7 @@ import { promises as fs } from 'node:fs'
 import { createHash, randomBytes } from 'node:crypto'
 import * as path from 'node:path'
 import { atomicWriteFile } from '../../adapters/fs-store/atomic.js'
+import { withLock } from '../../adapters/fs-store/mutex.js'
 import {
   approveRequest, consumeRequest, createRequest, denyRequest, normalizeCommand,
   type ApprovalRequest,
@@ -82,47 +83,55 @@ export async function listRequests(dir = approvalDir()): Promise<ApprovalRequest
 }
 
 /** 新建申请：L3 直接拒绝（抛出）；其余按级别决定是否需要令牌。 */
-export async function requestCommand(raw: string, dir = approvalDir(), now = Date.now()): Promise<ApprovalRequest> {
+export async function requestCommand(raw: string, dir = approvalDir(), now = Date.now(), requestedBy?: string): Promise<ApprovalRequest> {
   const id = `appr-${now.toString(36)}-${randomBytes(3).toString('hex')}`
-  const req = createRequest(raw, { id, now, digest })
+  const req = createRequest(raw, { id, now, digest, ...(requestedBy === undefined ? {} : { requestedBy }) })
   await writeRequest(dir, req)
   return req
 }
 
 /** 批准：生成一次性令牌并写请求文件；同时落一个队列标记触发 root 执行器。 */
-export async function approveById(id: string, dir = approvalDir(), now = Date.now()): Promise<ApprovalRequest> {
+export async function approveById(id: string, dir = approvalDir(), now = Date.now(), by?: string): Promise<ApprovalRequest> {
   const p = await ensureDirs(dir)
   const file = path.join(p.requests, `${id}.json`)
-  const req = await readRequestFile(file)
-  if (req === null) throw new Error(`没有请求 ${id}`)
-  const token = randomBytes(16).toString('hex')
-  const approved = approveRequest(req, token, now)
-  await writeRequest(dir, approved)
-  // 空文件 = 队列标记（systemd path 监听目录变化）。
-  await atomicWriteFile(path.join(p.queue, `${id}.req`), id)
-  return approved
+  // **读改写必须串行**：两次并发「批准」各自读到 pending、各自生成令牌，
+  // 后写的覆盖先写的，前一个令牌就变成幽灵（2026-10-19 排查）。
+  return await withLock(file, async () => {
+    const req = await readRequestFile(file)
+    if (req === null) throw new Error(`没有请求 ${id}`)
+    const token = randomBytes(16).toString('hex')
+    const approved = approveRequest(req, token, now, undefined, by)
+    await writeRequest(dir, approved)
+    // 空文件 = 队列标记（systemd path 监听目录变化）。
+    await atomicWriteFile(path.join(p.queue, `${id}.req`), id)
+    return approved
+  })
 }
 
-export async function denyById(id: string, dir = approvalDir()): Promise<ApprovalRequest> {
+export async function denyById(id: string, dir = approvalDir(), by?: string): Promise<ApprovalRequest> {
   const p = await ensureDirs(dir)
   const file = path.join(p.requests, `${id}.json`)
-  const req = await readRequestFile(file)
-  if (req === null) throw new Error(`没有请求 ${id}`)
-  const denied = denyRequest(req)
-  await writeRequest(dir, denied)
-  return denied
+  return await withLock(file, async () => {
+    const req = await readRequestFile(file)
+    if (req === null) throw new Error(`没有请求 ${id}`)
+    const denied = denyRequest(req, by)
+    await writeRequest(dir, denied)
+    return denied
+  })
 }
 
 /** 执行器侧：核验令牌与命令，成功后把请求标记为 consumed。 */
 export async function consumeById(id: string, raw: string, dir = approvalDir(), now = Date.now()): Promise<{ ok: true; request: ApprovalRequest } | { ok: false; reason: string }> {
   const p = await ensureDirs(dir)
   const file = path.join(p.requests, `${id}.json`)
-  const req = await readRequestFile(file)
-  if (req === null) return { ok: false, reason: 'not-found' }
-  const result = consumeRequest(req, req.token ?? '', raw, now, digest)
-  if (!result.ok) return { ok: false, reason: result.reason }
-  await writeRequest(dir, result.request)
-  return { ok: true, request: result.request }
+  return await withLock(file, async () => {
+    const req = await readRequestFile(file)
+    if (req === null) return { ok: false, reason: 'not-found' as const }
+    const result = consumeRequest(req, req.token ?? '', raw, now, digest)
+    if (!result.ok) return { ok: false, reason: result.reason }
+    await writeRequest(dir, result.request)
+    return { ok: true, request: result.request }
+  })
 }
 
 export interface ExecResult {
@@ -140,23 +149,32 @@ export async function writeResult(result: ExecResult, dir = approvalDir()): Prom
   await atomicWriteFile(path.join(p.results, `${result.id}.json`), JSON.stringify(result, null, 2))
 }
 
-/** bot 侧：取出尚未转发的回执（读到的文件会被删除）。 */
-export async function takeResults(dir = approvalDir()): Promise<ExecResult[]> {
+/**
+ * bot 侧：**只读**列出尚未转发的回执。
+ *
+ * 删除由调用方在"真的发出去之后"做（{@link removeResult}）。旧实现先删后发，
+ * 发送失败即永久丢失——而它恰好在最需要的时候（协议端刚重启）最容易失败。
+ */
+export async function listResults(dir = approvalDir()): Promise<ExecResult[]> {
   const p = await ensureDirs(dir)
   const names = await fs.readdir(p.results).catch(() => [] as string[])
   const out: ExecResult[] = []
   for (const name of names) {
     if (!name.endsWith('.json')) continue
-    const file = path.join(p.results, name)
     try {
-      const parsed = JSON.parse(await fs.readFile(file, 'utf-8')) as ExecResult
+      const parsed = JSON.parse(await fs.readFile(path.join(p.results, name), 'utf-8')) as ExecResult
       out.push(parsed)
-      await fs.unlink(file)
     } catch {
       // 半截文件留到下一轮；不要因为一条坏回执挡住其它。
     }
   }
   return out
+}
+
+/** 回执已经转发成功，删掉它。 */
+export async function removeResult(id: string, dir = approvalDir()): Promise<void> {
+  const p = await ensureDirs(dir)
+  await fs.unlink(path.join(p.results, `${id}.json`)).catch(() => {})
 }
 
 /** 请求的简短展示（列表与回执共用）：`appr-xxx [L2] systemctl restart dsh`。 */

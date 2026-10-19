@@ -8,6 +8,8 @@ import type { Reminder, ReminderStore } from './store.js'
 
 export class ReminderRunner {
   private timer: ReturnType<typeof setInterval> | null = null
+  /** 上一轮还没跑完就不开下一轮：send 超过 30s 时同一批 due 会被推两次。 */
+  private running = false
   private readonly store: ReminderStore
   private readonly send: (r: Reminder) => Promise<void>
   private readonly log: (line: string) => void
@@ -29,6 +31,16 @@ export class ReminderRunner {
 
   /** 每次轮询同一时刻的 due 快照；单条失败只记日志，其它条继续。 */
   private async tick(): Promise<void> {
+    if (this.running) return
+    this.running = true
+    try {
+      await this.runDue()
+    } finally {
+      this.running = false
+    }
+  }
+
+  private async runDue(): Promise<void> {
     const pending = this.store.due()
     for (const reminder of pending) {
       try {

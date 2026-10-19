@@ -124,7 +124,10 @@ function qqSearchHistory(deps: QQToolDeps): ToolSpec {
           const sender = args.senderId === undefined ? null : Number(args.senderId)
           const since = args.sinceDate === undefined ? null : String(args.sinceDate)
           const until = args.untilDate === undefined ? null : String(args.untilDate)
-          const limit = Math.min(Number(args.limit ?? 20), 50)
+          // 夹取到 [1, 50]：`0` 会变成 0 条、`abc` 会变成 NaN（`hits.length >= NaN`
+          // 恒假 ⇒ 上限形同虚设）、负数直接不返回（2026-10-19 排查）。
+          const requested = Number(args.limit ?? 20)
+          const limit = Number.isFinite(requested) ? Math.max(1, Math.min(Math.trunc(requested), 50)) : 20
           const filter = { keyword, sender, since, until }
           const hits: Array<{ time: string; sender: string; userId: number; msgId: string; text: string }> = []
           for (const line of jsonl.split('\n')) {
@@ -160,18 +163,24 @@ function parseHistoryLine(
     const entry = JSON.parse(line)
     const content = entry.data?.content
     if (!Array.isArray(content)) return null
+    // 保留换行：一条入站包是多行的（抬头 + 房间行 + 信封），聊天行只是其中一行。
     const text = content
       .filter((b: { type: string }) => b.type === 'text')
       .map((b: { text?: string }) => b.text ?? '')
-      .join(' ')
+      .join('\n')
     if (text === '') return null
-    // 入站行长这样：`HH:MM 昵称(QQ号)…：正文`（见 core/message/render.ts）。
-    // 会话日志里没有发送者字段，而定时任务注入的行没有这个前缀——所以这一条正则
-    // 同时干了两件事：**还原发送者**，以及**把不是聊天的行丢掉**。
-    const head = /^(\d{2}:\d{2}) (.+?)\((\d+)\)/.exec(text)
+    // 聊天行长这样：`HH:MM 昵称(QQ号) #消息号 [@咱]：正文`（见 core/message/render.ts）。
+    // **必须逐行找**：包的第一行是 `【私聊消息】` 之类的抬头，用 `^` 锚在整段开头
+    // 会一条都匹配不上（2026-10-19 实测：qq_search_history 永远返回空）。
+    const chatLine = text
+      .split('\n')
+      .map((line) => line.trim())
+      .find((line) => /^\d{2}:\d{2} .+\(\d+\)/.test(line))
+    if (chatLine === undefined) return null
+    const head = /^(\d{2}:\d{2}) (.+?)\((\d+)\)/.exec(chatLine)
     if (head === null) return null
     const userId = Number(head[3])
-    const body = text.includes('：') ? text.slice(text.indexOf('：') + 1) : text
+    const body = chatLine.includes('：') ? chatLine.slice(chatLine.indexOf('：') + 1) : chatLine
     const iso = new Date(entry.time).toISOString().slice(0, 10)
     if (filter.since !== null && iso < filter.since) return null
     if (filter.until !== null && iso > filter.until) return null
@@ -179,7 +188,13 @@ function parseHistoryLine(
     if (filter.sender !== null && userId !== filter.sender) return null
     return {
       time: new Date(entry.time).toISOString(),
-      sender: head[2] ?? '',
+      // 昵称前面常带不可见的方向控制符（⁧‭ 之类），原样返回会污染 JSON 与日志。
+      sender: [...(head[2] ?? '')].filter((ch) => {
+        const code = ch.codePointAt(0) ?? 0
+        return !(code >= 0x200b && code <= 0x200f)
+          && !(code >= 0x202a && code <= 0x202e)
+          && !(code >= 0x2066 && code <= 0x2069)
+      }).join('').trim(),
       userId,
       msgId: '#' + String(entry.data?.messageId ?? entry.seq),
       text: body.slice(0, 300),

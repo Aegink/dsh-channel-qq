@@ -122,17 +122,20 @@ export function renderMapping(): string {
  * 对照表，必须保持原样（调用方排除它）。
  */
 export function rewriteLegacyToolNames(text: string): string {
-  // 按名字**从长到短**替换，并要求两侧不是标识符字符：否则 `qq_remind` 会把
-  // `qq_remind_at` 的前缀吃掉，变成 `qq_remind（action=add）_at`（2026-10-18 实测）。
-  const pairs: Array<[string, string]> = []
+  const table = new Map<string, string>()
   for (const face of MAPPING) {
-    for (const branch of face.branches) pairs.push([branch.legacy, `${face.name}（action=${branch.action}）`])
+    for (const branch of face.branches) {
+      table.set(branch.legacy, `${face.name}（action=${branch.action}）`)
+    }
   }
-  pairs.sort((a, b) => b[0].length - a[0].length)
-  let out = text
-  for (const [legacy, replacement] of pairs) {
-    const pattern = new RegExp(`(?<![A-Za-z0-9_])${legacy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9_])`, 'g')
-    out = out.replace(pattern, replacement)
-  }
-  return out
+  // **一次扫描 + 查表**，不是"逐条 replace"。
+  //
+  // 循环 replace 的替换结果会被下一条规则再次匹配：`qq_remind_at` 先变成
+  // `qq_remind（action=add_at）`，紧接着处理 `qq_remind` 时又把里面那个吃掉，
+  // 得到 `qq_remind（action=add）（action=add_at）`（2026-10-19 实测）。
+  // 「按长度倒序」只防原文里的重叠，防不住自己刚产生的重叠。
+  const escaped = (name: string): string => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const names = [...table.keys()].sort((a, b) => b.length - a.length).map(escaped)
+  const pattern = new RegExp(`(?<![A-Za-z0-9_])(${names.join('|')})(?![A-Za-z0-9_])`, 'g')
+  return text.replace(pattern, (match) => table.get(match) ?? match)
 }

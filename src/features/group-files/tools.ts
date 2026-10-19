@@ -88,7 +88,8 @@ function qqDownloadGroupFile(deps: QQToolDeps): ToolSpec {
           const wsRoot = config.workspacePath ?? process.cwd()
           const dir = path.join(wsRoot, 'downloads')
           await fs.mkdir(dir, { recursive: true })
-          const safeName = String(args.saveAs ?? `file_${Date.now()}`).replace(/[\/:*?"<>|]/g, '_')
+          // 反斜杠也要清洗：Windows 宿主上 `..\..\x` 是路径逃逸；这里与 files 的同名实现保持一致。
+          const safeName = String(args.saveAs ?? `file_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`).replace(/[\\/:*?"<>|]/g, '_')
           const target = path.join(dir, safeName)
           await atomicWriteFile(target, bytes)
           return { saved: target, size: bytes.length }

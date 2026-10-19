@@ -480,3 +480,12 @@ test('golden: tools.v2 打开的注册面（17 个合并工具的 schema）', as
     assert.equal(t.definitions.length, 17)
   } finally { t.dispose() }
 })
+
+const { rewriteLegacyToolNames } = await import('../src/features/tools-v2/mapping.js')
+
+test('旧名改写：一次扫描，绝不二次替换自己产生的文本', () => {
+  // 旧实现按长度倒序逐条 replace：`qq_remind_at` 先变成 `qq_remind（action=add_at）`，
+  // 紧接着处理 `qq_remind` 时又把里面那个吃掉，得到 `（action=add）（action=add_at）`。
+  assert.equal(rewriteLegacyToolNames('用 qq_remind_at 定'), '用 qq_remind（action=add_at） 定')
+  assert.equal(rewriteLegacyToolNames('qq_remind 本身'), 'qq_remind（action=add） 本身')
+})

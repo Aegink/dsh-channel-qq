@@ -132,17 +132,24 @@ export async function announceToolsV2Switch(host: SubHost, registry: Conversatio
         failures.push(`${id}：${error instanceof Error ? error.message : String(error)}`)
       }
     }
-    await atomicWriteJson(file, { announced: TOOLS_SURFACE_VERSION })
     host.log(`tools.v2: 切换日说明已投给 ${delivered}/${ids.length} 个已挂回会话`)
     if (failures.length > 0) {
       host.log(`tools.v2: 未投达 ${failures.length} 个会话：${failures.slice(0, 5).join('；')}${failures.length > 5 ? ' …' : ''}`)
+      // **有失败就不记账**：旧实现无论成败都写 announced，失败者永久收不到。
+      // 但也不能无限重试（坏房间会每次都失败），所以记次数，三次后放弃。
+      const attempts = (state?.attempts ?? 0) + 1
+      await atomicWriteJson(file, attempts >= 3
+        ? { announced: TOOLS_SURFACE_VERSION, attempts }
+        : { attempts })
+      return
     }
+    await atomicWriteJson(file, { announced: TOOLS_SURFACE_VERSION })
   } catch (error) {
     host.log(`tools.v2: 切换日说明投递失败（不影响启动）：${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
-function isSurfaceState(value: unknown): value is { announced?: string } {
+function isSurfaceState(value: unknown): value is { announced?: string; attempts?: number } {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
   const announced = (value as { announced?: unknown }).announced
   return announced === undefined || typeof announced === 'string'

@@ -71,7 +71,7 @@
       },
       "target": {
         "type": "number",
-        "description": "群号或好友QQ号，省略时用配置里的主群"
+        "description": "群号或好友QQ号；省略时仅在 isGroup=true 下回落到主群（私聊请务必给出 target）"
       }
     },
     "required": [

@@ -277,23 +277,29 @@ export class RssPoller {
     const items = fetched.items
     if (items.length === 0) return
 
-    // feed 通常按新→旧排列。水位线之前（数组下标更小）的都是新条目；
-    // 找不到水位线（feed 换了 guid 规则）时保守地只推最新一条，避免一次灌一屏。
+    // **不能假设 feed 一定按新→旧排列**：升序 feed（按发布时间从旧到新）在旧逻辑下
+    // 会把水位线定在"最老的一条"，于是新条目永远进不了 fresh、历史条目每轮重推
+    // （2026-10-19 排查）。用发布日期判方向，两条分支各自取"水位线之后"的那一段。
+    const firstDate = items[0]?.published ?? null
+    const lastDate = items[items.length - 1]?.published ?? null
+    const descending = firstDate === null || lastDate === null ? true : firstDate >= lastDate
     const boundary = feed.lastGuid === null ? -1 : items.findIndex((item) => item.guid === feed.lastGuid)
     const fresh = boundary >= 0
-      ? items.slice(0, boundary)
-      : (feed.lastGuid === null ? items.slice(0, 1) : [])
+      ? (descending ? items.slice(0, boundary) : items.slice(boundary + 1))
+      : (feed.lastGuid === null ? [descending ? items[0] : items[items.length - 1]] : [])
 
     const limit = Math.max(1, Number(this.config.rss?.maxPerPoll ?? 3))
-    const batch = fresh.slice(0, limit).reverse() // 反转让群里按时间从旧到新读
+    // 取**最新**的 limit 条（升序时最新在末尾），再按时间从旧到新发出去。
+    const batch = descending ? [...fresh.slice(0, limit)].reverse() : fresh.slice(-limit)
     for (const item of batch) {
+      if (item === undefined) continue
       await this.send(item, feed)
     }
     // 水位线永远推进到最新一条：即使因为 maxPerPoll 丢了中间几条，也不下一轮补发刷屏。
-    const newest = items[0]
+    const newest = descending ? items[0] : items[items.length - 1]
     if (newest !== undefined && newest.guid !== feed.lastGuid) {
       feed.lastGuid = newest.guid
-      this.log(`rss: ${feed.id} pushed ${batch.length} item(s), lastGuid → ${newest.guid}`)
+      this.log(`rss: ${feed.id} pushed ${batch.length} item(s) (${descending ? 'desc' : 'asc'}), lastGuid → ${newest.guid}`)
     }
   }
 }

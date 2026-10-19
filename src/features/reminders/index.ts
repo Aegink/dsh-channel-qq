@@ -28,6 +28,9 @@ export const remindersPlugin: SubPlugin = {
   async apply(host) {
     const store = new ReminderStore(host.config.reminders, storeOptions(host))
     await store.load()
+    // 一次性提醒触发后保留 7 天给主人回看，之后清掉（否则文件无界增长）。
+    const pruned = await store.pruneFired().catch(() => 0)
+    if (pruned > 0) host.log(`reminders: pruned ${pruned} fired one-shot reminder(s)`)
     host.provide('reminders', store)
     host.registerResource('reminders', {
       label: '提醒',

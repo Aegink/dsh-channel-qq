@@ -95,7 +95,9 @@ export function validateValue(spec: FieldSpec, value: unknown): string | null {
       return typeof value === 'boolean' ? null : '应为开关值（true/false）'
     case 'number': {
       // `NO_DEFAULT` 的可选数字（如 primaryTalkValue）允许 null = "取消覆盖"。
-      if (value === null) return spec.default === NO_DEFAULT ? null : '不能为空'
+      // `null` 表示"未设置"：既包括 NO_DEFAULT 的可选字段，也包括默认值本来就是
+      // null 的字段（如 primaryGroup）。
+      if (value === null) return spec.default === NO_DEFAULT || spec.default === null ? null : '不能为空'
       if (typeof value !== 'number' || !Number.isFinite(value)) return '应为数字'
       if (spec.min !== undefined && value < spec.min) return `不能小于 ${spec.min}`
       if (spec.max !== undefined && value > spec.max) return `不能大于 ${spec.max}`
