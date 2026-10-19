@@ -16,6 +16,7 @@
 
 import argparse
 import json
+import os
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -29,6 +30,8 @@ DIM_BY_MODEL = {
 _lock = threading.Lock()
 _embedder = None
 _model_name = None
+# 本地模型目录（离线部署：HF 被墙时用 ModelScope 拉下来的 Qdrant onnx 包）。
+_model_path = None
 
 
 def load_embedder(name: str):
@@ -36,7 +39,10 @@ def load_embedder(name: str):
     with _lock:
         if _embedder is None:
             from fastembed import TextEmbedding
-            _embedder = TextEmbedding(model_name=name)
+            _embedder = TextEmbedding(
+                model_name=name,
+                **({'specific_model_path': _model_path} if _model_path else {}),
+            )
             _model_name = name
             print(f'[embed] 模型已加载：{name}（{DIM_BY_MODEL.get(name, "?")} 维）', flush=True)
         return _embedder
@@ -116,13 +122,16 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global _model_name
+    global _model_name, _model_path
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=8801)
     parser.add_argument('--host', default='127.0.0.1')
     parser.add_argument('--model', default='BAAI/bge-small-zh-v1.5')
+    # 离线模型目录；不给就用 fastembed 自己的下载/缓存逻辑。
+    parser.add_argument('--model-path', default=os.environ.get('DSH_EMBED_MODEL_PATH') or None)
     args = parser.parse_args()
     _model_name = args.model
+    _model_path = args.model_path
     print(f'[embed] 监听 http://{args.host}:{args.port}/v1/embeddings（模型 {args.model}）', flush=True)
     load_embedder(args.model)  # 启动时就加载：第一次请求不该等 30 秒
     ThreadingHTTPServer((args.host, args.port), Handler).serve_forever()

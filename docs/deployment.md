@@ -1222,9 +1222,36 @@ bash deploy/embed-server/install.sh          # 幂等；重复跑只重启服务
 ```ini
 # deploy/embed-server/dsh-embed.service（要点）
 ExecStart=/srv/dsh-embed/venv/bin/python …/server.py --port 8801
+Environment=DSH_EMBED_MODEL_PATH=/srv/dsh-embed/models/bge-small-zh-v1.5
 MemoryMax=1500M     # 实测：600M 会被 systemd 杀掉（OOM）
 Nice=5
 ```
+
+### 13.1.1 模型从哪来（HF 不通时的离线路径）
+
+`fastembed` 默认从 HuggingFace 拉 `Qdrant/bge-small-zh-v1.5` 的
+`model_optimized.onnx`。**国内机器上 huggingface.co 往往不可达**，而
+`hf-mirror.com` 现在会 308 跳回 huggingface.co（实测 2026-10-20）。
+
+可用的路径是 ModelScope（它镜像了 Qdrant 那份 ONNX 包）：
+
+```bash
+D=/srv/dsh-embed/models/bge-small-zh-v1.5
+mkdir -p "$D" && cd "$D"
+for f in config.json model_optimized.onnx ort_config.json special_tokens_map.json \
+         tokenizer.json tokenizer_config.json vocab.txt configuration.json; do
+  curl -sL -o "$f" \
+    "https://modelscope.cn/api/v1/models/Qdrant/bge-small-zh-v1.5/repo?Revision=master&FilePath=$f"
+done
+```
+
+服务端 `server.py --model-path <目录>`（或环境变量 `DSH_EMBED_MODEL_PATH`）会把目录
+传给 `fastembed.TextEmbedding(specific_model_path=…)`，**不再尝试联网**。目录里必须
+有 `model_optimized.onnx`（fastembed 对这个模型写死的文件名）与 tokenizer 三件套。
+
+> 只镜像了 PyTorch 权重的仓库（`AI-ModelScope/bge-small-zh-v1.5`）**不够**：
+> 里面有 `model.safetensors` / `pytorch_model.bin`，没有 ONNX，fastembed 仍然报
+> `Could not load model … from any source`。
 
 ### 13.2 验证
 

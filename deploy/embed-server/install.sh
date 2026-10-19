@@ -28,6 +28,18 @@ fi
 echo "=== fastembed ==="
 "$VENV/bin/pip" install -q --upgrade fastembed
 
+# 模型：优先 ModelScope 镜像（Qdrant 发布的 ONNX 包）。HF 在国内往往不可达，
+# 而 hf-mirror.com 会 308 跳回 huggingface.co（2026-10-20 实测）。已有就跳过。
+MODEL_DIR=/srv/dsh-embed/models/bge-small-zh-v1.5
+mkdir -p "$MODEL_DIR"
+if [ ! -s "$MODEL_DIR/model_optimized.onnx" ]; then
+  echo "=== 模型（ModelScope: Qdrant/bge-small-zh-v1.5）==="
+  for f in config.json model_optimized.onnx ort_config.json special_tokens_map.json            tokenizer.json tokenizer_config.json vocab.txt configuration.json; do
+    echo "  - $f"
+    curl -fsSL --retry 2 -m 900 -o "$MODEL_DIR/$f"       "https://modelscope.cn/api/v1/models/Qdrant/bge-small-zh-v1.5/repo?Revision=master&FilePath=$f"
+  done
+fi
+
 echo "=== systemd 单元 ==="
 sed "s#/srv/dsh/dsh-channel-qq#$ROOT#g" "$HERE/dsh-embed.service" > /etc/systemd/system/dsh-embed.service
 systemctl daemon-reload

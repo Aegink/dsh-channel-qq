@@ -13,6 +13,8 @@
 - 技能使用计数：加载 / `/名字` 触发分别记，后台列表直接看；计数在
   `<dshHome>/channel-qq/skills-stats.json`，不写回 SKILL.md
 - 导入支持 GitHub 目录链接（`…/tree/<ref>/<path>`，递归下载，上限 200 个文件）
+- **本机 embed 服务可离线安装**：`install.sh` 从 ModelScope 的 Qdrant ONNX 包预置模型，
+  新增 `--model-path` / `DSH_EMBED_MODEL_PATH`（HF 不可达时不再卡在下载）
 - **发送侧健康探测**：后台只读路由 `/api/healthz`（仅 loopback），内部一次
   `get_status` 往返、不产生消息；返回 socket 状态、online/good、延迟与最近收帧时间
 
