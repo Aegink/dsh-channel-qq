@@ -10,6 +10,7 @@ import { ConversationRegistry } from '../../app/conversation/registry.js'
 import { GatewayHealth } from '../../app/conversation/gateway-health.js'
 import { PromptComposer } from '../../app/conversation/prompt-composer.js'
 import { syncInstructionRegion } from './instruction-region.js'
+
 import { TurnLauncher } from '../../app/conversation/turns.js'
 import { InboundPipeline } from '../../app/inbound/pipeline.js'
 import { NoticeHandler } from '../../app/inbound/notices.js'
@@ -39,8 +40,10 @@ import type { createAgentGateway } from '../../adapters/dsh-host/agents.js'
 import type { QQChannelConfig } from '../../config.js'
 import type { ChatPlatform } from '../../ports/platform.js'
 import type { MemoryEvidence } from '../../ports/memory.js'
-import type { GatewayErrorBus, SubHost, SubPlugin } from '../plugin-kit.js'
+import type { GatewayErrorBus, PlatformParts, SubHost, SubPlugin } from '../plugin-kit.js'
 import { createAdminCommand, startReceiptPoller } from '../approval/index.js'
+import { maybeHandleResetCommand } from './reset-command.js'
+import { createRuntimeNoteRefresher } from './runtime-note.js'
 import { approvalEnabled } from '../approval/store.js'
 export { syncInstructionRegion, writeInstructionRegion, type InstructionRegionStatus } from './instruction-region.js'
 
@@ -73,6 +76,8 @@ interface RuntimeDeps {
   readonly adminCommand?: (text: string, userId: number) => Promise<string | null>
   /** 模型错误投递（换血看门狗消费）。 */
   readonly onGatewayError?: (room: string, detail: string) => void
+  /** 每包开头的运行环境事实（模型 / 图片能力 / 窗口）。 */
+  readonly runtimeNote?: () => string
 }
 
 /** 会话登记表：房间 → 会话，四条件路径共用同一份并发保护。 */
@@ -99,6 +104,7 @@ function createTurns(registry: ConversationRegistry, deps: RuntimeDeps): TurnLau
     log: deps.log,
     config: () => deps.config,
     openSentLog: deps.openSentLog,
+    ...deps.runtimeNote === undefined ? {} : { runtimeNote: deps.runtimeNote },
   }, {
     ledger: turnTrust,
     admins: () => deps.config.admins,
@@ -309,9 +315,9 @@ export const inboundPlugin: SubPlugin = {
     const { config } = host
     const parts = host.need('platform')
     const health = new GatewayHealth()
-    // 换血看门狗订阅模型错误：inbound 提供、session-reset 消费（后者挂载更晚）。
     const gatewayErrors: GatewayErrorBus = {}
     host.provide('gatewayErrors', gatewayErrors)
+    const runtimeNotes = createRuntimeNoteRefresher(host)
     // 同一房间只建一次 sent-log；读写共用（写侧按房间记账见 messaging/tools.ts）。
     const sentLogHub = createSentLogHub(host.dshHome, host.log)
     // 注入特征表（P6c）：坏表/版本不认识 → 降级为"没有规则"，绝不挡对话（loader 内记日志）。
@@ -335,6 +341,7 @@ export const inboundPlugin: SubPlugin = {
       },
       openSentLog: (room: string) => sentLogHub.for(room),
       onGatewayError: (room, detail) => gatewayErrors.handler?.(room, detail),
+      runtimeNote: runtimeNotes.note,
       // 审批网关（默认关；CHANNEL_QQ_APPROVAL=1 时生效）。命令先于 agent 处理、不经模型。
       // 传取值函数而不是 `config.admins`：撤掉管理员后必须立刻失效。
       ...approvalEnabled() ? { adminCommand: createAdminCommand(() => host.config.admins, host.log) } : {},
@@ -346,6 +353,7 @@ export const inboundPlugin: SubPlugin = {
       pipeline: runtime.pipeline,
     })
     parts.client.on('event', (event: OneBotEvent) => {
+      if (maybeHandleResetCommand(host, parts, event)) return
       void dispatch(host, runtime, event)
     })
     // 主 sent-log：工具面（qq_search_history 等）与后台资源共用同一份。
@@ -357,7 +365,11 @@ export const inboundPlugin: SubPlugin = {
     host.log(`instruction region (AGENTS.md): ${await syncInstructionRegion(host)}`)
     host.log(`tools region (AGENTS.md): ${await syncToolsRegion(host)}`)
     const stopApproval = approvalEnabled() ? startReceiptPoller(host) : undefined
-    return () => { runtime.notices.dispose(); stopApproval?.() }
+    return () => {
+      runtime.notices.dispose()
+      stopApproval?.()
+      runtimeNotes.dispose()
+    }
   },
   // context.v2 翻动时重写指令受管区；组包行为本身是现取配置，无需重挂。
   async reload(host) {

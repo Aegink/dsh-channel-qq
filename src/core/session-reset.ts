@@ -63,3 +63,8 @@ export class OverflowStreak {
     this.hits.delete(room)
   }
 }
+
+/** 管理员私聊里的换血指令（`/换血`、`重置会话`、`/reset`）。 */
+export function isResetCommand(text: string): boolean {
+  return /^\/?(换血|重置会话|reset)\s*$/i.test(text.trim())
+}

@@ -209,6 +209,25 @@ export const sessionResetPlugin: SubPlugin = {
     let busy = false
     const seen = new Set<string>()
     const streak = new OverflowStreak()
+    // 管理员 `/换血` 指令的入口；inbound 在私聊里拦下指令后调用。
+    host.provide('sessionReset', {
+      async reset(room: string, reason: string) {
+        const registry = host.get('inbound')?.registry
+        if (registry === undefined) return { ok: false, note: '会话注册表还没就绪' }
+        const record = registry.get(room)
+        if (record !== undefined && record.tracker.running()) return { ok: false, note: '有回合在跑，稍后再试' }
+        const probe = host.bridge.sessionSize?.()
+        const measured = probe === undefined ? null : await probe.measure(`qq-${room}`).catch(() => null)
+        const size: SessionSize = measured ?? { tokens: 0, contextWindow: null, provider: 'unknown', model: 'unknown' }
+        try {
+          await resetRoom(host, registry, room, size, host.config.sessionReset as SessionResetConfig)
+          host.log(`session-reset: 手动换血 ${room}（${reason}）`)
+          return { ok: true, note: '历史已备份，下一句开始是新会话' }
+        } catch (error) {
+          return { ok: false, note: (error as Error).message }
+        }
+      },
+    })
     // 连续 400：压缩失败时比 5 分钟一次的体积检查更快。
     const bus = host.get('gatewayErrors')
     if (bus !== undefined) {

@@ -28,6 +28,10 @@
   内置 models.dev 模型目录（`assets/model-context.json`，`node scripts/update-model-catalog.mjs` 更新）
 - **默认供应商切到本机 8317（workbuddy）**，模型 `deepseek-v4.1-flash-1017`（窗口 1M）
 
+- **每包注入运行环境事实**：模型/图片能力/上下文窗口 + 「历史里相反的说法作废」，
+  防止模型把旧环境结论（例如「看不到图」）当事实自我强化
+- **管理员 `/换血` 指令**：私聊发送即换血（确定性处理、不经模型），历史先备份
+
 ### 修复
 
 - **多模态模型被声明成纯文本**：`workbuddy/deepseek-v4.1-flash-1017` 的

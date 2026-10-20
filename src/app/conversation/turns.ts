@@ -39,6 +39,8 @@ export interface TurnLauncherDeps {
   readonly config: () => TurnsConfig
   /** 取某个房间的出站消息日志；文件在哪儿是部署知识，由组合根提供。 */
   readonly openSentLog: (room: string) => Promise<SentLogReader>
+  /** 每回合开头的运行环境事实（模型 / 图片能力 / 窗口）；缺省 = 不加。 */
+  readonly runtimeNote?: () => string
 }
 
 export class TurnLauncher {
@@ -63,11 +65,16 @@ export class TurnLauncher {
     imageRefs: readonly unknown[] = [],
     origin: TurnOrigin = PROACTIVE,
   ): void {
+    // 运行环境事实放在每个回合的最前面：模型会把历史里的旧结论当事实，
+    // 每回合明确一次「现在是什么样子、旧说法作废」（2026-10-20 看图事故）。
+    const note = this.deps.runtimeNote?.() ?? ''
+    const text = note === '' ? prompt : `${note}
+${prompt}`
     // 新的一包顶掉旧的网关重试：旧包的问题已经被新内容取代了。
-    conversation.tracker.begin(prompt, imageRefs.length > 0)
+    conversation.tracker.begin(text, imageRefs.length > 0)
     // 记下是谁引起的这一轮（P6 的信任分级会读它；现在只记录）。
     conversation.lastOrigin = origin
-    const content: PromptPart[] = [{ type: 'text', text: prompt }]
+    const content: PromptPart[] = [{ type: 'text', text }]
     for (const attachment of imageRefs) content.push({ type: 'image', attachment })
     conversation.tracker.deliver(content)
   }

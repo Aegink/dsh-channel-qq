@@ -57,9 +57,14 @@ for (const [provider, info] of Object.entries(data)) {
       ...modalities.includes('pdf') ? { pdf: true } : {},
       provider,
     }
-    // 同一个 id 在多个供应商里出现：保留上下文更大的那条（更接近模型本身）。
+    // 同一个 id 在多个供应商里出现：上下文取更大的那条，能力取并集
+    // （某些网关只挂纯文本变体，不能因此把模型本身的多模态抹掉）。
     const existing = byId.get(id)
-    if (existing === undefined || entry.context > existing.context) byId.set(id, entry)
+    if (existing === undefined) { byId.set(id, entry); continue }
+    const merged = { ...existing, ...entry.context > existing.context ? entry : existing }
+    if (existing.image === true || entry.image === true) merged.image = true
+    if (existing.pdf === true || entry.pdf === true) merged.pdf = true
+    byId.set(id, merged)
   }
 }
 

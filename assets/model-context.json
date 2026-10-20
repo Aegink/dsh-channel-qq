@@ -233,7 +233,8 @@
       "context": 1000000,
       "output": 128000,
       "image": true,
-      "provider": "prime"
+      "provider": "prime",
+      "pdf": true
     },
     {
       "id": "claude-sonnet-4.6:thinking",
@@ -322,7 +323,8 @@
       "context": 1000000,
       "output": 128000,
       "image": true,
-      "provider": "prime"
+      "provider": "prime",
+      "pdf": true
     },
     {
       "id": "claude-sonnet-5.5:thinking",
@@ -372,7 +374,8 @@
       "name": "DeepSeek: DeepSeek V4 Flash Latest",
       "context": 1048576,
       "output": 943718,
-      "provider": "kilo"
+      "provider": "kilo",
+      "image": true
     },
     {
       "id": "deepseek-v4-flash-speed",
@@ -493,7 +496,8 @@
       "context": 1050000,
       "output": 393216,
       "image": true,
-      "provider": "llmgateway-providers"
+      "provider": "llmgateway-providers",
+      "pdf": true
     },
     {
       "id": "deepseek-v4.1-flash-1017",
@@ -920,7 +924,9 @@
       "name": "Gemini Embedding 2",
       "context": 8192,
       "output": 1,
-      "provider": "tempr"
+      "provider": "tempr",
+      "image": true,
+      "pdf": true
     },
     {
       "id": "gemini-exp-1206",
@@ -953,7 +959,9 @@
       "name": "Nano Banana 2.1 (Vertex AI)",
       "context": 131072,
       "output": 32768,
-      "provider": "edenai"
+      "provider": "edenai",
+      "image": true,
+      "pdf": true
     },
     {
       "id": "gemini-omni-1.1-flash",
@@ -1045,15 +1053,16 @@
       "name": "GLM-5.3",
       "context": 1049000,
       "output": 262000,
-      "provider": "siliconflow"
+      "provider": "siliconflow",
+      "image": true
     },
     {
       "id": "glm-5.3-fast",
       "name": "GLM 5.3 Fast",
       "context": 1048576,
       "output": 262144,
-      "image": true,
-      "provider": "baseten"
+      "provider": "baseten",
+      "image": true
     },
     {
       "id": "glm-5.3-flash",
@@ -1061,6 +1070,7 @@
       "context": 1049000,
       "output": 262000,
       "image": true,
+      "pdf": true,
       "provider": "siliconflow"
     },
     {
@@ -1136,6 +1146,7 @@
       "context": 1048576,
       "output": 131072,
       "image": true,
+      "pdf": true,
       "provider": "kilo"
     },
     {
@@ -1214,6 +1225,7 @@
       "context": 202800,
       "output": 131072,
       "image": true,
+      "pdf": true,
       "provider": "nano-gpt"
     },
     {
@@ -1426,14 +1438,16 @@
       "name": "GPT Audio",
       "context": 128000,
       "output": 16384,
-      "provider": "merge-gateway"
+      "provider": "merge-gateway",
+      "pdf": true
     },
     {
       "id": "gpt-audio-mini",
       "name": "GPT Audio Mini",
       "context": 128000,
       "output": 16384,
-      "provider": "merge-gateway"
+      "provider": "merge-gateway",
+      "pdf": true
     },
     {
       "id": "gpt-chat-latest",
@@ -1479,9 +1493,9 @@
       "id": "gpt-image-2",
       "name": "GPT-Image-2",
       "context": 272000,
-      "output": 16384,
       "image": true,
-      "provider": "kenari"
+      "provider": "kenari",
+      "output": 16384
     },
     {
       "id": "gpt-latest",
@@ -1522,7 +1536,8 @@
       "name": "gpt-oss-120b",
       "context": 131072,
       "output": 131072,
-      "provider": "ovhcloud"
+      "provider": "ovhcloud",
+      "image": true
     },
     {
       "id": "gpt-oss-120b-cs",
@@ -1628,7 +1643,8 @@
       "context": 524288,
       "output": 524288,
       "image": true,
-      "provider": "llmgateway-providers"
+      "provider": "llmgateway-providers",
+      "pdf": true
     },
     {
       "id": "grok-4-fast",
@@ -1667,7 +1683,8 @@
       "name": "x-AI/Grok-4.1-Fast",
       "context": 2000000,
       "output": 2000000,
-      "provider": "qiniu-ai"
+      "provider": "qiniu-ai",
+      "image": true
     },
     {
       "id": "grok-4.1-fast-non-reasoning",
@@ -1675,7 +1692,8 @@
       "context": 2000000,
       "output": 2000000,
       "image": true,
-      "provider": "qiniu-ai"
+      "provider": "qiniu-ai",
+      "pdf": true
     },
     {
       "id": "grok-4.1-fast-reasoning",
@@ -1683,7 +1701,8 @@
       "context": 20000000,
       "output": 2000000,
       "image": true,
-      "provider": "qiniu-ai"
+      "provider": "qiniu-ai",
+      "pdf": true
     },
     {
       "id": "grok-4.2-beta",
@@ -1822,7 +1841,8 @@
       "context": 1000000,
       "output": 1000000,
       "image": true,
-      "provider": "aihubmix"
+      "provider": "aihubmix",
+      "pdf": true
     },
     {
       "id": "grok-4.6",
@@ -1830,7 +1850,8 @@
       "context": 524288,
       "output": 500000,
       "image": true,
-      "provider": "google-vertex"
+      "provider": "google-vertex",
+      "pdf": true
     },
     {
       "id": "grok-4.7",
@@ -1838,6 +1859,7 @@
       "context": 524288,
       "output": 500000,
       "image": true,
+      "pdf": true,
       "provider": "google-vertex"
     },
     {
@@ -1846,7 +1868,8 @@
       "context": 256000,
       "output": 256000,
       "image": true,
-      "provider": "llmgateway-providers"
+      "provider": "llmgateway-providers",
+      "pdf": true
     },
     {
       "id": "grok-build-0.1",
@@ -2086,7 +2109,8 @@
       "context": 262144,
       "output": 262144,
       "image": true,
-      "provider": "302ai"
+      "provider": "302ai",
+      "pdf": true
     },
     {
       "id": "kimi-k2.6-fast",
@@ -2134,7 +2158,8 @@
       "context": 271360,
       "output": 262144,
       "image": true,
-      "provider": "jalapeno"
+      "provider": "jalapeno",
+      "pdf": true
     },
     {
       "id": "kimi-k2.7-code-fast",
@@ -2166,7 +2191,8 @@
       "context": 262144,
       "output": 262144,
       "image": true,
-      "provider": "tempr"
+      "provider": "tempr",
+      "pdf": true
     },
     {
       "id": "kimi-k2.7-code-nitro",
@@ -2190,7 +2216,8 @@
       "context": 1113088,
       "output": 65536,
       "image": true,
-      "provider": "engy"
+      "provider": "engy",
+      "pdf": true
     },
     {
       "id": "kimi-k3-fast",
@@ -2198,7 +2225,8 @@
       "context": 1048560,
       "output": 1048560,
       "image": true,
-      "provider": "neuralwatt"
+      "provider": "neuralwatt",
+      "pdf": true
     },
     {
       "id": "kimi-k3-fast-api",
@@ -2304,7 +2332,8 @@
       "name": "Llama 3.2 3B Instruct",
       "context": 131072,
       "output": 80000,
-      "provider": "pioneer"
+      "provider": "pioneer",
+      "pdf": true
     },
     {
       "id": "llama-3.2-90b-vision-instruct",
@@ -2566,7 +2595,8 @@
       "context": 262144,
       "output": 256000,
       "image": true,
-      "provider": "edenai"
+      "provider": "edenai",
+      "pdf": true
     },
     {
       "id": "mistral-small-2603@eu",
@@ -2654,7 +2684,8 @@
       "context": 262144,
       "output": 256000,
       "image": true,
-      "provider": "edenai"
+      "provider": "edenai",
+      "pdf": true
     },
     {
       "id": "mistral.devstral-2-123b",
@@ -2708,7 +2739,8 @@
       "name": "Pixtral Large (25.02) (Amazon Bedrock)",
       "context": 128000,
       "output": 8192,
-      "provider": "edenai"
+      "provider": "edenai",
+      "image": true
     },
     {
       "id": "mistral.pixtral-large-2502-v1:0@us",
@@ -2972,7 +3004,8 @@
       "context": 200000,
       "output": 100000,
       "pdf": true,
-      "provider": "edenai"
+      "provider": "edenai",
+      "image": true
     },
     {
       "id": "o3-mini-high",
@@ -2980,7 +3013,8 @@
       "context": 200000,
       "output": 100000,
       "pdf": true,
-      "provider": "kilo"
+      "provider": "kilo",
+      "image": true
     },
     {
       "id": "o3-mini-low",
@@ -3060,7 +3094,8 @@
       "context": 1131072,
       "output": 131072,
       "image": true,
-      "provider": "ofox"
+      "provider": "ofox",
+      "pdf": true
     },
     {
       "id": "qwen3.8-27b-antislop",
@@ -3242,7 +3277,8 @@
       "context": 1048576,
       "output": 131072,
       "image": true,
-      "provider": "requesty"
+      "provider": "requesty",
+      "pdf": true
     },
     {
       "id": "qwen3.8-flash-next",
@@ -3275,7 +3311,8 @@
       "context": 1000000,
       "output": 131072,
       "image": true,
-      "provider": "edenai"
+      "provider": "edenai",
+      "pdf": true
     },
     {
       "id": "qwen3.8-max-preview",

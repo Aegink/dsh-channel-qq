@@ -48,6 +48,7 @@ import type { ToolHost } from '../adapters/dsh-host/tools.js'
 import type { SkillHost } from '../ports/skills.js'
 import type { HealthProbe } from '../ports/health.js'
 import type { SessionSizeProbe } from '../adapters/dsh-host/session-size.js'
+import type { RuntimeFacts } from '../ports/runtime.js'
 
 /** platform 子插件提供的四件套（传输对象 + 端口 + 出站队列）。 */
 export interface PlatformParts {
@@ -84,6 +85,11 @@ export interface KnowledgeParts {
   readonly extract: (source: string, text: string) => Promise<number>
 }
 
+/** 会话换血服务（session-reset 提供；inbound 的管理员指令调用它）。 */
+export interface SessionResetService {
+  reset(room: string, reason: string): Promise<{ ok: boolean; note: string }>
+}
+
 /** 网关错误信号：inbound 在每次 agent/error 时投递，session-reset 消费。 */
 export interface GatewayErrorBus {
   handler?: (room: string, detail: string) => void
@@ -115,6 +121,8 @@ export interface ServiceBag {
   health?: HealthProbe
   /** 网关错误总线（inbound 提供；换血看门狗消费）。 */
   gatewayErrors?: GatewayErrorBus
+  /** 会话换血（session-reset 提供；inbound 的 `/换血` 指令调用）。 */
+  sessionReset?: SessionResetService
 }
 
 /** 根转交进来的宿主能力；这里也是 cordis `ctx` 唯一被"窄化"的地方。 */
@@ -135,6 +143,8 @@ export interface HostBridge {
   skillsHost?(): SkillHost
   /** 会话体积探针（换血看门狗用：tokenMeter + 模型窗口）。 */
   sessionSize?(): SessionSizeProbe
+  /** 当前模型能力（每包注入一条，用来压过历史里过时的能力描述）。 */
+  runtimeFacts?(): Promise<RuntimeFacts | null>
   /** 宿主 console logger 的错误出口（事件分发层用，不写文件日志）。 */
   logHostError(message: string): void
   /** 把一次配置补丁交给根：只重载被命中的子插件。 */

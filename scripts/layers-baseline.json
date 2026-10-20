@@ -4,6 +4,7 @@
   "hostImporters": [
     "src/adapters/dsh-host/agent.ts",
     "src/adapters/dsh-host/agents.ts",
+    "src/adapters/dsh-host/runtime-info.ts",
     "src/adapters/dsh-host/services.ts",
     "src/adapters/dsh-host/session-size.ts",
     "src/adapters/dsh-host/skills.ts",

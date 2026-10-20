@@ -2,7 +2,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { OverflowStreak, looksLikeOverflow, shouldResetSession } from '../src/core/session-reset.js'
+import { OverflowStreak, isResetCommand, looksLikeOverflow, shouldResetSession } from '../src/core/session-reset.js'
 
 test('窗口未知 / 非有限值：不换血', () => {
   assert.equal(shouldResetSession(1_000_000, null, 0.7), false)
@@ -53,4 +53,15 @@ test('错误文本识别：网关包装的 400 与标准上下文错误', () => 
   assert.equal(looksLikeOverflow('CONTEXT_WINDOW_EXCEEDED'), true)
   assert.equal(looksLikeOverflow('LlmError: 503: model_not_found'), false)
   assert.equal(looksLikeOverflow('Connection error.'), false)
+})
+
+test('管理员换血指令的识别：只认固定写法', () => {
+  assert.equal(isResetCommand('/换血'), true)
+  assert.equal(isResetCommand('换血'), true)
+  assert.equal(isResetCommand('/重置会话'), true)
+  assert.equal(isResetCommand('/reset'), true)
+  assert.equal(isResetCommand('  /Reset  '), true)
+  assert.equal(isResetCommand('换血一下'), false)
+  assert.equal(isResetCommand('请换血'), false)
+  assert.equal(isResetCommand('/换血 顺便'), false)
 })
