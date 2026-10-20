@@ -117,7 +117,10 @@ cordis.patch.yml（部署级）
 | `sessionReset.enabled` | `true` | 关掉后只能手动跑 `deploy/session-reset.mjs` |
 | `sessionReset.thresholdRatio` | `0.85` | `tokens ≥ 窗口 × ratio` 时换血；刻意排在压缩（约 0.8）之后 |
 | `sessionReset.checkIntervalMin` | `5` | 每轮检查活跃会话；只在回合空闲时动手 |
-| `sessionReset.seed` | 空 | 换血后注入下一轮的一句话（空 = 内置文案） |
+| `sessionReset.maxAgeDays` | `7` | 距上次换血超过 N 天强制换一次（`0` = 关闭） |
+| `sessionReset.strictRooms` | 空 | 图片/工具特别多的房间（逗号分隔），用更低的阈值 |
+| `sessionReset.strictThresholdRatio` | `0.6` | 上面这些房间使用的比例 |
+| `sessionReset.seed` | 空 | 换血后注入下一轮的一句话（空 = 内置文案，会提示先补记 MEMORY.md） |
 
 换血做的事：释放会话 → 历史移到 `<dshHome>/channel-qq/backups/session-auto-<时间>-<会话>/`
 → 写 `session-seed-<会话>.json` → 下一条消息自动开新会话并注入种子。**长期记忆、

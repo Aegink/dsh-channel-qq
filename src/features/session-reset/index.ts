@@ -14,7 +14,7 @@
 import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
 import { atomicWriteFile } from '../../adapters/fs-store/atomic.js'
-import { OverflowStreak, looksLikeOverflow, shouldResetSession } from '../../core/session-reset.js'
+import { OverflowStreak, looksLikeOverflow, sessionExpired, shouldResetSession } from '../../core/session-reset.js'
 import { formatLocalStamp } from '../../core/schedule/stamp.js'
 import { encodeSegment, sessionDir } from '../../paths.js'
 import type { SessionSize } from '../../adapters/dsh-host/session-size.js'
@@ -31,6 +31,28 @@ const DEFAULT_SEED = [
 
 /** 看门狗的固定 tick（配置的检查间隔在 tick 内部判断）。 */
 const TICK_MS = 60_000
+
+/** 每个房间上次换血的时间（定期换血用）。 */
+async function readResetState(host: SubHost): Promise<Record<string, number>> {
+  try {
+    const parsed: unknown = JSON.parse(await fs.readFile(path.join(host.dshHome, 'channel-qq', 'session-reset-state.json'), 'utf8'))
+    return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, number>
+      : {}
+  } catch {
+    return {}
+  }
+}
+
+/** 记下这个房间刚换过血。 */
+async function markReset(host: SubHost, room: string): Promise<void> {
+  const state = await readResetState(host)
+  state[room] = Date.now()
+  await atomicWriteFile(
+    path.join(host.dshHome, 'channel-qq', 'session-reset-state.json'),
+    JSON.stringify(state, null, 2),
+  )
+}
 
 /** 换血：备份历史 → 释放会话 → 写种子。下一次消息会用新会话。 */
 async function resetRoom(
@@ -66,6 +88,7 @@ async function resetRoom(
     path.join(host.dshHome, 'channel-qq', `session-seed-${sessionId}.json`),
     JSON.stringify({ sessionId, createdAt: new Date().toISOString(), seed }, null, 2),
   )
+  await markReset(host, room)
   host.log(
     `session-reset: ${sessionId} 换血（${size.tokens}/${size.contextWindow} tokens，`
     + `route ${size.provider}/${size.model}，备份 ${moved} 个文件${backup === '' ? '' : ` → ${backup}`}）`,
@@ -135,6 +158,9 @@ async function tick(host: SubHost, seen: Set<string>): Promise<void> {
     seen.add('__tick')
     host.log(`session-reset: 首轮检查，活跃房间 ${rooms.length} 个`)
   }
+  const state = await readResetState(host)
+  const strict = new Set(String(config.strictRooms ?? '').split(',').map((room) => room.trim()).filter((room) => room !== ''))
+  let stateDirty = false
   for (const room of rooms) {
     const record = registry.get(room)
     if (record === undefined || record.tracker.running()) continue
@@ -154,12 +180,23 @@ async function tick(host: SubHost, seen: Set<string>): Promise<void> {
       seen.add(room)
       host.log(`session-reset: 探测 ${room} = ${size.tokens}/${size.contextWindow ?? '?'} tokens（${size.provider}/${size.model}）`)
     }
-    if (!shouldResetSession(size.tokens, size.contextWindow, config.thresholdRatio)) continue
+    const ratio = strict.has(room) ? config.strictThresholdRatio : config.thresholdRatio
+    const expired = sessionExpired(state[room] ?? null, Date.now(), config.maxAgeDays)
+    if (!expired && !shouldResetSession(size.tokens, size.contextWindow, ratio)) continue
     try {
       await resetRoom(host, registry, room, size, config)
+      state[room] = Date.now()
+      stateDirty = true
+      if (expired) host.log(`session-reset: ${room} 到期（>${config.maxAgeDays} 天），定期换血`)
     } catch (error) {
       host.log(`session-reset: 处理 ${room} 失败：${(error as Error).message}`)
     }
+  }
+  if (stateDirty) {
+    await atomicWriteFile(
+      path.join(host.dshHome, 'channel-qq', 'session-reset-state.json'),
+      JSON.stringify(state, null, 2),
+    ).catch(() => {})
   }
 }
 

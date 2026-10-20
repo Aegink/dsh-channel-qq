@@ -68,3 +68,13 @@ export class OverflowStreak {
 export function isResetCommand(text: string): boolean {
   return /^\/?(换血|重置会话|reset)\s*$/i.test(text.trim())
 }
+
+/**
+ * 定期换血：会话距上次换血超过 `maxAgeDays` 天就该重置。
+ * `maxAgeDays <= 0` 表示关闭；未知上次时间（null）不触发。
+ */
+export function sessionExpired(lastResetAt: number | null, now: number, maxAgeDays: number): boolean {
+  if (!Number.isFinite(maxAgeDays) || maxAgeDays <= 0) return false
+  if (lastResetAt === null || !Number.isFinite(lastResetAt)) return false
+  return now - lastResetAt >= maxAgeDays * 24 * 60 * 60_000
+}

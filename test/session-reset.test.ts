@@ -2,7 +2,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { OverflowStreak, isResetCommand, looksLikeOverflow, shouldResetSession } from '../src/core/session-reset.js'
+import { OverflowStreak, isResetCommand, looksLikeOverflow, sessionExpired, shouldResetSession } from '../src/core/session-reset.js'
 
 test('窗口未知 / 非有限值：不换血', () => {
   assert.equal(shouldResetSession(1_000_000, null, 0.7), false)
@@ -64,4 +64,14 @@ test('管理员换血指令的识别：只认固定写法', () => {
   assert.equal(isResetCommand('换血一下'), false)
   assert.equal(isResetCommand('请换血'), false)
   assert.equal(isResetCommand('/换血 顺便'), false)
+})
+
+test('定期换血：按天数判断，0 关闭，未知时间不触发', () => {
+  const day = 24 * 60 * 60_000
+  const now = 1000 * day
+  assert.equal(sessionExpired(null, now, 7), false)
+  assert.equal(sessionExpired(0, now, 7), true) // 0 是"很久以前"
+  assert.equal(sessionExpired(now - 6 * day, now, 7), false)
+  assert.equal(sessionExpired(now - 7 * day, now, 7), true)
+  assert.equal(sessionExpired(now - 100 * day, now, 0), false)
 })

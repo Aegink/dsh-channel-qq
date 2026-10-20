@@ -13,6 +13,12 @@ export interface SessionResetConfig {
   thresholdRatio: number
   /** 检查间隔（分钟）。 */
   checkIntervalMin: number
+  /** 定期换血：多少天强制换一次（0 = 关闭）。 */
+  maxAgeDays: number
+  /** 需要更激进阈值的房间（逗号分隔：`dm-1000000002,group-145335503`）。 */
+  strictRooms: string
+  /** 上面这些房间使用的更低比例。 */
+  strictThresholdRatio: number
   /** 续接种子（空 = 用内置文案）。 */
   seed: string
 }
@@ -34,6 +40,18 @@ export const SESSION_RESET_GROUPS: FieldGroup[] = [
       checkIntervalMin: n('检查间隔', 5, {
         hot: 'live', min: 1, max: 60, unit: 'min',
         help: '每轮检查活跃会话的体积；只在回合空闲时动手。',
+      }),
+      maxAgeDays: n('定期换血', 7, {
+        hot: 'live', min: 0, max: 365, unit: '天',
+        help: '距上次换血超过这么多天就重置一次（0 = 关闭）。上下文腐化是渐进的，定期重置比等出事便宜。',
+      }),
+      strictRooms: s('激进房间', '', {
+        hot: 'live',
+        help: '图片/工具特别多的房间，逗号分隔；这些房间用下面的更低比例。',
+      }),
+      strictThresholdRatio: n('激进比例', 0.6, {
+        hot: 'live', min: 0.1, max: 0.95, step: 0.05,
+        help: '「激进房间」使用的触发比例；默认 0.6，比常规的 0.85 更早换血。',
       }),
       seed: s('续接种子', '', {
         hot: 'live', advanced: true,

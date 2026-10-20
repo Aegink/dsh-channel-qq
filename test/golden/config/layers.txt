@@ -180,6 +180,9 @@ override = {}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -701,6 +704,9 @@ override = {}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -1220,6 +1226,9 @@ override = {"batching":{"windowMs":20000}}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -1739,6 +1748,9 @@ override = {"admin":{"port":8790}}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -2258,6 +2270,9 @@ override = {"imageGen":{"model":"flux"}}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -2777,6 +2792,9 @@ override = {"tts":{"voice":"b"}}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -3296,6 +3314,9 @@ override = {"flood":{"windowSec":30}}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -3822,6 +3843,9 @@ override = {}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -4341,6 +4365,9 @@ override = {"keywordTriggers":[]}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -4867,6 +4894,9 @@ override = {"rss":{"pollIntervalMin":5}}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -5386,6 +5416,9 @@ override = {"groupEnabled":false}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -5905,6 +5938,9 @@ override = {}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -6424,6 +6460,9 @@ override = {"groupEnabled":true}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -6943,6 +6982,9 @@ override = {"admin":{"host":"127.0.0.1"}}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -7462,6 +7504,9 @@ override = {}
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
@@ -7981,6 +8026,9 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "enabled": true,
   "thresholdRatio": 0.85,
   "checkIntervalMin": 5,
+  "maxAgeDays": 7,
+  "strictRooms": "",
+  "strictThresholdRatio": 0.6,
   "seed": ""
  },
  "planner": {
