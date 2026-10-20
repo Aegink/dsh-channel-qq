@@ -9,11 +9,9 @@
  * 所以不需要进 `scripts/layers-baseline.json` 的棘轮名单。
  */
 
-import { readFileSync } from 'node:fs'
-import * as path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { catalogContextOf, modelCatalog } from './model-catalog.js'
+import type { CatalogEntry } from './model-catalog.js'
 import { systemHttp } from '../http/client.js'
-import { findPackageRoot } from '../persona/fs-pack.js'
 import { HEADER_PRESETS, normalizeHeaders, presetById } from './provider-headers.js'
 import { runProbes } from './provider-probes.js'
 
@@ -57,14 +55,6 @@ export interface ProviderModel {
 }
 
 /** 内置模型目录的一条（来自 models.dev）。 */
-export interface CatalogEntry {
-  id: string
-  name: string
-  context: number
-  output?: number
-  provider: string
-}
-
 /** 列表里的一项供应商（绝不包含密钥值——只有引用名与"配没配"）。 */
 export interface ProviderSummary {
   name: string
@@ -133,33 +123,6 @@ interface RawProvider {
   apiKeyEnv?: string
   models?: Array<{ id?: string; name?: string; input?: string[]; contextWindow?: number; maxTokens?: number }>
   headers?: Record<string, string>
-}
-
-/** 内置模型目录：懒加载一次（assets/model-context.json，由脚本生成）。 */
-let catalogCache: readonly CatalogEntry[] | null = null
-export function modelCatalog(): readonly CatalogEntry[] {
-  if (catalogCache !== null) return catalogCache
-  try {
-    const root = findPackageRoot(path.dirname(fileURLToPath(import.meta.url))) ?? '.'
-    const parsed: unknown = JSON.parse(readFileSync(path.join(root, 'assets', 'model-context.json'), 'utf8'))
-    const models = (parsed as { models?: unknown })?.models
-    catalogCache = Array.isArray(models) ? models as CatalogEntry[] : []
-  } catch {
-    catalogCache = []
-  }
-  return catalogCache
-}
-
-/** 模型目录里按 id 找上下文长度：先精确，再取最长的前缀匹配。 */
-export function catalogContextOf(id: string): CatalogEntry | undefined {
-  const wanted = String(id).trim().toLowerCase()
-  if (wanted === '') return undefined
-  let best: CatalogEntry | undefined
-  for (const entry of modelCatalog()) {
-    if (entry.id === wanted) return entry
-    if (wanted.startsWith(entry.id) && (best === undefined || entry.id.length > best.id.length)) best = entry
-  }
-  return best
 }
 
 /** settings 里的 models → 后台表单用的结构。 */
@@ -316,7 +279,13 @@ function makeSave(host: ProvidersHost): ProvidersSurface['save'] {
         })(),
         ...model.maxTokens !== undefined && Number.isInteger(model.maxTokens) && model.maxTokens > 0
           ? { maxTokens: model.maxTokens } : {},
-        ...model.vision === true ? { input: ['text', 'image'] } : {},
+        ...(() => {
+          const catalog = catalogContextOf(model.id)
+          // 显式勾选优先；没写时按官方能力表（models.dev）补，避免把多模态模型
+          // 声明成纯文本、图片在入站预检里被替换成「图片」占位（2026-10-20）。
+          const vision = model.vision === true || (model.vision === undefined && catalog?.image === true)
+          return vision ? { input: ['text', 'image'] } : {}
+        })(),
       }))
     if (models.length === 0) throw new Error('至少要有一个模型 id')
     const provider: RawProvider = {

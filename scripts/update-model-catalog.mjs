@@ -47,11 +47,14 @@ for (const [provider, info] of Object.entries(data)) {
     const context = Number(model.limit?.context)
     const output = Number(model.limit?.output)
     if (!Number.isFinite(context) || context <= 0) continue
+    const modalities = Array.isArray(model.modalities?.input) ? model.modalities.input : []
     const entry = {
       id,
       name: String(model.name ?? rawId),
       context: Math.trunc(context),
       ...Number.isFinite(output) && output > 0 ? { output: Math.trunc(output) } : {},
+      ...modalities.includes('image') ? { image: true } : {},
+      ...modalities.includes('pdf') ? { pdf: true } : {},
       provider,
     }
     // 同一个 id 在多个供应商里出现：保留上下文更大的那条（更接近模型本身）。
