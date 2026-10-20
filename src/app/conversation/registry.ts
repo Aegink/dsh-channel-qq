@@ -99,6 +99,8 @@ export interface RegistryDeps {
   readonly config: () => RegistryConfig
   /** 网关重试要补的那句话（来自人格包；取值函数才能跟着包一起热改）。 */
   readonly nudge: () => string
+  /** 每次模型错误都投递一次（换血看门狗据此识别连续 400）。 */
+  readonly onGatewayError?: (room: string, detail: string) => void
 }
 
 export class ConversationRegistry {
@@ -288,6 +290,7 @@ export class ConversationRegistry {
         nudge: this.deps.nudge,
         injectMode: () => this.deps.config().injectMode,
         roll: () => this.deps.random.next(),
+        ...this.deps.onGatewayError === undefined ? {} : { onGatewayError: this.deps.onGatewayError },
       }),
       queue: [],
       pendingImages: [],

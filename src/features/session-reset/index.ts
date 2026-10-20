@@ -14,7 +14,7 @@
 import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
 import { atomicWriteFile } from '../../adapters/fs-store/atomic.js'
-import { shouldResetSession } from '../../core/session-reset.js'
+import { OverflowStreak, looksLikeOverflow, shouldResetSession } from '../../core/session-reset.js'
 import { formatLocalStamp } from '../../core/schedule/stamp.js'
 import { encodeSegment, sessionDir } from '../../paths.js'
 import type { SessionSize } from '../../adapters/dsh-host/session-size.js'
@@ -72,6 +72,51 @@ async function resetRoom(
   )
 }
 
+/** 体积曲线：每次探测追加一行 JSONL（超过 5MB 轮转一次）。 */
+async function recordSize(host: SubHost, room: string, size: SessionSize): Promise<void> {
+  const file = path.join(host.dshHome, 'channel-qq', 'session-size.jsonl')
+  try {
+    const stat = await fs.stat(file).catch(() => null)
+    if (stat !== null && stat.size > 5 * 1024 * 1024) await fs.rename(file, `${file}.1`)
+    await fs.appendFile(file, `${JSON.stringify({
+      at: Date.now(), room, tokens: size.tokens, window: size.contextWindow,
+      provider: size.provider, model: size.model,
+    })}
+`)
+  } catch (error) {
+    host.log(`session-reset: 写体积曲线失败：${(error as Error).message}`)
+  }
+}
+
+/** 连续错误触发的换血：等回合收尾（最多等 3 次），再动手。 */
+async function forceReset(
+  host: SubHost,
+  room: string,
+  streak: OverflowStreak,
+  attempt = 0,
+): Promise<void> {
+  const registry = host.get('inbound')?.registry
+  if (registry === undefined) return
+  const record = registry.get(room)
+  if (record !== undefined && record.tracker.running() && attempt < 3) {
+    setTimeout(() => { void forceReset(host, room, streak, attempt + 1) }, 5_000).unref?.()
+    return
+  }
+  const probe = host.bridge.sessionSize?.()
+  const measured = probe === undefined ? null : await probe.measure(`qq-${room}`).catch(() => null)
+  const size: SessionSize = measured ?? {
+    tokens: 0, contextWindow: null, provider: 'unknown', model: 'unknown',
+  }
+  const config = host.config.sessionReset as SessionResetConfig
+  try {
+    await resetRoom(host, registry, room, size, config)
+    streak.clear(room)
+    host.log(`session-reset: ${room} 连续上下文错误，已主动换血`)
+  } catch (error) {
+    host.log(`session-reset: 连续错误换血 ${room} 失败：${(error as Error).message}`)
+  }
+}
+
 /** 一轮检查。 */
 async function tick(host: SubHost, seen: Set<string>): Promise<void> {
   const config = host.config.sessionReset as SessionResetConfig
@@ -104,6 +149,7 @@ async function tick(host: SubHost, seen: Set<string>): Promise<void> {
       continue
     }
     if (size === null) continue
+    void recordSize(host, room, size)
     if (!seen.has(room)) {
       seen.add(room)
       host.log(`session-reset: 探测 ${room} = ${size.tokens}/${size.contextWindow ?? '?'} tokens（${size.provider}/${size.model}）`)
@@ -117,6 +163,43 @@ async function tick(host: SubHost, seen: Set<string>): Promise<void> {
   }
 }
 
+/** 后台「指标」页读它画体积曲线：最近 500 行，按房间分组。 */
+function registerSizeResource(host: SubHost): void {
+// 后台「指标」页读它画体积曲线：最近 500 行，按房间分组。
+host.registerResource('session-size', {
+  label: '会话体积',
+  list: async () => {
+    const file = path.join(host.dshHome, 'channel-qq', 'session-size.jsonl')
+    let lines: string[] = []
+    try {
+      lines = (await fs.readFile(file, 'utf8')).split('\n').filter(Boolean).slice(-500)
+    } catch { lines = [] }
+    const rooms = new Map<string, {
+      room: string; tokens: number; window: number | null; provider: string; model: string; at: number;
+      points: Array<{ at: number; tokens: number }>
+    }>()
+    for (const line of lines) {
+      try {
+        const row = JSON.parse(line) as { at?: number; room?: string; tokens?: number; window?: number | null; provider?: string; model?: string }
+        if (typeof row.room !== 'string' || typeof row.tokens !== 'number') continue
+        const entry = rooms.get(row.room) ?? {
+          room: row.room, tokens: 0, window: null, provider: '', model: '', at: 0, points: [],
+        }
+        entry.tokens = row.tokens
+        entry.window = typeof row.window === 'number' ? row.window : null
+        entry.provider = row.provider ?? ''
+        entry.model = row.model ?? ''
+        entry.at = typeof row.at === 'number' ? row.at : Date.now()
+        entry.points.push({ at: entry.at, tokens: row.tokens })
+        if (entry.points.length > 120) entry.points.shift()
+        rooms.set(row.room, entry)
+      } catch { /* 坏行忽略 */ }
+    }
+    return { rooms: [...rooms.values()] }
+  },
+})
+}
+
 export const sessionResetPlugin: SubPlugin = {
   name: 'session-reset',
   watches: ['sessionReset'],
@@ -125,6 +208,18 @@ export const sessionResetPlugin: SubPlugin = {
     let lastRun = 0
     let busy = false
     const seen = new Set<string>()
+    const streak = new OverflowStreak()
+    // 连续 400：压缩失败时比 5 分钟一次的体积检查更快。
+    const bus = host.get('gatewayErrors')
+    if (bus !== undefined) {
+      host.log('session-reset: 已订阅网关错误（连续 2 次同类 400 会主动换血）')
+      bus.handler = (room, detail) => {
+        if (!looksLikeOverflow(detail)) return
+        if (!streak.hit(room, Date.now())) return
+        host.log(`session-reset: ${room} 连续上下文类错误，安排换血`)
+        setTimeout(() => { void forceReset(host, room, streak) }, 5_000).unref?.()
+      }
+    }
     const timer = setInterval(() => {
       if (busy) return
       const config = host.config.sessionReset as SessionResetConfig
@@ -139,10 +234,12 @@ export const sessionResetPlugin: SubPlugin = {
     // 启动后先跑一次：重启后的第一分钟就发现超限会话。
     const kick = setTimeout(() => { lastRun = Date.now(); void tick(host, seen) }, 20_000)
     kick.unref?.()
+    registerSizeResource(host)
     host.log(`session-reset: 看门狗已启动（每 ${host.config.sessionReset.checkIntervalMin} 分钟，比例 ${host.config.sessionReset.thresholdRatio}）`)
     return () => {
       clearInterval(timer)
       clearTimeout(kick)
+      if (bus !== undefined) bus.handler = undefined
     }
   },
 }

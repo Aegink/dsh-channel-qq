@@ -129,3 +129,12 @@ cordis.patch.yml（部署级）
 阈值顺序建议：宿主压缩约 `0.8 × 窗口`，换血 `0.85`；两者都失败时还有模型本身的
 剩余窗口兜底。窗口越大（例如 1M），换血越少；128k 的模型会更频繁。
 
+**连续 400 也会触发换血**：网关把上游的上下文错误包成 `bad_response_status_code`，
+宿主的溢出恢复认不出来。看门狗订阅 `agent/error`：同一房间 10 分钟内出现 2 次同类
+错误（`bad_response_status_code` / `context_length_exceeded` 等）就主动换血，
+30 分钟内不重复触发。这条比「等 5 分钟一次的体积检查」更快。
+
+**体积曲线**：每轮检查把 `{at, room, tokens, window, provider, model}` 追加到
+`<dshHome>/channel-qq/session-size.jsonl`（超过 5MB 轮转）。后台「指标」页读
+`session-size` 资源画 sparkline，一眼能看到增长斜率与当前占比。
+

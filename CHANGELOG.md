@@ -20,7 +20,11 @@
 
 - **自动换血（会话体积看门狗）**：按模型声明的上下文窗口，`tokens ≥ 窗口 × 0.85`
   时自动备份历史、释放会话、写续接种子；排在宿主压缩之后兜底
-- **供应商页增强**：从网关 `/v1/models` 拉模型列表、每个模型可填上下文长度/最大输出、
+- **连续 400 主动换血**：订阅 `agent/error`，10 分钟内同类上下文错误 2 次即换血
+  （30 分钟冷却），比体积看门狗更快
+- **会话体积曲线**：看门狗每轮写 `session-size.jsonl`，后台「指标」页画 sparkline
+- **供应商保存自动补上下文长度**：没填时按内置目录（models.dev）补
+：从网关 `/v1/models` 拉模型列表、每个模型可填上下文长度/最大输出、
   内置 models.dev 模型目录（`assets/model-context.json`，`node scripts/update-model-catalog.mjs` 更新）
 - **默认供应商切到本机 8317（workbuddy）**，模型 `deepseek-v4.1-flash-1017`（窗口 1M）
 

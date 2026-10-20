@@ -2,7 +2,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { shouldResetSession } from '../src/core/session-reset.js'
+import { OverflowStreak, looksLikeOverflow, shouldResetSession } from '../src/core/session-reset.js'
 
 test('窗口未知 / 非有限值：不换血', () => {
   assert.equal(shouldResetSession(1_000_000, null, 0.7), false)
@@ -25,4 +25,32 @@ test('按比例触发；比例被夹在 0.1–0.95', () => {
 test('1M 窗口：27.8 万 token 不触发（留出压缩余量）', () => {
   assert.equal(shouldResetSession(278_000, 1_048_576, 0.7), false)
   assert.equal(shouldResetSession(734_004, 1_048_576, 0.7), true)
+})
+
+test('连续 400：窗口内两次才算，冷却期内不再触发', () => {
+  const streak = new OverflowStreak(2, 10 * 60_000, 30 * 60_000)
+  const t0 = 1_000_000
+  assert.equal(streak.hit('dm-1', t0), false)
+  assert.equal(streak.hit('dm-1', t0 + 1_000), true)
+  // 冷却期内：即使再连续两次也不触发
+  assert.equal(streak.hit('dm-1', t0 + 2_000), false)
+  assert.equal(streak.hit('dm-1', t0 + 3_000), false)
+  // 冷却期过后重新计数
+  assert.equal(streak.hit('dm-1', t0 + 31 * 60_000), false)
+  assert.equal(streak.hit('dm-1', t0 + 31 * 60_000 + 1_000), true)
+})
+
+test('连续 400：超过窗口的旧计数不算连续', () => {
+  const streak = new OverflowStreak(2, 60_000, 0)
+  assert.equal(streak.hit('dm-2', 0), false)
+  assert.equal(streak.hit('dm-2', 120_000), false) // 间隔 > 窗口，重新从 1 开始
+  assert.equal(streak.hit('dm-2', 150_000), true)
+})
+
+test('错误文本识别：网关包装的 400 与标准上下文错误', () => {
+  assert.equal(looksLikeOverflow('LlmError: 400: {"code":"bad_response_status_code"}'), true)
+  assert.equal(looksLikeOverflow('context_length_exceeded'), true)
+  assert.equal(looksLikeOverflow('CONTEXT_WINDOW_EXCEEDED'), true)
+  assert.equal(looksLikeOverflow('LlmError: 503: model_not_found'), false)
+  assert.equal(looksLikeOverflow('Connection error.'), false)
 })

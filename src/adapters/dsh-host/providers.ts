@@ -306,8 +306,14 @@ function makeSave(host: ProvidersHost): ProvidersSurface['save'] {
       .map((model) => ({
         id: model.id.trim(),
         ...model.name !== undefined && model.name !== '' ? { name: model.name } : {},
-        ...model.contextWindow !== undefined && Number.isInteger(model.contextWindow) && model.contextWindow > 0
-          ? { contextWindow: model.contextWindow } : {},
+        // 没填窗口就用内置目录补（models.dev）；仍没有就交给宿主默认值。
+        ...(() => {
+          const explicit = model.contextWindow !== undefined && Number.isInteger(model.contextWindow) && model.contextWindow > 0
+            ? model.contextWindow
+            : undefined
+          const fallback = explicit ?? catalogContextOf(model.id)?.context
+          return fallback === undefined ? {} : { contextWindow: fallback }
+        })(),
         ...model.maxTokens !== undefined && Number.isInteger(model.maxTokens) && model.maxTokens > 0
           ? { maxTokens: model.maxTokens } : {},
         ...model.vision === true ? { input: ['text', 'image'] } : {},

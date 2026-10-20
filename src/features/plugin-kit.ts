@@ -84,6 +84,11 @@ export interface KnowledgeParts {
   readonly extract: (source: string, text: string) => Promise<number>
 }
 
+/** 网关错误信号：inbound 在每次 agent/error 时投递，session-reset 消费。 */
+export interface GatewayErrorBus {
+  handler?: (room: string, detail: string) => void
+}
+
 /** 服务袋：子插件互相协作的唯一直达通道。 */
 export interface ServiceBag {
   platform?: PlatformParts
@@ -108,6 +113,8 @@ export interface ServiceBag {
   observers?: InboundObservers
   /** 发送侧健康探测（platform 提供；后台 `/api/healthz` 与运维脚本读它）。 */
   health?: HealthProbe
+  /** 网关错误总线（inbound 提供；换血看门狗消费）。 */
+  gatewayErrors?: GatewayErrorBus
 }
 
 /** 根转交进来的宿主能力；这里也是 cordis `ctx` 唯一被"窄化"的地方。 */

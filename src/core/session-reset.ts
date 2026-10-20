@@ -25,3 +25,41 @@ export function shouldResetSession(
   const clamped = Number.isFinite(ratio) ? Math.min(Math.max(ratio, MIN_RATIO), MAX_RATIO) : 0.7
   return tokens >= contextWindow * clamped
 }
+
+/** 错误文本是不是「上下文/请求被上游拒绝」这一类（网关会把它包成 bad_response_status_code）。 */
+export function looksLikeOverflow(detail: string): boolean {
+  return /bad_response_status_code|context[ _-]?length|maximum context|too many tokens|CONTEXT_WINDOW_EXCEEDED/i.test(detail)
+}
+
+/** 连续同类错误的判定器：窗口内累计到 limit 次才返回 true；触发后有冷却。 */
+export class OverflowStreak {
+  private readonly hits = new Map<string, { count: number; at: number }>()
+  private readonly lastFire = new Map<string, number>()
+
+  constructor(
+    private readonly limit = 2,
+    private readonly windowMs = 10 * 60_000,
+    private readonly cooldownMs = 30 * 60_000,
+  ) {}
+
+  /**
+   * 记一次错误；达到阈值且不在冷却期时返回 true。
+   * @param now 当前时间（注入，测试可重放）
+   */
+  hit(room: string, now: number): boolean {
+    const previous = this.hits.get(room)
+    const count = previous === undefined || now - previous.at > this.windowMs ? 1 : previous.count + 1
+    this.hits.set(room, { count, at: now })
+    if (count < this.limit) return false
+    const fired = this.lastFire.get(room)
+    if (fired !== undefined && now - fired < this.cooldownMs) return false
+    this.lastFire.set(room, now)
+    this.hits.delete(room)
+    return true
+  }
+
+  /** 换血成功后清掉计数。 */
+  clear(room: string): void {
+    this.hits.delete(room)
+  }
+}

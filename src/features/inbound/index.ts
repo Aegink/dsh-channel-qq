@@ -39,7 +39,7 @@ import type { createAgentGateway } from '../../adapters/dsh-host/agents.js'
 import type { QQChannelConfig } from '../../config.js'
 import type { ChatPlatform } from '../../ports/platform.js'
 import type { MemoryEvidence } from '../../ports/memory.js'
-import type { SubHost, SubPlugin } from '../plugin-kit.js'
+import type { GatewayErrorBus, SubHost, SubPlugin } from '../plugin-kit.js'
 import { createAdminCommand, startReceiptPoller } from '../approval/index.js'
 import { approvalEnabled } from '../approval/store.js'
 export { syncInstructionRegion, writeInstructionRegion, type InstructionRegionStatus } from './instruction-region.js'
@@ -71,6 +71,8 @@ interface RuntimeDeps {
   readonly openSentLog: (room: string) => Promise<SentLogReader>
   /** 管理员本地命令（审批网关）；未启用的部署为 undefined。 */
   readonly adminCommand?: (text: string, userId: number) => Promise<string | null>
+  /** 模型错误投递（换血看门狗消费）。 */
+  readonly onGatewayError?: (room: string, detail: string) => void
 }
 
 /** 会话登记表：房间 → 会话，四条件路径共用同一份并发保护。 */
@@ -83,6 +85,7 @@ function createRegistry(deps: RuntimeDeps, gateway: ReturnType<typeof createAgen
     log: deps.log,
     config: () => deps.config,
     nudge: () => deps.prompts.gatewayNudge(),
+    ...deps.onGatewayError === undefined ? {} : { onGatewayError: deps.onGatewayError },
   })
 }
 
@@ -306,6 +309,9 @@ export const inboundPlugin: SubPlugin = {
     const { config } = host
     const parts = host.need('platform')
     const health = new GatewayHealth()
+    // 换血看门狗订阅模型错误：inbound 提供、session-reset 消费（后者挂载更晚）。
+    const gatewayErrors: GatewayErrorBus = {}
+    host.provide('gatewayErrors', gatewayErrors)
     // 同一房间只建一次 sent-log；读写共用（写侧按房间记账见 messaging/tools.ts）。
     const sentLogHub = createSentLogHub(host.dshHome, host.log)
     // 注入特征表（P6c）：坏表/版本不认识 → 降级为"没有规则"，绝不挡对话（loader 内记日志）。
@@ -328,6 +334,7 @@ export const inboundPlugin: SubPlugin = {
         return result === null ? null : result[0]
       },
       openSentLog: (room: string) => sentLogHub.for(room),
+      onGatewayError: (room, detail) => gatewayErrors.handler?.(room, detail),
       // 审批网关（默认关；CHANNEL_QQ_APPROVAL=1 时生效）。命令先于 agent 处理、不经模型。
       // 传取值函数而不是 `config.admins`：撤掉管理员后必须立刻失效。
       ...approvalEnabled() ? { adminCommand: createAdminCommand(() => host.config.admins, host.log) } : {},

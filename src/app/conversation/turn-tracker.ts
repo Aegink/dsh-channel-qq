@@ -30,6 +30,8 @@ export interface TurnTrackerDeps {
   readonly injectMode: () => { readonly enabled: boolean; readonly wakeIdle: boolean }
   /** 取随机数（退避抖动）——注入是为了让退避曲线可重放。 */
   readonly roll: () => number
+  /** 每次模型错误都投递一次（换血看门狗据此识别连续 400）。 */
+  readonly onGatewayError?: (room: string, detail: string) => void
 }
 
 export class TurnTracker implements TurnListener {
@@ -122,6 +124,7 @@ export class TurnTracker implements TurnListener {
 
   /** 宿主报错：分类、必要时安排重试。 */
   onError(error: { readonly raw: string }): void {
+    this.deps.onGatewayError?.(this.deps.room, error.raw)
     const action = classifyFailure(error.raw, {
       hadImages: this.lastPromptHadImages,
       textOnlyRetryDone: this.textOnlyRetryDone,
