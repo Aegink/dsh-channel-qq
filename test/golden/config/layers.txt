@@ -176,6 +176,12 @@ override = {}
    "system": 0
   }
  },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
+ },
  "planner": {
   "enabled": false
  },
@@ -691,6 +697,12 @@ override = {}
    "system": 0
   }
  },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
+ },
  "planner": {
   "enabled": false
  },
@@ -1203,6 +1215,12 @@ override = {"batching":{"windowMs":20000}}
    "group": 0,
    "system": 0
   }
+ },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
  },
  "planner": {
   "enabled": false
@@ -1717,6 +1735,12 @@ override = {"admin":{"port":8790}}
    "system": 0
   }
  },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
+ },
  "planner": {
   "enabled": false
  },
@@ -2229,6 +2253,12 @@ override = {"imageGen":{"model":"flux"}}
    "group": 0,
    "system": 0
   }
+ },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
  },
  "planner": {
   "enabled": false
@@ -2743,6 +2773,12 @@ override = {"tts":{"voice":"b"}}
    "system": 0
   }
  },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
+ },
  "planner": {
   "enabled": false
  },
@@ -3255,6 +3291,12 @@ override = {"flood":{"windowSec":30}}
    "group": 0,
    "system": 0
   }
+ },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
  },
  "planner": {
   "enabled": false
@@ -3776,6 +3818,12 @@ override = {}
    "system": 0
   }
  },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
+ },
  "planner": {
   "enabled": false
  },
@@ -4288,6 +4336,12 @@ override = {"keywordTriggers":[]}
    "group": 0,
    "system": 0
   }
+ },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
  },
  "planner": {
   "enabled": false
@@ -4809,6 +4863,12 @@ override = {"rss":{"pollIntervalMin":5}}
    "system": 0
   }
  },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
+ },
  "planner": {
   "enabled": false
  },
@@ -5321,6 +5381,12 @@ override = {"groupEnabled":false}
    "group": 0,
    "system": 0
   }
+ },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
  },
  "planner": {
   "enabled": false
@@ -5835,6 +5901,12 @@ override = {}
    "system": 0
   }
  },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
+ },
  "planner": {
   "enabled": false
  },
@@ -6347,6 +6419,12 @@ override = {"groupEnabled":true}
    "group": 0,
    "system": 0
   }
+ },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
  },
  "planner": {
   "enabled": false
@@ -6861,6 +6939,12 @@ override = {"admin":{"host":"127.0.0.1"}}
    "system": 0
   }
  },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
+ },
  "planner": {
   "enabled": false
  },
@@ -7374,6 +7458,12 @@ override = {}
    "system": 0
   }
  },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
+ },
  "planner": {
   "enabled": false
  },
@@ -7886,6 +7976,12 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
    "group": 0,
    "system": 0
   }
+ },
+ "sessionReset": {
+  "enabled": true,
+  "thresholdRatio": 0.85,
+  "checkIntervalMin": 5,
+  "seed": ""
  },
  "planner": {
   "enabled": false

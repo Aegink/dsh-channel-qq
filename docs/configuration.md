@@ -107,3 +107,25 @@ cordis.patch.yml（部署级）
 导入支持三种：粘贴全文、单文件 URL（GitHub blob 链接自动换成 raw）、GitHub
 目录（`…/tree/<ref>/<path>`，递归下载，最多 200 个文件）。三种都先落 `.staging`。
 
+## 会话换血（自动）
+
+宿主的上下文压缩是**第一道防线**，但它有一个死结：历史一旦**已经超过**模型窗口，
+压缩自己的摘要请求也会超窗（2026-10-20 的 400 就是这个）。换血是第二道防线：
+
+| 配置项 | 默认 | 说明 |
+|---|---|---|
+| `sessionReset.enabled` | `true` | 关掉后只能手动跑 `deploy/session-reset.mjs` |
+| `sessionReset.thresholdRatio` | `0.85` | `tokens ≥ 窗口 × ratio` 时换血；刻意排在压缩（约 0.8）之后 |
+| `sessionReset.checkIntervalMin` | `5` | 每轮检查活跃会话；只在回合空闲时动手 |
+| `sessionReset.seed` | 空 | 换血后注入下一轮的一句话（空 = 内置文案） |
+
+换血做的事：释放会话 → 历史移到 `<dshHome>/channel-qq/backups/session-auto-<时间>-<会话>/`
+→ 写 `session-seed-<会话>.json` → 下一条消息自动开新会话并注入种子。**长期记忆、
+人格、知识库都不动**。
+
+前提：模型必须**声明 `contextWindow`**（供应商页可填）。窗口未知时不换血——
+宁可不换，也不要在错误的尺寸上误杀历史。
+
+阈值顺序建议：宿主压缩约 `0.8 × 窗口`，换血 `0.85`；两者都失败时还有模型本身的
+剩余窗口兜底。窗口越大（例如 1M），换血越少；128k 的模型会更频繁。
+

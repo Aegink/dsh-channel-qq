@@ -173,6 +173,12 @@
       "system": 0
     }
   },
+  "sessionReset": {
+    "enabled": true,
+    "thresholdRatio": 0.85,
+    "checkIntervalMin": 5,
+    "seed": ""
+  },
   "planner": {
     "enabled": false
   },

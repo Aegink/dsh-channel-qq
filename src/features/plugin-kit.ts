@@ -47,6 +47,7 @@ import type { AgentRegistry, PresetRegistry } from '../adapters/dsh-host/service
 import type { ToolHost } from '../adapters/dsh-host/tools.js'
 import type { SkillHost } from '../ports/skills.js'
 import type { HealthProbe } from '../ports/health.js'
+import type { SessionSizeProbe } from '../adapters/dsh-host/session-size.js'
 
 /** platform 子插件提供的四件套（传输对象 + 端口 + 出站队列）。 */
 export interface PlatformParts {
@@ -125,6 +126,8 @@ export interface HostBridge {
   providersSurface(): ProvidersSurface | undefined
   /** 技能接缝：把技能仓库接进宿主的目录与 `/name` 触发（宿主没装 skill 服务时 install 返回 undefined）。 */
   skillsHost?(): SkillHost
+  /** 会话体积探针（换血看门狗用：tokenMeter + 模型窗口）。 */
+  sessionSize?(): SessionSizeProbe
   /** 宿主 console logger 的错误出口（事件分发层用，不写文件日志）。 */
   logHostError(message: string): void
   /** 把一次配置补丁交给根：只重载被命中的子插件。 */

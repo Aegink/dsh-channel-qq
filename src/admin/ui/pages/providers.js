@@ -25,6 +25,10 @@ const fmtDur = (ms) => (ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${Math.roun
 let host = null
 let editing = null
 let draftHeaders = []
+/** 编辑中的模型行：{ id, contextWindow, maxTokens, vision }。 */
+let draftModels = []
+/** 内置模型目录（models.dev 生成，服务端随列表返回）。 */
+let catalog = []
 
 function render(h) {
   host = h
@@ -58,6 +62,7 @@ async function load(curBox, listBox) {
     ['默认供应商', cur === null ? '（未设置）' : String(cur.provider)],
     ['默认模型', cur === null ? '—' : String(cur.model)],
   ]))
+  catalog = Array.isArray(res.body.catalog) ? res.body.catalog : []
   const providers = Array.isArray(res.body.providers) ? res.body.providers : []
   if (providers.length === 0) {
     listBox.appendChild(emptyBox('还没有供应商', '用下面的表单添加第一个。', 'plug'))
@@ -87,6 +92,7 @@ function providerCard(p, cur, reload) {
   edit.addEventListener('click', () => {
     editing = p
     draftHeaders = Object.entries(p.headers ?? {}).map(([k, v]) => ({ k, v }))
+    draftModels = (p.modelDetails ?? (p.models ?? []).map((id) => ({ id }))).map((m) => ({ ...m }))
     render(host)
   })
   head.appendChild(el('div', { class: 'rowbtns' }, [edit, del]))
@@ -201,6 +207,101 @@ function field(label, node, hint) {
   return box
 }
 
+/** 内置目录匹配：精确优先，其次最长前缀（`...-1017` 能对上基础 id）。 */
+function catalogMatch(id) {
+  const wanted = String(id ?? '').trim().toLowerCase()
+  if (wanted === '') return undefined
+  let best
+  for (const entry of catalog) {
+    if (entry.id === wanted) return entry
+    if (wanted.startsWith(entry.id) && (best === undefined || entry.id.length > best.id.length)) best = entry
+  }
+  return best
+}
+
+/** 一行模型：id + 上下文长度 + 最大输出 + 删除。 */
+function modelRow(model, rerender) {
+  const row = el('div', { class: 'rowflex', style: 'margin-bottom:6px' })
+  const id = el('input', { placeholder: 'deepseek-v4.1-flash-1017', value: model.id ?? '', attrs: { list: 'model-catalog' }, style: 'min-width:220px' })
+  const context = el('input', { type: 'number', min: '0', placeholder: '上下文', value: model.contextWindow ?? '', style: 'width:110px' })
+  const output = el('input', { type: 'number', min: '0', placeholder: '最大输出', value: model.maxTokens ?? '', style: 'width:100px' })
+  const fill = () => {
+    if (context.value !== '') return
+    const hit = catalogMatch(id.value)
+    if (hit !== undefined) context.value = String(hit.context)
+  }
+  id.addEventListener('input', () => { model.id = id.value })
+  id.addEventListener('blur', fill)
+  context.addEventListener('input', () => {
+    const n = Number(context.value)
+    model.contextWindow = Number.isFinite(n) && n > 0 ? Math.trunc(n) : undefined
+  })
+  output.addEventListener('input', () => {
+    const n = Number(output.value)
+    model.maxTokens = Number.isFinite(n) && n > 0 ? Math.trunc(n) : undefined
+  })
+  const del = button('删除', 'small', 'trash')
+  del.addEventListener('click', () => {
+    const at = draftModels.indexOf(model)
+    if (at >= 0) draftModels.splice(at, 1)
+    rerender()
+  })
+  row.append(id, context, output, del)
+  return row
+}
+
+/** 模型编辑器：多行 + 目录预填 + 从网关拉取。 */
+function modelEditor() {
+  const box = el('div', { class: 'stack' })
+  const list = el('div', { class: 'stack' })
+  const datalist = el('datalist', { id: 'model-catalog' })
+  for (const entry of catalog) {
+    datalist.appendChild(el('option', { value: entry.id, text: `${entry.name} · ${Math.round(entry.context / 1024)}k` }))
+  }
+  const rerender = () => {
+    list.textContent = ''
+    if (draftModels.length === 0) draftModels.push({ id: '' })
+    for (const model of draftModels) list.appendChild(modelRow(model, rerender))
+  }
+  rerender()
+  const add = button('+ 添加模型', 'small', 'plus')
+  add.addEventListener('click', () => { draftModels.push({ id: '' }); rerender() })
+  const fillAll = button('按目录补全', 'small', 'wand')
+  fillAll.addEventListener('click', () => {
+    let filled = 0
+    for (const model of draftModels) {
+      if (model.contextWindow !== undefined) continue
+      const hit = catalogMatch(model.id)
+      if (hit === undefined) continue
+      model.contextWindow = hit.context
+      filled += 1
+    }
+    rerender()
+    toast(filled === 0 ? '没有可补全的模型' : `已补全 ${filled} 个上下文长度`, 'ok', 4000)
+  })
+  const pull = button('从网关拉取', 'small', 'download')
+  pull.disabled = editing === null
+  pull.addEventListener('click', async () => {
+    if (editing === null) return
+    pull.disabled = true
+    const res = await api('/api/providers/discover', { method: 'POST', body: { name: editing.name } })
+    pull.disabled = false
+    if (res.status !== 200) { toast(`拉取失败：${errText(res)}`, 'bad', 9000); return }
+    const ids = Array.isArray(res.body?.models) ? res.body.models : []
+    const have = new Set(draftModels.map((m) => m.id))
+    let added = 0
+    for (const id of ids) {
+      if (have.has(id)) continue
+      draftModels.push({ id, ...catalogMatch(id) ? { contextWindow: catalogMatch(id).context } : {} })
+      added += 1
+    }
+    rerender()
+    toast(String(res.body?.note ?? `拉到 ${ids.length} 个模型`) + `；新增 ${added} 行`, 'ok', 7000)
+  })
+  box.append(datalist, list, el('div', { class: 'rowflex' }, [add, fillAll, pull]))
+  return box
+}
+
 function editForm() {
   const src = editing ?? {}
   const inputs = {}
@@ -223,7 +324,7 @@ function editForm() {
   grid.appendChild(field('显示名', mk('displayName', src.displayName, 'windhub 网关')))
   grid.appendChild(field('协议', protocol, '按供应商实际提供的接口选'))
   grid.appendChild(field('Base URL', mk('baseURL', src.baseURL, 'https://example.com/v1'), 'Anthropic Messages 要带 /v1'))
-  grid.appendChild(field('模型 id', mk('model', (src.models ?? [])[0], 'deepseek-v4.1-flash')))
+  grid.appendChild(field('模型', modelEditor(), '上下文长度留空时按内置目录（models.dev）自动匹配；仍匹配不到就用宿主默认值。'))
   grid.appendChild(field('密钥环境变量名', mk('apiKeyEnv', src.apiKeyEnv, '留空 = NAME_API_KEY')))
   grid.appendChild(field('密钥', mk('apiKey', '', editing === null ? 'sk-…' : '留空 = 不修改', 'password'), '填了写进凭据缝'))
   const vision = el('input', { type: 'checkbox', checked: src.vision === true })
@@ -251,10 +352,14 @@ async function save(inputs, btn) {
     const k = row.k.trim()
     if (k !== '') headers[k] = row.v
   }
+  const models = draftModels
+    .map((m) => ({ ...m, id: String(m.id ?? '').trim() }))
+    .filter((m) => m.id !== '')
   const body = {
     name: inputs.name.value.trim(),
     baseURL: inputs.baseURL.value.trim(),
-    model: inputs.model.value.trim(),
+    model: models[0]?.id ?? '',
+    models,
     api: inputs.api.value,
     vision: inputs.vision.checked,
     headers,

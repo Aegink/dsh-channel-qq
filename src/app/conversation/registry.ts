@@ -118,6 +118,11 @@ export class ConversationRegistry {
     return this.records.size
   }
 
+  /** 已登记的房间键快照（会话换血的看门狗要遍历它们）。 */
+  keys(): string[] {
+    return [...this.records.keys()]
+  }
+
   /**
    * 取记录，没有就按这条事件建一个**空壳**（会话还没开）。
    *

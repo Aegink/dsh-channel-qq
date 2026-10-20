@@ -111,6 +111,7 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
   ['eventMonitor', section('群事件', 'eventMonitor')],
   ['context', section('上下文', 'context')],
   ['turn', section('回合', 'turn')],
+  ['sessionReset', section('会话换血', 'sessionReset')],
   ['planner', section('群聊准入（要不要说话）', 'planner')],
   ['contextBudget', section('上下文预算', 'contextBudget')],
   ['groupAdmin', section('高危群管', 'groupAdmin')],

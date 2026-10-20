@@ -112,7 +112,7 @@ test('P5.1：requires 未满足的段挂不上（inject 的等价断言）；卸
 
 test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 applyEffects）', () => {
   assert.deepEqual(SECTION_PLUGINS.map((p) => p.name), [
-    'persona', 'observers', 'platform', 'inbound', 'stickers', 'memory', 'affection',
+    'persona', 'observers', 'platform', 'inbound', 'session-reset', 'stickers', 'memory', 'affection',
     'qq-tools', 'links', 'meme', 'voice', 'quotes', 'reminders', 'rss', 'imagegen',
     'flood', 'learn', 'music', 'skills', 'proactive', 'admin',
   ])
@@ -122,6 +122,7 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
   assert.deepEqual(watched, [
     ['platform', ['connection', 'accessToken']],
     ['inbound', ['context.v2', 'tools.v2']],
+    ['session-reset', ['sessionReset']],
     ['stickers', ['emoji.dir', 'emoji.registeredDir']],
     ['memory', [
       'memory.v2', 'memory.threshold', 'memory.maxRecords', 'memory.maxChars',

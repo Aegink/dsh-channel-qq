@@ -113,6 +113,24 @@ async function removeRoute(env: ProvidersRouteEnv, req: http.IncomingMessage, re
   }
 }
 
+async function discoverRoute(env: ProvidersRouteEnv, req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  if (req.method !== 'POST') {
+    env.json(res, 405, { error: '用 POST' })
+    return
+  }
+  const body = await env.readBody(req)
+  const name = String(body.name ?? '')
+  const ip = env.clientIp(req)
+  try {
+    const data = await env.deps.providers!.discover(name)
+    await env.audit(ip, 'POST', '/api/providers/discover', 'providers.discover', `拉取 ${name} 的模型列表：${data.models.length} 个`)
+    env.json(res, 200, { ok: true, ...data })
+  } catch (error) {
+    await env.audit(ip, 'POST', '/api/providers/discover', 'providers.discover', `拉取 ${name} 失败：${messageOf(error)}`, 'error')
+    env.json(res, 400, { error: messageOf(error) })
+  }
+}
+
 /** 供应商路由：`/api/providers` 前缀下的一切。命中返回 true。 */
 export async function routeProviders(env: ProvidersRouteEnv, req: http.IncomingMessage, res: http.ServerResponse, url: URL): Promise<boolean> {
   const route = url.pathname
@@ -130,6 +148,7 @@ export async function routeProviders(env: ProvidersRouteEnv, req: http.IncomingM
     if (route === '/api/providers/test') { await testRoute(env, req, res); return true }
     if (route === '/api/providers/default') { await defaultRoute(env, req, res); return true }
     if (route === '/api/providers/save') { await saveRoute(env, req, res); return true }
+    if (route === '/api/providers/discover') { await discoverRoute(env, req, res); return true }
     env.json(res, 404, { error: `未知的供应商接口 ${route}` })
     return true
   } catch (error) {

@@ -18,6 +18,12 @@
 - **发送侧健康探测**：后台只读路由 `/api/healthz`（仅 loopback），内部一次
   `get_status` 往返、不产生消息；返回 socket 状态、online/good、延迟与最近收帧时间
 
+- **自动换血（会话体积看门狗）**：按模型声明的上下文窗口，`tokens ≥ 窗口 × 0.85`
+  时自动备份历史、释放会话、写续接种子；排在宿主压缩之后兜底
+- **供应商页增强**：从网关 `/v1/models` 拉模型列表、每个模型可填上下文长度/最大输出、
+  内置 models.dev 模型目录（`assets/model-context.json`，`node scripts/update-model-catalog.mjs` 更新）
+- **默认供应商切到本机 8317（workbuddy）**，模型 `deepseek-v4.1-flash-1017`（窗口 1M）
+
 ### 修复
 
 - 技能仓库默认放在 `dshHome` 而不是工作区：工作区对模型可写，而技能正文会进系统

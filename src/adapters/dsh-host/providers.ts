@@ -9,6 +9,11 @@
  * 所以不需要进 `scripts/layers-baseline.json` 的棘轮名单。
  */
 
+import { readFileSync } from 'node:fs'
+import * as path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { systemHttp } from '../http/client.js'
+import { findPackageRoot } from '../persona/fs-pack.js'
 import { HEADER_PRESETS, normalizeHeaders, presetById } from './provider-headers.js'
 import { runProbes } from './provider-probes.js'
 
@@ -39,6 +44,27 @@ export interface ProvidersHost {
   agentDefaultModel?: DefaultModelSeam
 }
 
+/** 一个模型的配置（id + 可选能力）。 */
+export interface ProviderModel {
+  id: string
+  name?: string
+  /** 上下文窗口（token）；不填时按宿主默认值估算。 */
+  contextWindow?: number
+  /** 最大输出 token。 */
+  maxTokens?: number
+  /** 声明图片输入。 */
+  vision?: boolean
+}
+
+/** 内置模型目录的一条（来自 models.dev）。 */
+export interface CatalogEntry {
+  id: string
+  name: string
+  context: number
+  output?: number
+  provider: string
+}
+
 /** 列表里的一项供应商（绝不包含密钥值——只有引用名与"配没配"）。 */
 export interface ProviderSummary {
   name: string
@@ -48,6 +74,8 @@ export interface ProviderSummary {
   apiKeyEnv: string
   keyConfigured: boolean
   models: string[]
+  /** 完整模型配置（后台编辑表单回填 contextWindow / maxTokens）。 */
+  modelDetails: ProviderModel[]
   /** 第一个模型是否声明了图片输入（编辑表单回填用）。 */
   vision: boolean
   headers: Record<string, string>
@@ -76,7 +104,9 @@ export interface SaveProviderInput {
   /** openai-completions | openai-responses | anthropic-messages */
   api?: string
   model: string
-  /** 声明图片输入（写进 models[].input）。 */
+  /** 完整模型列表；给了就覆盖 `model`（兼容旧调用方）。 */
+  models?: ProviderModel[]
+  /** 声明图片输入（写进 models[].input，仅对没有 models 的旧调用方生效）。 */
   vision?: boolean
   /** 自定义请求头（整组替换；空对象 = 清空）。 */
   headers?: Record<string, string>
@@ -86,11 +116,13 @@ export interface SaveProviderInput {
 }
 
 export interface ProvidersSurface {
-  list(): Promise<{ ok: true; current: { provider: string; model: string } | null; providers: ProviderSummary[]; presets: typeof HEADER_PRESETS } | { ok: false; note: string }>
+  list(): Promise<{ ok: true; current: { provider: string; model: string } | null; providers: ProviderSummary[]; presets: typeof HEADER_PRESETS; catalog: readonly CatalogEntry[] } | { ok: false; note: string }>
   test(name: string): Promise<ProviderTestReport>
   setDefault(provider: string, model: string): Promise<string>
   save(input: SaveProviderInput): Promise<string>
   remove(name: string): Promise<string>
+  /** 从供应商的 `/v1/models` 拉模型 id 列表（OpenAI 兼容端点）。 */
+  discover(name: string): Promise<{ models: string[]; note: string }>
 }
 
 /** 供应商在 settings 文档里的原始形状（只取我们读写的字段）。 */
@@ -99,8 +131,46 @@ interface RawProvider {
   api?: string
   baseURL?: string
   apiKeyEnv?: string
-  models?: Array<{ id?: string; name?: string; input?: string[] }>
+  models?: Array<{ id?: string; name?: string; input?: string[]; contextWindow?: number; maxTokens?: number }>
   headers?: Record<string, string>
+}
+
+/** 内置模型目录：懒加载一次（assets/model-context.json，由脚本生成）。 */
+let catalogCache: readonly CatalogEntry[] | null = null
+export function modelCatalog(): readonly CatalogEntry[] {
+  if (catalogCache !== null) return catalogCache
+  try {
+    const root = findPackageRoot(path.dirname(fileURLToPath(import.meta.url))) ?? '.'
+    const parsed: unknown = JSON.parse(readFileSync(path.join(root, 'assets', 'model-context.json'), 'utf8'))
+    const models = (parsed as { models?: unknown })?.models
+    catalogCache = Array.isArray(models) ? models as CatalogEntry[] : []
+  } catch {
+    catalogCache = []
+  }
+  return catalogCache
+}
+
+/** 模型目录里按 id 找上下文长度：先精确，再取最长的前缀匹配。 */
+export function catalogContextOf(id: string): CatalogEntry | undefined {
+  const wanted = String(id).trim().toLowerCase()
+  if (wanted === '') return undefined
+  let best: CatalogEntry | undefined
+  for (const entry of modelCatalog()) {
+    if (entry.id === wanted) return entry
+    if (wanted.startsWith(entry.id) && (best === undefined || entry.id.length > best.id.length)) best = entry
+  }
+  return best
+}
+
+/** settings 里的 models → 后台表单用的结构。 */
+function modelDetailsOf(raw: RawProvider): ProviderModel[] {
+  return (raw.models ?? []).map((model) => ({
+    id: String(model.id ?? ''),
+    ...typeof model.name === 'string' && model.name !== '' ? { name: model.name } : {},
+    ...typeof model.contextWindow === 'number' ? { contextWindow: model.contextWindow } : {},
+    ...typeof model.maxTokens === 'number' ? { maxTokens: model.maxTokens } : {},
+    ...Array.isArray(model.input) && model.input.includes('image') ? { vision: true } : {},
+  })).filter((model) => model.id !== '')
 }
 
 const PROTOCOLS = ['openai-completions', 'openai-responses', 'anthropic-messages'] as const
@@ -173,11 +243,12 @@ function makeList(host: ProvidersHost): ProvidersSurface['list'] {
         apiKeyEnv: raw.apiKeyEnv ?? '',
         keyConfigured: await keyConfigured(host, raw.apiKeyEnv ?? ''),
         models: (raw.models ?? []).map((m) => String(m.id ?? '')).filter((id) => id !== ''),
+        modelDetails: modelDetailsOf(raw),
         vision: Array.isArray(raw.models?.[0]?.input) && raw.models[0].input.includes('image'),
         headers: raw.headers ?? {},
       })
     }
-    return { ok: true as const, current: host.agentDefaultModel.currentSelection(), providers, presets: HEADER_PRESETS }
+    return { ok: true as const, current: host.agentDefaultModel.currentSelection(), providers, presets: HEADER_PRESETS, catalog: modelCatalog() }
   }
 }
 
@@ -212,7 +283,8 @@ function makeSetDefault(host: ProvidersHost): ProvidersSurface['setDefault'] {
 function validateSave(input: SaveProviderInput): void {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(input.name)) throw new Error('供应商名必须是小写字母/数字/连字符（llm-pi-ai 的路由名规则）')
   if (normalizeBaseURL(input.baseURL) === '') throw new Error('baseURL 不能为空')
-  if (input.model.trim() === '') throw new Error('模型 id 不能为空')
+  const hasList = Array.isArray(input.models) && input.models.some((model) => model.id.trim() !== '')
+  if (!hasList && input.model.trim() === '') throw new Error('模型 id 不能为空')
   if (input.api !== undefined && !PROTOCOLS.includes(input.api as typeof PROTOCOLS[number])) {
     throw new Error(`不支持的协议 ${input.api}（可选：${PROTOCOLS.join('、')}）`)
   }
@@ -226,14 +298,27 @@ function makeSave(host: ProvidersHost): ProvidersSurface['save'] {
     if (found === null) throw new Error('未在 settings 文档里找到 llm-pi-ai 条目')
     const headers = normalizeHeaders(input.headers ?? {})
     const apiKeyEnv = (input.apiKeyEnv ?? '').trim() || `${input.name.toUpperCase().replace(/-/g, '_')}_API_KEY`
-    const modelEntry: { id: string; name?: string; input?: string[] } = { id: input.model.trim() }
-    if (input.vision === true) modelEntry.input = ['text', 'image']
+    const incoming: ProviderModel[] = Array.isArray(input.models) && input.models.length > 0
+      ? input.models
+      : [{ id: input.model, ...input.vision === true ? { vision: true } : {} }]
+    const models = incoming
+      .filter((model) => model.id.trim() !== '')
+      .map((model) => ({
+        id: model.id.trim(),
+        ...model.name !== undefined && model.name !== '' ? { name: model.name } : {},
+        ...model.contextWindow !== undefined && Number.isInteger(model.contextWindow) && model.contextWindow > 0
+          ? { contextWindow: model.contextWindow } : {},
+        ...model.maxTokens !== undefined && Number.isInteger(model.maxTokens) && model.maxTokens > 0
+          ? { maxTokens: model.maxTokens } : {},
+        ...model.vision === true ? { input: ['text', 'image'] } : {},
+      }))
+    if (models.length === 0) throw new Error('至少要有一个模型 id')
     const provider: RawProvider = {
       displayName: input.displayName?.trim() || input.name,
       api: input.api?.trim() || 'openai-completions',
       baseURL: normalizeBaseURL(input.baseURL),
       apiKeyEnv,
-      models: [modelEntry],
+      models,
       ...Object.keys(headers).length === 0 ? {} : { headers },
     }
     await host.settings.update(found.ns, { providers: { [input.name]: provider } }, found.revision)
@@ -244,6 +329,29 @@ function makeSave(host: ProvidersHost): ProvidersSurface['save'] {
       keyNote = `；密钥已写入凭据缝（${apiKeyEnv}）`
     }
     return `已保存供应商 ${input.name}${keyNote}；下一次模型调用生效`
+  }
+}
+
+function makeDiscover(host: ProvidersHost): ProvidersSurface['discover'] {
+  return async (name: string) => {
+    const raw = requireProvider(host, name)
+    const baseURL = normalizeBaseURL(raw.baseURL ?? '')
+    if (baseURL === '') throw new Error(`${name} 没配 baseURL`)
+    const key = await resolveKey(host, raw.apiKeyEnv ?? '')
+    if (key === undefined) throw new Error(`${name} 的密钥未配置（${raw.apiKeyEnv ?? '未写 apiKeyEnv'}）`)
+    const url = `${baseURL}/models`
+    // 运维显式填的地址：允许私网（8317 这类本机网关就是私网）。
+    const response = await systemHttp.request(url, {
+      headers: { authorization: `Bearer ${key}`, accept: 'application/json', ...raw.headers ?? {} },
+      timeoutMs: 20_000,
+      limit: 2 * 1024 * 1024,
+      allowPrivateHosts: true,
+    })
+    if (!response.ok) throw new Error(`拉取模型列表失败 HTTP ${response.status}`)
+    const body = response.json<{ data?: Array<{ id?: unknown }> } | Array<{ id?: unknown }>>()
+    const list = Array.isArray(body) ? body : Array.isArray(body.data) ? body.data : []
+    const models = list.map((entry) => String(entry.id ?? '')).filter((id) => id !== '')
+    return { models, note: `从 ${url} 拉到 ${models.length} 个模型` }
   }
 }
 
@@ -269,6 +377,7 @@ export function createProvidersSurface(host: ProvidersHost): ProvidersSurface | 
     setDefault: makeSetDefault(host),
     save: makeSave(host),
     remove: makeRemove(host),
+    discover: makeDiscover(host),
   }
 }
 

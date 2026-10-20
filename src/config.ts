@@ -40,7 +40,6 @@ export interface PokeConfig {
    */
   windowSec: number
 }
-
 export interface ImageConfig {
   /** Download inbound images and attach them to the model prompt (vision). */
   enabled: boolean
@@ -362,6 +361,7 @@ export interface QQChannelConfig extends SwitchSections {
   memory: MemoryConfig
   music: import('./config/sections/music.js').MusicConfig
   skills: import('./config/sections/skills.js').SkillsConfig
+  sessionReset: import('./config/sections/session-reset.js').SessionResetConfig
   eventMonitor: EventMonitorConfig
   contextBudget: ContextBudgetConfig
   context: ContextV2Config

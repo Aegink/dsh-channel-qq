@@ -20,6 +20,7 @@ import { createAgentGateway } from './adapters/dsh-host/agents.js'
 import { createProvidersSurface } from './adapters/dsh-host/providers.js'
 import { agentRegistry, installToolGate, presetRegistry } from './adapters/dsh-host/services.js'
 import { installSkills } from './adapters/dsh-host/skills.js'
+import { createSessionSizeProbe } from './adapters/dsh-host/session-size.js'
 import { guardTemplateKey, policyEnabled } from './app/policy/tool-policy.js'
 import { toolsV2Enabled } from './features/tools-v2/index.js'
 import { SendSignatureGuard } from './core/guards/output-signatures.js'
@@ -179,6 +180,8 @@ export class ChannelQQ extends Service {
       skillsHost: () => ({
         install: (provider, trigger, log) => installSkills(this.ctx, provider, trigger, log),
       }),
+      // 会话换血看门狗：tokenMeter 的估算 + 路由模型声明的窗口。
+      sessionSize: () => createSessionSizeProbe(this.ctx),
       providersSurface: () => createProvidersSurface({
         // settings / credentials 用 get（可选查询）：宿主没装这两个服务时整页降级，
         // 但不能拦启动——属性访问（ctx.settings）要求先 inject，没声明会直接抛

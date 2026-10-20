@@ -26,6 +26,7 @@ import { TOOLS_GROUPS } from './sections/tools.js'
 import { PROACTIVE_GROUPS } from './sections/proactive.js'
 import { PLANNER_GROUPS } from './sections/planner.js'
 import { ROOT_ENTRIES } from './sections/root.js'
+import { SESSION_RESET_GROUPS } from './sections/session-reset.js'
 
 export type {
   ConfigSchema, FieldGroup, FieldKind, FieldSpec, HotLevel, SectionFieldSpec,
@@ -48,6 +49,7 @@ export const SCHEMA: ConfigSchema = {
     ...TOOLS_GROUPS,
     ...PROACTIVE_GROUPS,
     ...PLANNER_GROUPS,
+    ...SESSION_RESET_GROUPS,
   ],
 }
 
