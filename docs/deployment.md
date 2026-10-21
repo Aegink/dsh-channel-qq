@@ -342,6 +342,17 @@ fi
 
 ---
 
+### 6.7 无人值守的三条防挂起
+
+1. **安装 bubblewrap**（`apt-get install -y bubblewrap`）：宿主 bash 的
+   `workspace-write` 沙箱后端需要它；缺了会让普通写文件动作被当成"需要升级沙箱"，
+   进而弹出一个没人能答的审批。
+2. **审批策略按预设关掉**：在 profile 里把 `permission` 预设的
+   `workspace-write.approval` 设为 `never`（**不要**改 `approval` 的全局 policy，
+   否则 permission-presets 匹配不到预设、channel-qq 起不来）。
+3. **回合看门狗**：`sessionReset.maxTurnMinutes`（默认 10）——任何回合超时未结束
+   就强制换血，避免一个挂起的工具调用堵死整个房间。
+
 ## 7. 安全清单
 
 - [ ] NapCat `WEBUI_TOKEN` / OneBot `accessToken` 换成强随机串，**不要用默认值**
