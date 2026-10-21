@@ -868,7 +868,7 @@
 }
 {
   "name": "qq_resolve_music",
-  "description": "解析一首歌的播放直链/封面/歌词（网易云 songId）。发语音或拿链接前用这个。",
+  "description": "解析一首歌的播放直链（网易云 songId）。先问已配置的落雪音源，再退回网易云直链；发语音或拿链接前用这个。",
   "parameters": {
     "type": "object",
     "properties": {
@@ -876,6 +876,14 @@
         "type": "string",
         "required": true,
         "description": "网易云歌曲ID"
+      },
+      "name": {
+        "type": "string",
+        "description": "歌名（可选，音源用它做元数据）"
+      },
+      "artists": {
+        "type": "string",
+        "description": "歌手（可选）"
       }
     },
     "required": [
@@ -885,7 +893,7 @@
 }
 {
   "name": "qq_send_music_card",
-  "description": "在群/私聊里发一首歌（官方音乐卡片，网易云 songId）。最适合点歌展示。",
+  "description": "点歌：解析音源后把歌曲以音频文件发到群/私聊（官方音乐卡片在现行 QQ 上会显示「版本过低」，所以改发文件；文件名带歌名与歌手）。",
   "parameters": {
     "type": "object",
     "properties": {
@@ -895,7 +903,15 @@
       },
       "songId": {
         "type": "string",
-        "description": "网易云歌曲ID"
+        "description": "网易云歌曲ID（来自 qq_search_music）"
+      },
+      "name": {
+        "type": "string",
+        "description": "歌名（可选：文件名与音源元数据用）"
+      },
+      "artists": {
+        "type": "string",
+        "description": "歌手（可选）"
       },
       "private": {
         "type": "boolean",
@@ -910,7 +926,7 @@
 }
 {
   "name": "qq_send_music_voice",
-  "description": "把一首歌下载后以语音形式发到群/私聊（卡片发不了时的降级，听感像发语音条）。",
+  "description": "把一首歌以语音条发到群/私聊（先走落雪音源再退回网易云；长歌可能被 QQ 客户端截断，优先用 qq_send_music_card 发文件）。",
   "parameters": {
     "type": "object",
     "properties": {
@@ -921,6 +937,14 @@
       "songId": {
         "type": "string",
         "description": "网易云歌曲ID"
+      },
+      "name": {
+        "type": "string",
+        "description": "歌名（可选）"
+      },
+      "artists": {
+        "type": "string",
+        "description": "歌手（可选）"
       },
       "private": {
         "type": "boolean",

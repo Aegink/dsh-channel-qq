@@ -48,15 +48,15 @@ function playlistTranslate(args: Readonly<Record<string, unknown>>): Record<stri
 
 export const MUSIC_FACE: Face = {
   name: 'qq_music',
-  description: '音乐：搜索（search）、解析播放直链（resolve）、发音乐卡片（send_card）、以语音条发歌（send_voice）、歌词（lyrics）、个人歌单（playlist）、扫码登录（login_start / login_poll）、登录状态（status）。点歌展示用 send_card；卡片发不了时用 send_voice 降级。',
+  description: '音乐：搜索（search）、解析播放直链（resolve）、点歌发文件（send_card）、以语音条发歌（send_voice）、歌词（lyrics）、个人歌单（playlist）、扫码登录（login_start / login_poll）、登录状态（status）。send_card 发的是音频文件（现行 QQ 不再渲染旧音乐卡片）；想听语音条用 send_voice。',
   providerSelect: true,
   note: 'provider 默认 netease（网易云）；酷狗（kugou）只有 search / send_voice / login_start / login_poll，其余动作传 kugou 会报错。歌单 playlist 的子动作用 op：add / remove / list / clear，add 需要 songId 和 name。',
   branches: [
     { action: 'search', legacy: 'qq_search_music', provider: 'netease', required: ['keyword'], optional: ['limit'] },
     { action: 'search', legacy: 'qq_kugou_search', provider: 'kugou', required: ['keyword'], optional: ['limit'] },
-    { action: 'resolve', legacy: 'qq_resolve_music', provider: 'netease', required: ['songId'] },
-    { action: 'send_card', legacy: 'qq_send_music_card', provider: 'netease', required: ['target', 'songId'], optional: ['private'] },
-    { action: 'send_voice', legacy: 'qq_send_music_voice', provider: 'netease', required: ['target', 'songId'], optional: ['private'] },
+    { action: 'resolve', legacy: 'qq_resolve_music', provider: 'netease', required: ['songId'], optional: ['name', 'artists'] },
+    { action: 'send_card', legacy: 'qq_send_music_card', provider: 'netease', required: ['target', 'songId'], optional: ['name', 'artists', 'private'] },
+    { action: 'send_voice', legacy: 'qq_send_music_voice', provider: 'netease', required: ['target', 'songId'], optional: ['name', 'artists', 'private'] },
     { action: 'send_voice', legacy: 'qq_kugou_send', provider: 'kugou', required: ['target', 'hash'], optional: ['quality', 'private'] },
     { action: 'lyrics', legacy: 'qq_music_lyrics', provider: 'netease', required: ['songId'] },
     { action: 'playlist', legacy: 'qq_music_playlist', provider: 'any', required: ['op'], optional: ['songId', 'name', 'artists'], translate: playlistTranslate },

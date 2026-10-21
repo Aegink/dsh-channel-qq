@@ -8,20 +8,20 @@
  */
 
 import { systemHttp } from '../../adapters/http/client.js'
-import { napcatFileArg, localPathOf } from '../../local-file.js'
 import { resolveDshHome } from '../../paths.js'
 import { atomicWriteFile } from '../../adapters/fs-store/atomic.js'
 import type { OneBotMessageSegment } from '../../types.js'
 import {
   loginStatus as neteaseLoginStatus, saveCookie as neteaseSaveCookie,
-  searchSongs as neteaseSearch, songUrl as neteaseSongUrl,
+  searchSongs as neteaseSearch,
   qrLoginStart, qrLoginPoll,
 } from '../../adapters/providers/music-netease.js'
 import {
   qrLoginPoll as kugouQrPoll, qrLoginStart as kugouQrStart,
   searchSongs as kugouSearch, songUrl as kugouSongUrl,
 } from '../../adapters/providers/music-kugou.js'
-import { MAX_DOWNLOAD_BYTES } from '../download-limit.js'
+import { parseLxSources, resolveSongAudio } from './source.js'
+import { prepareSong, saveAudio } from './delivery.js'
 import type { ToolSpec } from '../../adapters/dsh-host/tools.js'
 import type { QQToolDeps } from '../tool-deps.js'
 
@@ -48,88 +48,112 @@ function qqSearchMusic(deps: QQToolDeps): ToolSpec {
 
 /** `qq_resolve_music` — 解析一首歌的播放直链/封面/歌词（网易云 songId）。发语音或拿链接前用这个。… */
 function qqResolveMusic(deps: QQToolDeps): ToolSpec {
-  const {  } = deps
   return {
         name: 'qq_resolve_music',
-        description: '解析一首歌的播放直链/封面/歌词（网易云 songId）。发语音或拿链接前用这个。',
+        description: '解析一首歌的播放直链（网易云 songId）。先问已配置的落雪音源，再退回网易云直链；发语音或拿链接前用这个。',
         parameters: {
           type: 'object',
-          properties: { songId: { type: 'string', required: true, description: '网易云歌曲ID' } },
+          properties: {
+            songId: { type: 'string', required: true, description: '网易云歌曲ID' },
+            name: { type: 'string', description: '歌名（可选，音源用它做元数据）' },
+            artists: { type: 'string', description: '歌手（可选）' },
+          },
           required: ['songId'],
         },
         run: async (args) => {
-          const br = Math.min(Number(args.br ?? 320000), 999000)
-          const result = await neteaseSongUrl(String(args.songId), br)
-          if (result.url === null) {
-            throw new Error(result.vipRequired ? '该曲为 VIP/付费歌曲：请先 qq_netease_login 扫码登录会员账号' : '拿不到播放直链：多半是没登录（后台「音乐」页扫码）或该曲受限')
-          }
-          return { audioUrl: result.url, quality: result.br, fee: result.fee, size: result.size }
+          const parsed = parseLxSources(deps.config.music.lxSources)
+          if (parsed.error !== '') deps.log(`music: ${parsed.error}`)
+          const resolved = await resolveSongAudio({
+            songId: String(args.songId),
+            ...(args.name === undefined ? {} : { name: String(args.name) }),
+            ...(args.artists === undefined ? {} : { artists: String(args.artists) }),
+          }, {
+            sources: parsed.sources,
+            defaultQuality: deps.config.music.quality,
+            log: deps.log,
+          })
+          return { audioUrl: resolved.url, via: resolved.via, quality: resolved.quality }
         },
       }
 }
 
-/** `qq_send_music_card` — 在群/私聊里发一首歌（官方音乐卡片，网易云 songId）。最适合点歌展示。… */
+/** `qq_send_music_card` — 点歌：解析音源 → 下载 → 以音频文件发送。
+ *
+ * 为什么不发"官方音乐卡片"：SnowLuma 的 `music` 段依赖外部签名服务，默认签名
+ * 地址已下线，回退生成的 `com.tencent.structmsg` 旧卡片在现行 QQ 上只显示
+ * 「发送者版本过低，无法展示内容」（SnowLuma #365，2026-08 关闭为不修复）。
+ * 所以默认发**文件**——任何版本都能播放/下载，文件名里带歌名与歌手。
+ */
 function qqSendMusicCard(deps: QQToolDeps): ToolSpec {
   const { api, out } = deps
   return {
         name: 'qq_send_music_card',
-        description: '在群/私聊里发一首歌（官方音乐卡片，网易云 songId）。最适合点歌展示。',
+        description: '点歌：解析音源后把歌曲以音频文件发到群/私聊（官方音乐卡片在现行 QQ 上会显示「版本过低」，所以改发文件；文件名带歌名与歌手）。',
         parameters: {
           type: 'object',
           properties: {
             target: { type: 'number', description: '群号或好友QQ号' },
-            songId: { type: 'string', description: '网易云歌曲ID' },
+            songId: { type: 'string', description: '网易云歌曲ID（来自 qq_search_music）' },
+            name: { type: 'string', description: '歌名（可选：文件名与音源元数据用）' },
+            artists: { type: 'string', description: '歌手（可选）' },
             private: { type: 'boolean', description: 'true=私聊发送（默认群聊）' },
           },
           required: ['target', 'songId'],
         },
         run: async (args) => {
-          const segment: OneBotMessageSegment[] = [{ type: 'music', data: { type: '163', id: String(args.songId) } }]
-          // 走限流队列：与 voice / imagegen 同一个契约（直连 api 会绕过发送间隔）。
-          return await out.push(() => (args.private === true
-            ? api.sendPrivateMessage(Number(args.target), segment)
-            : api.sendGroupMessage(Number(args.target), segment)))
+          const prepared = await prepareSong({
+            songId: String(args.songId),
+            ...(args.name === undefined ? {} : { name: String(args.name) }),
+            ...(args.artists === undefined ? {} : { artists: String(args.artists) }),
+          }, deps.config, deps.log)
+          const segment: OneBotMessageSegment[] = [{
+            type: 'file',
+            data: { file: prepared.arg, name: prepared.fileName },
+          }]
+          try {
+            const result = (await out.push(() => (args.private === true
+              ? api.sendPrivateMessage(Number(args.target), segment)
+              : api.sendGroupMessage(Number(args.target), segment)))) as Record<string, unknown>
+            return { ...result, via: prepared.via, quality: prepared.quality, file: prepared.fileName, bytes: prepared.bytes }
+          } finally {
+            await prepared.cleanup()
+          }
         },
       }
 }
 
-/** `qq_send_music_voice` — 把一首歌下载后以语音形式发到群/私聊（卡片发不了时的降级，听感像发语音条）。… */
+/** `qq_send_music_voice` — 同一首歌以语音条发送（短歌合适；长歌由 QQ 客户端决定能否播完）。… */
 function qqSendMusicVoice(deps: QQToolDeps): ToolSpec {
   const { api, out } = deps
   return {
         name: 'qq_send_music_voice',
-        description: '把一首歌下载后以语音形式发到群/私聊（卡片发不了时的降级，听感像发语音条）。',
+        description: '把一首歌以语音条发到群/私聊（先走落雪音源再退回网易云；长歌可能被 QQ 客户端截断，优先用 qq_send_music_card 发文件）。',
         parameters: {
           type: 'object',
           properties: {
             target: { type: 'number', description: '群号或好友QQ号' },
             songId: { type: 'string', description: '网易云歌曲ID' },
+            name: { type: 'string', description: '歌名（可选）' },
+            artists: { type: 'string', description: '歌手（可选）' },
             private: { type: 'boolean', description: 'true=私聊发送（默认群聊）' },
           },
           required: ['target', 'songId'],
         },
         run: async (args) => {
-          const resolved = await neteaseSongUrl(String(args.songId), 320000)
-          const audioUrl = resolved.url
-          if (audioUrl === null) {
-            throw new Error(resolved.vipRequired ? '该曲为 VIP/付费歌曲：请先 qq_netease_login 扫码登录会员账号' : '拿不到音频直链')
-          }
-          const audio = await systemHttp.request(audioUrl, { limit: MAX_DOWNLOAD_BYTES })
-          if (!audio.ok) throw new Error(`音频下载失败 HTTP ${audio.status}`)
-          const fsMod = await import('node:fs/promises')
-          const pathMod = await import('node:path')
-          const tmpDir = pathMod.join(resolveDshHome(), 'channel-qq', 'music-tmp')
-          await fsMod.mkdir(tmpDir, { recursive: true })
-          const target = pathMod.join(tmpDir, `song_${Date.now()}.mp3`)
-          await atomicWriteFile(target, Buffer.from(audio.bytes))
-          const segment: OneBotMessageSegment[] = [{ type: 'record', data: { file: await napcatFileArg(target) } }]
+          const prepared = await prepareSong({
+            songId: String(args.songId),
+            ...(args.name === undefined ? {} : { name: String(args.name) }),
+            ...(args.artists === undefined ? {} : { artists: String(args.artists) }),
+          }, deps.config, deps.log)
+          const segment: OneBotMessageSegment[] = [{ type: 'record', data: { file: prepared.arg } }]
           try {
-            return await out.push(() => (args.private === true
+            const result = (await out.push(() => (args.private === true
               ? api.sendPrivateMessage(Number(args.target), segment)
-              : api.sendGroupMessage(Number(args.target), segment)))
+              : api.sendGroupMessage(Number(args.target), segment)))) as Record<string, unknown>
+            return { ...result, via: prepared.via, quality: prepared.quality }
           } finally {
-            // 发送失败也要删：否则每次失败都在磁盘上留一份整首歌（voice/tts 就是这么做的）。
-            await fsMod.rm(target, { force: true }).catch(() => {})
+            // 发送失败也要删：否则每次失败都在磁盘上留一份整首歌。
+            await prepared.cleanup()
           }
         },
       }
@@ -301,24 +325,15 @@ function qqKugouSend(deps: QQToolDeps): ToolSpec {
         },
         run: async (args) => {
           const resolved = await kugouSongUrl(String(args.hash), String(args.quality ?? 'auto'), deps.config.music.kugouApiBase)
-          const audio = await systemHttp.request(resolved.url, { limit: MAX_DOWNLOAD_BYTES })
-          if (!audio.ok) throw new Error(`音频下载失败 HTTP ${audio.status}`)
-          const fsMod = await import('node:fs/promises')
-          const pathMod = await import('node:path')
-          // resolveDshHome() rather than an inline `DSH_HOME ?? <win32 literal>`:
-          // the literal is what produced unusable temp paths on a POSIX host.
-          const tmpDir = pathMod.join(resolveDshHome(), 'channel-qq', 'music-tmp')
-          await fsMod.mkdir(tmpDir, { recursive: true })
-          const target = pathMod.join(tmpDir, `kg_${Date.now()}.${resolved.extName}`)
-          await atomicWriteFile(target, Buffer.from(audio.bytes))
-          const segment: OneBotMessageSegment[] = [{ type: 'record', data: { file: await napcatFileArg(target) } }]
+          const saved = await saveAudio(resolved.url, resolved.extName, deps.config)
+          const segment: OneBotMessageSegment[] = [{ type: 'record', data: { file: saved.arg } }]
           try {
             const result = (await out.push(() => (args.private === true
               ? api.sendPrivateMessage(Number(args.target), segment)
               : api.sendGroupMessage(Number(args.target), segment)))) as Record<string, unknown>
             return { ...result, trial: resolved.trial, quality: String(args.quality ?? 'auto') }
           } finally {
-            await fsMod.rm(target, { force: true }).catch(() => {})
+            await saved.cleanup()
           }
         },
       }

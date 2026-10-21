@@ -7,7 +7,7 @@ export type OneBotMessageSegment =
   | { type: 'reply'; data: { id: string } }
   | { type: 'face'; data: { id: number } }
   | { type: 'record'; data: { file: string } }
-  | { type: 'file'; data: { file: string; url?: string; file_id?: string; file_size?: number | string } }
+  | { type: 'file'; data: { file: string; name?: string; url?: string; file_id?: string; file_size?: number | string } }
   | { type: 'video'; data: { file: string } }
   | { type: 'tts'; data: { text: string } }
   // `music` 一直在发（`qq_send_music`），但类型联合里漏了它：以前走的是

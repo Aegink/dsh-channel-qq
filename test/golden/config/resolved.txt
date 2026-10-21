@@ -141,7 +141,9 @@
     "vectorWeight": 1
   },
   "music": {
-    "kugouApiBase": "http://127.0.0.1:4000"
+    "kugouApiBase": "http://127.0.0.1:4000",
+    "lxSources": "",
+    "quality": "320k"
   },
   "skills": {
     "enabled": true,

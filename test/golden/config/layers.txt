@@ -144,7 +144,9 @@ override = {}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -680,7 +682,9 @@ override = {}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -1214,7 +1218,9 @@ override = {"batching":{"windowMs":20000}}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -1748,7 +1754,9 @@ override = {"admin":{"port":8790}}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -2282,7 +2290,9 @@ override = {"imageGen":{"model":"flux"}}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -2816,7 +2826,9 @@ override = {"tts":{"voice":"b"}}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -3350,7 +3362,9 @@ override = {"flood":{"windowSec":30}}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -3891,7 +3905,9 @@ override = {}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -4425,7 +4441,9 @@ override = {"keywordTriggers":[]}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -4966,7 +4984,9 @@ override = {"rss":{"pollIntervalMin":5}}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -5500,7 +5520,9 @@ override = {"groupEnabled":false}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -6034,7 +6056,9 @@ override = {}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -6568,7 +6592,9 @@ override = {"groupEnabled":true}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -7102,7 +7128,9 @@ override = {"admin":{"host":"127.0.0.1"}}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -7636,7 +7664,9 @@ override = {}
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,
@@ -8170,7 +8200,9 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "vectorWeight": 1
  },
  "music": {
-  "kugouApiBase": "http://127.0.0.1:4000"
+  "kugouApiBase": "http://127.0.0.1:4000",
+  "lxSources": "",
+  "quality": "320k"
  },
  "skills": {
   "enabled": true,

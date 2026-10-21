@@ -10,6 +10,13 @@ import { s, type FieldGroup } from '../dsl.js'
 export interface MusicConfig {
   /** 酷狗自建 API（KuGouMusicApi）的基地址；空 = 读 `KUGOU_API_BASE`，再回退 127.0.0.1:4000。 */
   kugouApiBase: string
+  /**
+   * 落雪（LX Music）音源：JSON 数组，`[{name,url,quality?,enabled?}]` 或 URL 字符串。
+   * 音源是远程 JS，**必须管理员显式配置**；运行在受限 vm 里（见 lx-source/runtime）。
+   */
+  lxSources: string
+  /** 点歌默认音质（给音源与网易云直链用）。 */
+  quality: string
 }
 
 export const MUSIC_GROUPS: FieldGroup[] = [
@@ -23,6 +30,15 @@ export const MUSIC_GROUPS: FieldGroup[] = [
         hot: 'live',
         help: '自建 KuGouMusicApi 服务的基地址（默认本机 4000）。留空则读环境变量 KUGOU_API_BASE。'
           + '网易云不需要本项——它直连 music.163.com。',
+      }),
+      lxSources: s('落雪音源（JSON）', '', {
+        hot: 'live',
+        help: 'JSON 数组：[{"name":"ikun","url":"https://…/script/lxmusic?key=…"}]，也可直接写 URL 字符串。'
+          + '音源是远程 JS，只填你信任的地址；留空 = 只用网易云直链。',
+      }),
+      quality: s('点歌音质', '320k', {
+        hot: 'live',
+        help: '128k / 320k / flac。音源不支持时会自己降级或报错，失败就换下一个音源。',
       }),
     },
   },
