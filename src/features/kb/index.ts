@@ -28,6 +28,8 @@ import { KbVectors } from './vectors.js'
 
 /** 首轮扫描延迟：让连接与会话恢复先跑完。 */
 const FIRST_SCAN_DELAY_MS = 8_000
+/** 批量建索引的超时（配置里的 800ms 是"不拖住一回合"的上限，不是批量任务的上限）。 */
+const BULK_EMBED_TIMEOUT_MS = 15_000
 
 export const kbPlugin: SubPlugin = {
   name: 'kb',
@@ -43,19 +45,20 @@ export const kbPlugin: SubPlugin = {
       store, workspace: root, dirs: cfg.dirs, maxBytes: cfg.maxFileBytes,
       doclingUrl: cfg.doclingUrl, log: host.log,
     })
-    const { vectors, embed } = await setupVectors(host, store.dir)
+    const { vectors, embed, bulk } = await setupVectors(host, store.dir)
     const retriever = new KbRetriever({
       store, vectors, embed, log: host.log,
       vectorWeight: () => host.config.kb.vectorWeight,
       scopes: () => parseScopes(host.config.kb.scopes).scopes,
     })
     let reindexing = false
+    const bulkEmbed = bulk ?? embed
     const reindex = async (): Promise<{ embedded: number; failed: number; total: number; skipped: boolean }> => {
-      if (vectors === null || embed === null) return { embedded: 0, failed: 0, total: 0, skipped: true }
+      if (vectors === null || bulkEmbed === null) return { embedded: 0, failed: 0, total: 0, skipped: true }
       if (reindexing) return { embedded: 0, failed: 0, total: vectors.size(), skipped: true }
       reindexing = true
       try {
-        return { ...(await vectors.rebuild(store.activeChunks(), embed)), skipped: false }
+        return { ...(await vectors.rebuild(store.activeChunks(), bulkEmbed)), skipped: false }
       } catch (error) {
         host.log(`kb.vector: 重建失败（不影响关键词检索）：${(error as Error).message}`)
         return { embedded: 0, failed: 0, total: vectors.size(), skipped: true }
@@ -94,24 +97,34 @@ export const kbPlugin: SubPlugin = {
 }
 
 /** 向量装配：记忆的 embed 服务不可用/N 未开启时返回 null（检索退回关键词）。 */
-async function setupVectors(host: SubHost, dir: string): Promise<{ vectors: KbVectors | null; embed: EmbedPort | null }> {
-  if (!host.config.memory.vectorEnabled) return { vectors: null, embed: null }
+async function setupVectors(host: SubHost, dir: string): Promise<{
+  vectors: KbVectors | null
+  embed: EmbedPort | null
+  bulk: EmbedPort | null
+}> {
+  if (!host.config.memory.vectorEnabled) return { vectors: null, embed: null, bulk: null }
   try {
-    const embed = createEmbedAdapter({
+    const base = {
       baseUrl: host.config.memory.vectorUrl,
       dim: host.config.memory.vectorDim,
-      timeoutMs: host.config.memory.vectorTimeoutMs,
       log: host.log,
+    }
+    const embed = createEmbedAdapter({ ...base, timeoutMs: host.config.memory.vectorTimeoutMs })
+    // 批量重建单独一个适配器：它有自己的冷却状态，而且超时放宽到 15s——
+    // 首次索引要嵌几百块，800ms 会让每批都超时、整轮一条也写不进去。
+    const bulk = createEmbedAdapter({
+      ...base,
+      timeoutMs: Math.max(BULK_EMBED_TIMEOUT_MS, host.config.memory.vectorTimeoutMs),
     })
     const vectors = new KbVectors({ dir, dim: host.config.memory.vectorDim, log: host.log })
     const count = await vectors.load()
     host.log(count === 0
       ? 'kb.vector: 索引为空（首轮扫描后会自动重建）'
       : `kb.vector: ${count} 条向量已加载（服务 ${host.config.memory.vectorUrl}）`)
-    return { vectors, embed }
+    return { vectors, embed, bulk }
   } catch (error) {
     host.log(`kb.vector: 装配失败，退回关键词检索：${(error as Error).message}`)
-    return { vectors: null, embed: null }
+    return { vectors: null, embed: null, bulk: null }
   }
 }
 

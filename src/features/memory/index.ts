@@ -19,7 +19,6 @@
 
 import { KnowledgeStore, resolveExtractorRoute, extractFromText } from '../../knowledge.js'
 import { isChunkRecord, type MemoryRecord } from '../../core/memory/model.js'
-import { createEmbedAdapter } from '../../adapters/providers/embed.js'
 import { findConflicts } from '../../core/memory/nightly.js'
 import type { Json } from '../../admin/config-engine.js'
 import type { EmbedPort } from '../../ports/memory.js'
@@ -30,9 +29,8 @@ import { registerNightlyJobs } from './nightly.js'
 import { MemoryStore } from './store.js'
 import { importLegacyEntries } from './import-legacy.js'
 import { createMemoryService } from './service.js'
-import {
-  createVectorRecall, loadVectorIndex, VEC_FILE_NAME, VEC_MANIFEST_NAME, type VectorRecall,
-} from './vector-store.js'
+import { VEC_MANIFEST_NAME } from './vector-store.js'
+import { setupVectors } from './vectors-setup.js'
 import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
 import type { SubHost, SubPlugin } from '../plugin-kit.js'
@@ -134,8 +132,9 @@ async function attachMemoryV2(
   const renderTime = (at: number): string => new Date(at).toISOString().slice(0, 10)
   const clock = { now: () => Date.now() }
   const service = createMemoryService({ store, log: host.log, renderTime, clock, legacy })
-  const { recall: vectors, embed } = await setupVectors(host, store.dir)
-  nightly.embed = embed
+  const { recall: vectors, embed, bulk } = await setupVectors(host, store.dir)
+  // 夜间重建用宽超时的适配器；回合内的查询仍走 800ms 的那个（见 setupVectors）。
+  nightly.embed = bulk ?? embed
   const retriever = new MemoryRetriever({
     store,
     log: host.log,
@@ -187,45 +186,6 @@ function provideMemorySearch(host: SubHost, retriever: MemoryRetriever, renderTi
       chunk: r.tags.includes('chunk'),
     }))
   })
-}
-
-/**
- * 向量检索的装配（P6e·e2 / e3）：
- *
- *   - `memory.vectorEnabled` 关着 → 返回 `{recall: undefined, embed: null}`，检索走
- *     e1 的关键词路径（默认行为逐字节不变），夜间 `reindex` 也具名跳过；
- *   - 开着但索引为空 / 装配失败 → 记日志、照常退回关键词，**绝不挡启动**；
- *     但**嵌入器仍然返回**给夜间任务——索引为空正是 `reindex` 要去修的状态
- *     （只在装配失败时它才是 null）。
- *
- * 读配置一律走 `host.config.memory.vector*` 点路径（与后台静态审计的口径一致）。
- */
-async function setupVectors(host: SubHost, dir: string): Promise<{ recall: VectorRecall | undefined; embed: EmbedPort | null }> {
-  if (!host.config.memory.vectorEnabled) return { recall: undefined, embed: null }
-  let embed: EmbedPort | null = null
-  try {
-    embed = createEmbedAdapter({
-      baseUrl: host.config.memory.vectorUrl,
-      dim: host.config.memory.vectorDim,
-      timeoutMs: host.config.memory.vectorTimeoutMs,
-      log: host.log,
-    })
-    const { index } = await loadVectorIndex({
-      file: path.join(dir, VEC_FILE_NAME),
-      manifestFile: path.join(dir, VEC_MANIFEST_NAME),
-      dim: host.config.memory.vectorDim,
-      log: host.log,
-    })
-    if (index.size() === 0) {
-      host.log('memory.vector: 向量索引为空（夜间 reindex 任务会建它），本回合起退回关键词检索')
-      return { recall: undefined, embed }
-    }
-    host.log(`memory.vector: ${index.size()} 条向量已加载（服务 ${host.config.memory.vectorUrl}，余弦权重 ${host.config.memory.vectorWeight}）`)
-    return { recall: createVectorRecall(embed, index, host.config.memory.vectorWeight), embed }
-  } catch (error) {
-    host.log(`memory.vector: 装配失败，退回关键词检索：${error instanceof Error ? error.message : String(error)}`)
-    return { recall: undefined, embed: null }
-  }
 }
 
 /**

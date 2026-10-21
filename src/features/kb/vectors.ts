@@ -106,7 +106,7 @@ export class KbVectors {
     const embedded = await embedBatches(missing, embed, dim)
     for (const [id, vector] of embedded.ok) existing.set(id, vector)
     const alive = [...existing.entries()].filter(([id]) => wanted.has(id))
-    if (embedded.ok.length === 0 && alive.length === existing.size && snapshot.entries.size === alive.length) {
+    if (missing.length === 0 && alive.length === existing.size && snapshot.entries.size === alive.length) {
       this.index = new VectorIndex(snapshot)
       return { embedded: 0, failed: embedded.failed.length, total: alive.length }
     }
