@@ -28,6 +28,7 @@ import { createSentLogHub } from '../../sent-log.js'
 import { readJson } from '../../read-json.js'
 import { atomicWriteFile, readTextFileOrNull } from '../../adapters/fs-store/atomic.js'
 import { announceToolsV2Switch, syncToolsRegion } from '../tools-v2/index.js'
+import { lazyEvidence } from './lazy-evidence.js'
 import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -40,6 +41,7 @@ import type { createAgentGateway } from '../../adapters/dsh-host/agents.js'
 import type { QQChannelConfig } from '../../config.js'
 import type { ChatPlatform } from '../../ports/platform.js'
 import type { MemoryEvidence } from '../../ports/memory.js'
+import type { KbEvidence } from '../../ports/kb.js'
 import type { GatewayErrorBus, PlatformParts, SubHost, SubPlugin } from '../plugin-kit.js'
 import { createAdminCommand, startReceiptPoller } from '../approval/index.js'
 import { maybeHandleResetCommand } from './reset-command.js'
@@ -66,6 +68,8 @@ interface RuntimeDeps {
   readonly knowledge: () => { readonly entries: unknown[]; search(q: string, top?: number): Array<{ content: string }> } | null
   /** 记忆证据（memory 子插件提供；没装就是 undefined，组包退回旧的关键词召回）。 */
   readonly memoryEvidence?: MemoryEvidence
+  /** 知识库证据（kb 子插件提供；装载顺序在 inbound 之后，用惰性取值）。 */
+  readonly kbEvidence?: KbEvidence
   /** 语音转写（provider 的事，装配时从 stt 适配器接过来）。 */
   readonly transcribe: (messageId: number) => Promise<string | null>
   /** 注入特征扫描器（P6c；表坏掉时为 null = 不打标、不拦截）。 */
@@ -223,6 +227,7 @@ function createRuntime(deps: RuntimeDeps): ChannelRuntime {
     log: deps.log,
     knowledge: deps.knowledge,
     ...(deps.memoryEvidence === undefined ? {} : { memoryEvidence: deps.memoryEvidence }),
+    ...(deps.kbEvidence === undefined ? {} : { kbEvidence: deps.kbEvidence }),
     sentBlockFor: (room: string) => turns.sentBlockFor(room),
   }, createPolicyScreening({
     enabled: () => policyEnabled(deps.config),
@@ -287,24 +292,6 @@ function registerSendlResource(host: SubHost): void {
   })
 }
 
-/**
- * 记忆证据的**惰性**取值。装载表里 inbound 在 memory 之前，apply 时记忆插件还没
- * provide——从前这里是直接 `host.get(...)`，于是 `memory.v2` 打开后证据一次都没注入过
- * （2026-10-19 线上实测发现：两个回合的会话里没有任何「记忆检索」块）。
- *
- * 现在每次组包现查：晚挂的记忆插件、以及之后的重挂，都能立刻被读到。
- * 没装记忆服务时返回空串，组包会照旧退回旧知识库召回。
- */
-export function lazyMemoryEvidence(host: { get(name: string): unknown }): (input: {
-  readonly text: string; readonly room: string; readonly isGroup: boolean;
-}) => Promise<string> {
-  return async (input) => {
-    const evidence = host.get('memoryEvidence') as
-      | ((arg: typeof input) => Promise<string>) | undefined
-    return evidence === undefined ? '' : await evidence(input)
-  }
-}
-
 export const inboundPlugin: SubPlugin = {
   name: 'inbound',
   // context.v2 翻开关时要重写工作区 AGENTS.md 的指令受管区（组包行为是现取配置，不用重挂）。
@@ -333,7 +320,7 @@ export const inboundPlugin: SubPlugin = {
       prompts: host.need('persona').composer,
       log: host.log,
       knowledge: () => host.get('knowledge')?.store ?? null,
-      memoryEvidence: lazyMemoryEvidence(host),
+      ...lazyEvidence(host),
       screen: { scanner: bundle === null ? null : bundle.scanner },
       transcribe: async (messageId: number) => {
         const result = await transcribeVoiceMessage(parts.api, config.stt, messageId, host.log)

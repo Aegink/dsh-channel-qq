@@ -26,6 +26,7 @@
     "verify": "npm run check:admin && npm run check:syntax && npm run typecheck && npm test && npm run check:layers && npm run check:size",
     "probe:admin": "node scripts/probe-admin-layout.mjs",
     "eval": "node eval/run.mjs",
+    "eval:kb": "node eval/kb/run.mjs",
     "check:syntax": "node scripts/check-syntax.mjs",
     "catalog": "node scripts/update-model-catalog.mjs"
   },

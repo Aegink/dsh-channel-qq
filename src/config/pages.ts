@@ -49,6 +49,7 @@ export const ADMIN_PAGES: readonly AdminPage[] = [
   { key: 'persona', kind: 'module', group: '智能体', title: '人格', icon: 'mask', blurb: '人格文件（AGENTS.md/MEMORY.md）· 预设 · 会话重建' },
   { key: 'tools', kind: 'module', group: '智能体', title: '工具与策略', icon: 'toolbox', blurb: '工具清单 · 高危群管开关 · 指令注入' },
   { key: 'skills', kind: 'module', group: '智能体', title: '技能', icon: 'book', blurb: '技能库 · 可见范围 · 导入与待审' },
+  { key: 'kb', kind: 'module', group: '智能体', title: '知识库', icon: 'db', blurb: '用户资料摄取 · 集合与可见范围 · 带出处检索' },
 
   // ── 系统（7 个）────────────────────────────────────────────────────────
   { key: 'logs', kind: 'system', group: '系统', title: '日志', icon: 'filetext', blurb: '实时跟随 · 级别与模块过滤 · 错误聚合' },

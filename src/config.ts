@@ -327,7 +327,6 @@ export interface QQChannelConfig extends SwitchSections {
   /** Base reply probability in groups; the primary group may override via primaryTalkValue. */
   talkValue: number
   primaryTalkValue?: number
-  /** 按群覆盖：键是群号，值只写要覆盖的字段；缺省 = 跟全局。 */
   /** Workspace the QQ agents run in (main knowledge workspace). */
   workspacePath: string | null
   agentPreset: string
@@ -362,6 +361,7 @@ export interface QQChannelConfig extends SwitchSections {
   music: import('./config/sections/music.js').MusicConfig
   skills: import('./config/sections/skills.js').SkillsConfig
   sessionReset: import('./config/sections/session-reset.js').SessionResetConfig
+  kb: import('./config/sections/kb.js').KbConfig
   eventMonitor: EventMonitorConfig
   contextBudget: ContextBudgetConfig
   context: ContextV2Config

@@ -45,7 +45,8 @@ import type { FloodGuard } from './flood/guard.js'
 import type { createAgentGateway } from '../adapters/dsh-host/agents.js'
 import type { AgentRegistry, PresetRegistry } from '../adapters/dsh-host/services.js'
 import type { ToolHost } from '../adapters/dsh-host/tools.js'
-import type { SkillHost } from '../ports/skills.js'
+import type { SkillDrafts, SkillHost } from '../ports/skills.js'
+import type { KbEvidence, KbService } from '../ports/kb.js'
 import type { HealthProbe } from '../ports/health.js'
 import type { SessionSizeProbe } from '../adapters/dsh-host/session-size.js'
 import type { RuntimeFacts } from '../ports/runtime.js'
@@ -111,6 +112,12 @@ export interface ServiceBag {
   memory?: MemoryService
   /** 深召回（原文块）：agent 主动搜索用，不进自动注入。 */
   memorySearch?: MemorySearch
+  /** 知识库服务（知识库子插件提供；工具与后台走它）。 */
+  kb?: KbService
+  /** 知识库证据块（每回合自动注入；injectTop=0 时恒为空串）。 */
+  kbEvidence?: KbEvidence
+  /** 技能草稿（记忆候选晋升 → 技能待审区）。 */
+  skillDrafts?: SkillDrafts
   affection?: AffectionStore
   quotes?: QuoteStore
   reminders?: ReminderStore

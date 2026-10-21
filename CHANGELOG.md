@@ -2,6 +2,25 @@
 
 ### 新增
 
+- **知识库（P0–P2）**：工作区 `inbox/`、`downloads/`、`kb/raw/` 的文档被增量摄取
+  （sha256 判变、串行队列、单文件失败不影响整轮）；原生解析 md/txt/html，
+  PDF/Office/图片走可选的 Docling sidecar（`kb.doclingUrl`，没配时图片直接跳过）
+- **标题感知分块**：按 Markdown 标题分段，块带标题路径、行号与页码；超长段按上限
+  拆分并保留重叠，单行超长时按字符硬切。旧块归档（软删除）而不是直接删
+- **`qq_kb_search` 工具**：只读检索用户资料，返回带
+  `[知识库·标题·标题路径·第 N 段]` 出处的原文；不传 query 时列出当前房间可见的目录
+- **混合检索**：中文二元组 + IDF（标题命中加权）+ 向量余弦（复用记忆的 embed 服务
+  与 `vec.bin` 格式），`kb.vectorWeight` 调权重
+- **集合可见范围**：`kb.scopes` JSON 把集合绑定到房间；别的房间连候选都进不来
+- **每回合知识库证据**：`kb.injectTop` / `kb.injectChars`；与记忆证据分两段，
+  都没命中时组包与从前逐字节一致
+- **后台「知识库」页**：文档清单（状态/块数/大小/失败原因）、扫描进度、块预览、
+  移除/恢复、重建向量、集合可见范围一览；设置表单直接改 `kb` 段
+- **记忆候选 → 技能草稿**：后台「记忆审核」页对候选点「写成技能」，写入技能待审区
+  （带来源 metadata），确认后才启用
+- **KB 评测**：`npm run eval:kb`（合成 16 题，hit@1 / hit@5 / MRR / p95；`--enforce`
+  当回归门槛）。文档见 [docs/knowledge-base.md](docs/knowledge-base.md)
+
 - **技能系统（P0–P2）**：磁盘上的 Agent Skills 目录包（`<dshHome>/channel-qq/skills`），
   接进宿主的 `skill` 目录与 `/名字` 触发；新增 `qq_skill` 工具按房间列出/加载
 - 技能可见范围：`all` / `dm` / `groups` / `rooms` / `none`，可叠加「仅管理员」与停用；

@@ -58,8 +58,8 @@ test('DEFAULT_CONFIG 的每个叶子都被 schema 覆盖；反之只能是 NO_DE
   }
 })
 
-test('页面清单自洽：27 页、key 唯一、kind 计数固定', () => {
-  assert.equal(ADMIN_PAGES.length, 27)
+test('页面清单自洽：28 页、key 唯一、kind 计数固定', () => {
+  assert.equal(ADMIN_PAGES.length, 28)
   const seen = new Set<string>()
   for (const page of ADMIN_PAGES) {
     assert.ok(!seen.has(page.key), `页面 key 重复：${page.key}`)
@@ -68,7 +68,7 @@ test('页面清单自洽：27 页、key 唯一、kind 计数固定', () => {
     assert.ok(page.title !== '' && page.blurb !== '' && page.icon !== '', `${page.key} 缺少标题/说明/图标`)
   }
   assert.equal(ADMIN_PAGES.filter((p) => p.kind === 'overview').length, 1)
-  assert.equal(ADMIN_PAGES.filter((p) => p.kind === 'module').length, 18)
+  assert.equal(ADMIN_PAGES.filter((p) => p.kind === 'module').length, 19)
   assert.equal(ADMIN_PAGES.filter((p) => p.kind === 'system').length, 8)
 })
 

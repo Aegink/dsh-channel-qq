@@ -12,7 +12,8 @@
 import { promises as fs } from 'node:fs'
 import * as path from 'node:path'
 import { registerSpecs } from '../../adapters/dsh-host/tools.js'
-import { readSkillBody, scanSkills, skillsRoot, type SkillEntry } from './store.js'
+import { readSkillBody, scanSkills, skillsRoot, stageSkill, type SkillEntry } from './store.js'
+import { serializeSkillFile } from '../../core/skills/serialize.js'
 import { skillsResource } from './resource.js'
 import { SkillStats } from './stats.js'
 import { skillTools, visibleEntries } from './tools.js'
@@ -103,6 +104,26 @@ export const skillsPlugin: SubPlugin = {
       host.log(`skills: 已关闭（仓库 ${root} 仍可在后台管理）`)
       return
     }
+    // 记忆候选 → 技能草稿：只写待审区，管理员在「技能」页确认后才进主目录。
+    host.provide('skillDrafts', {
+      create: async (input) => {
+        if (!config.allowImport) throw new Error('技能导入已在配置里关闭（skills.allowImport）')
+        const text = serializeSkillFile({
+          name: input.name,
+          description: input.description,
+          whenToUse: input.whenToUse ?? '',
+          body: input.body,
+          metadata: input.source === undefined ? {} : { source: input.source },
+          policy: {
+            visibility: 'all', rooms: [], adminsOnly: false, enabled: true,
+            allowScripts: false, source: input.source ?? 'draft',
+          },
+        })
+        const entry = await stageSkill(root, [{ path: 'SKILL.md', content: text }])
+        host.log(`skills: 草稿已入待审区 ${entry.name}`)
+        return { name: entry.name, note: `已写入技能待审区（${entry.name}）——到「技能」页确认后点「启用」。` }
+      },
+    })
     const skillHost = host.bridge.skillsHost?.()
     const stop = skillHost?.install(
       buildProvider(entries, root, scriptsAllowed, stats),

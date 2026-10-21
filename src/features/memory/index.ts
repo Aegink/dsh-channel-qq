@@ -25,6 +25,7 @@ import type { Json } from '../../admin/config-engine.js'
 import type { EmbedPort } from '../../ports/memory.js'
 import { MemoryRetriever } from './retriever.js'
 import { migrateMemoryFile } from './migrate.js'
+import { promoteToSkill } from './promote.js'
 import { registerNightlyJobs } from './nightly.js'
 import { MemoryStore } from './store.js'
 import { importLegacyEntries } from './import-legacy.js'
@@ -261,6 +262,7 @@ function registerPendingResource(host: SubHost, nightly: { store: MemoryStore | 
       reject: (body) => decideCandidate(storeOf(), body, 'archived'),
       resolve: (body) => resolveConflict(storeOf(), body),
       migrate: () => runMigration(host, storeOf()),
+      toSkill: (body) => promoteToSkill(host, storeOf(), body),
     },
   })
 }

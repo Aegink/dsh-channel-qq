@@ -73,6 +73,14 @@ export interface PacketComposerDeps {
    * 所以默认装载下组包产物与从前逐字节一致（golden 盯着这一点）。
    */
   readonly memoryEvidence?: MemoryEvidence
+  /**
+   * 知识库证据（用户给的资料原文）。与记忆证据分开：一个是"我记得"，一个是
+   * "资料里写着"。没装时组包产物与从前逐字节一致。
+   */
+  readonly kbEvidence?: (input: {
+    readonly text: string
+    readonly room: string | null
+  }) => Promise<string>
   /** 这个房间"她最近说过什么"。 */
   readonly sentBlockFor: (room: string) => Promise<string>
 }
@@ -148,7 +156,20 @@ export class PacketComposer {
    * 没有证据或没装记忆服务时退回旧的知识库关键词召回——两者**不叠加**，否则同一个
    * 事实会以两种口吻出现两遍。
    */
+  /**
+   * 本回合要带上的"想起点什么"。
+   *
+   * 两段**各管各的**：记忆证据是"我记得"（`memory.v2`），知识库证据是"资料里
+   * 写着"（用户给的原文）。两者都命中就都带上；都没有时组包与从前逐字节一致。
+   */
   private async recallHint(rawContext: string, conversation: ConversationRecord): Promise<string> {
+    const memory = await this.memoryHint(rawContext, conversation)
+    const kb = await this.kbHint(rawContext, conversation)
+    return [memory, kb].filter((part) => part !== '').join('\n\n')
+  }
+
+  /** 记忆证据；没装记忆服务时退回旧的知识库关键词召回。 */
+  private async memoryHint(rawContext: string, conversation: ConversationRecord): Promise<string> {
     const evidence = this.deps.memoryEvidence
     if (evidence !== undefined) {
       try {
@@ -164,6 +185,18 @@ export class PacketComposer {
       }
     }
     return this.knowledgeOf(rawContext)
+  }
+
+  /** 知识库证据（用户资料原文片段）。没装、关着或没命中 → 空串。 */
+  private async kbHint(rawContext: string, conversation: ConversationRecord): Promise<string> {
+    const evidence = this.deps.kbEvidence
+    if (evidence === undefined) return ''
+    try {
+      return await evidence({ text: rawContext, room: conversation.key })
+    } catch (error) {
+      this.deps.log(`kb evidence failed for ${conversation.key}: ${error instanceof Error ? error.message : String(error)}`)
+      return ''
+    }
   }
 
   /**

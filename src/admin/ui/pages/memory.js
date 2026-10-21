@@ -18,7 +18,7 @@ async function act(name, body) {
   if (res.status !== 200) { toast(`操作失败：${errText(res)}`, 'bad', 8000); return false }
   const payload = res.body?.result ?? res.body
   if (payload?.ok === false) { toast(String(payload.reason ?? '操作失败'), 'bad', 8000); return false }
-  toast('已保存', 'ok', 4000)
+  toast(typeof payload?.note === 'string' && payload.note !== '' ? payload.note : '已保存', 'ok', 6000)
   return true
 }
 
@@ -94,7 +94,12 @@ function pendingCard() {
         approve.addEventListener('click', async () => { if (await act('approve', { id: c.id })) void load() })
         const reject = button('忽略', 'small', 'trash')
         reject.addEventListener('click', async () => { if (await act('reject', { id: c.id })) void load() })
-        box.appendChild(row(`${c.content}（${c.kind} · ${c.date} · ${c.source}）`, [approve, reject]))
+        const toSkill = button('写成技能', 'small', 'book')
+        toSkill.addEventListener('click', async () => {
+          if (!window.confirm('把这条候选写入技能待审区？到「技能」页确认后才会启用。')) return
+          if (await act('toSkill', { id: c.id })) void load()
+        })
+        box.appendChild(row(`${c.content}（${c.kind} · ${c.date} · ${c.source}）`, [approve, reject, toSkill]))
       }
     }
 

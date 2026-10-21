@@ -114,7 +114,7 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
   assert.deepEqual(SECTION_PLUGINS.map((p) => p.name), [
     'persona', 'observers', 'platform', 'inbound', 'session-reset', 'stickers', 'memory', 'affection',
     'qq-tools', 'links', 'meme', 'voice', 'quotes', 'reminders', 'rss', 'imagegen',
-    'flood', 'learn', 'music', 'skills', 'proactive', 'admin',
+    'flood', 'learn', 'music', 'skills', 'kb', 'proactive', 'admin',
   ])
   const watched = SECTION_PLUGINS
     .filter((p) => p.watches !== '*' && p.watches.length > 0)
@@ -134,6 +134,10 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
     // P6f：事件书开关或书改了都要重挂（实现选型与书的校验都在装配期完成）。
     // 技能：段开关/目录/脚本/导入四个旋钮变了要重挂 provider（可见范围在技能自己身上，不需要）。
     ['skills', ['skills']],
+    // 知识库整段 watched（目录/开关/预算/范围都在 kb.* 下）+ 向量参数随记忆的 embed 配置走。
+    ['kb', [
+      'kb', 'memory.vectorEnabled', 'memory.vectorUrl', 'memory.vectorDim', 'memory.vectorTimeoutMs',
+    ]],
     ['proactive', ['proactive']],
     ['admin', ['admin.port', 'admin.host', 'admin.enabled', 'admin.password']],
   ])
@@ -233,7 +237,7 @@ test('P6e：注入预算真的读配置（maxRecords=1 就只给一条）', asyn
 })
 
 test('记忆证据是惰性取值：inbound 先于 memory 挂载也能拿到证据（2026-10-19 线上回归）', async () => {
-  const { lazyMemoryEvidence } = await import('../src/features/inbound/index.js')
+  const { lazyMemoryEvidence } = await import('../src/features/inbound/lazy-evidence.js')
   const services = new Map<string, unknown>()
   const evidence = lazyMemoryEvidence({ get: (name: string) => services.get(name) })
   const input = { text: '在吗', room: 'qq-dm-1', isGroup: false }

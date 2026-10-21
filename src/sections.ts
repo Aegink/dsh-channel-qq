@@ -33,6 +33,7 @@ import { quotesPlugin } from './features/quotes/index.js'
 import { remindersPlugin } from './features/reminders/index.js'
 import { rssPlugin } from './features/rss/index.js'
 import { skillsPlugin } from './features/skills/index.js'
+import { kbPlugin } from './features/kb/index.js'
 import { sessionResetPlugin } from './features/session-reset/index.js'
 import { stickersPlugin } from './features/stickers/index.js'
 import { voicePlugin } from './features/voice/index.js'
@@ -59,6 +60,7 @@ export const SECTION_PLUGINS: readonly SubPlugin[] = [
   learnPlugin,
   musicPlugin,
   skillsPlugin,
+  kbPlugin,
   proactivePlugin,
   adminPlugin,
 ]

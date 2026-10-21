@@ -37,6 +37,21 @@ export type SkillTriggerHandler = (input: {
   readonly text: string
 }) => Promise<SkillTriggerHit | null>
 
+/** 一份技能草稿（记忆候选/知识库文档晋升为技能时用）。 */
+export interface SkillDraftInput {
+  readonly name: string
+  readonly description: string
+  readonly whenToUse?: string
+  readonly body: string
+  /** 来源说明（写进 metadata.source，便于回溯是哪条记忆/哪份文档）。 */
+  readonly source?: string
+}
+
+/** 技能草稿入口：只写**待审区**，绝不自动启用。 */
+export interface SkillDrafts {
+  create(input: SkillDraftInput): Promise<{ name: string; note: string }>
+}
+
 /** 宿主的技能接入面。 */
 export interface SkillHost {
   /**
