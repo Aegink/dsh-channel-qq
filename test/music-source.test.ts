@@ -3,7 +3,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-const { parseLxSources, resolveSongAudio } = await import('../src/features/music/source.js')
+const { parseLxSources, resolveSongAudio, normalizeSongName } = await import('../src/features/music/source.js')
+
+test('歌名归一化：去掉括号备注与标点（按歌名重试时判断同一首）', () => {
+  assert.equal(normalizeSongName('焚爱 (《淮水竹亭》影视剧神火/片头曲)'), '焚爱')
+  assert.equal(normalizeSongName('雨爱'), '雨爱')
+  assert.equal(normalizeSongName('We Don\'t Talk Anymore'), 'wedonttalkanymore')
+})
 
 test('配置：对象与 URL 字符串都认；坏 JSON 给原因', () => {
   const objects = parseLxSources(JSON.stringify([

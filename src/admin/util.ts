@@ -60,3 +60,31 @@ export function buildNote(effects: string[], restartRequired: string[], extra: s
     restartRequired.length > 0 ? `这些设置仍需重启插件：${restartRequired.join(', ')}` : '',
   ].filter((part) => part !== '').join(' ')
 }
+
+/**
+ * 读运行状态，最多等 `ms`。
+ *
+ * 快照里的 status 含一次 QQ 往返（`getGroupList`）。NapCat 忙时它可能长时间
+ * 不返回，而**所有页面**都要先拿到 `/api/snapshot` 才渲染数据表——所以这里
+ * 必须有上限：超时就给一个可读的占位状态，页面照常显示配置与资源表。
+ */
+export async function statusWithTimeout(
+  status: () => Promise<Record<string, unknown>>,
+  ms: number,
+): Promise<Record<string, unknown>> {
+  let timer: NodeJS.Timeout | undefined
+  try {
+    return await Promise.race([
+      status(),
+      new Promise<Record<string, unknown>>((resolve) => {
+        timer = setTimeout(() => resolve({
+          unavailable: `状态读取超时（${Math.round(ms / 1000)} 秒）：QQ/协议端可能正忙；配置与数据表不受影响，稍后刷新即可。`,
+        }), ms)
+      }),
+    ])
+  } catch (error) {
+    return { unavailable: `状态读取失败：${error instanceof Error ? error.message : String(error)}` }
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
+  }
+}

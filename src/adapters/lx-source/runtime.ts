@@ -157,10 +157,12 @@ export function runLxScript(scriptText: string, opts: LxRuntimeOptions = {}): Lx
 
   const sandbox: Record<string, unknown> = {
     lx,
+    // 音源脚本很喜欢在每次请求时 console.log 一串横幅（聆澜一次解析十几行）。
+    // 这些是脚本自己的调试输出，不是本插件的事件——只保留 error，免得日志被刷满。
     console: {
-      log: (msg: unknown) => log(`lx(script): ${String(msg)}`),
+      log: () => {},
       info: () => {},
-      warn: (msg: unknown) => log(`lx(script): ${String(msg)}`),
+      warn: () => {},
       error: (msg: unknown) => log(`lx(script): ${String(msg)}`),
       debug: () => {},
       group: () => {},

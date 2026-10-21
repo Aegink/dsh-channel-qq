@@ -32,6 +32,13 @@ async function readLogTail(host: SubHost, lines: number): Promise<string[]> {
   }
 }
 
+/** 群列表最多等这么久：NapCat 忙/卡时 `getGroupList` 可能永远不回，后台不能被它拖死。
+ *
+ * 2026-10-21 线上：`/api/snapshot` 因为这一步挂住 30 秒以上，而**所有页面**的
+ * 资源表都以 snapshot 的 meta 为准——于是"好多页面看不到数据"。
+ */
+const GROUP_LIST_TIMEOUT_MS = 3_000
+
 /** Live snapshot for the admin panel's overview tab（工具数直读注册表）。 */
 export async function buildStatus(host: SubHost, startedAt: number): Promise<Record<string, unknown>> {
   const { config } = host
@@ -39,7 +46,9 @@ export async function buildStatus(host: SubHost, startedAt: number): Promise<Rec
   const client = parts?.client ?? null
   const platform = parts?.platform ?? null
   const connected = platform?.isConnected() === true
-  const raw = platform !== null && connected ? await platform.api.getGroupList().catch(() => null) : null
+  const raw = platform !== null && connected
+    ? await withTimeout(platform.api.getGroupList().catch(() => null), GROUP_LIST_TIMEOUT_MS)
+    : null
   const groups = Array.isArray(raw) ? raw as Array<{ group_id?: number; group_name?: string }> : []
   const emoji = host.get('emoji')
   const flood = host.get('flood')
@@ -71,6 +80,19 @@ export async function buildStatus(host: SubHost, startedAt: number): Promise<Rec
       : '已关闭',
     tts: config.tts.enabled ? config.tts.voice : '已关闭',
     imageGen: config.imageGen.enabled ? `${config.imageGen.provider}/${config.imageGen.model}` : '已关闭',
+  }
+}
+
+/** 等一会儿；超时返回 null（调用方按"这次没拿到"处理，不抛错）。 */
+async function withTimeout<T>(promise: Promise<T | null>, ms: number): Promise<T | null> {
+  let timer: NodeJS.Timeout | undefined
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), ms) }),
+    ])
+  } finally {
+    if (timer !== undefined) clearTimeout(timer)
   }
 }
 

@@ -48,7 +48,7 @@ import { routeReadData, routeWriteData, routeWriteMisc, type DataRouteEnv } from
 import { serveHealthRoute } from './admin/health.js'
 import { routeProviders } from './admin/providers.js'
 import type { AdminDeps, ConfigPatchOptions, ConfigPatchResult } from './admin/types.js'
-import { buildNote, envFlag, isPlainObject, lineCount, messageOf, publicChange, statusOf, summaryOf, toJson, clientIpOf } from './admin/util.js'
+import { buildNote, envFlag, isPlainObject, lineCount, messageOf, publicChange, statusOf, statusWithTimeout, summaryOf, toJson, clientIpOf } from './admin/util.js'
 import { atomicWriteFile } from './adapters/fs-store/atomic.js'
 
 export { HASH_ENV, PASSWORD_ENV } from './admin/auth.js'
@@ -666,7 +666,8 @@ export class AdminServer {
   private async routeReadCore(res: http.ServerResponse, route: string): Promise<boolean> {
     if (route === '/api/snapshot') {
       const { config, secretSet } = maskConfigForView(this.deps.config)
-      const status = await this.deps.status()
+      // 状态里有 QQ 往返（群列表）；它挂住时不能拖死整个快照（配置与资源表清单都靠它）。
+      const status = await statusWithTimeout(this.deps.status, 5_000)
       this.json(res, 200, { ok: true, config, status, meta: this.metaView(secretSet) })
       return true
     }

@@ -91,6 +91,14 @@ function nameOfUrl(url: string): string {
   }
 }
 
+/** 歌名归一化：去掉括号里的备注与标点，用于"按歌名重试"时判断是不是同一首。 */
+export function normalizeSongName(name: string): string {
+  return String(name ?? '')
+    .toLowerCase()
+    .replace(/[（(][^）)]*[）)]/g, '')
+    .replace(/[^\p{L}\p{N}]/gu, '')
+}
+
 /** 音源请求用的 `musicInfo`：`wy` 认 `songmid`，其它平台也常读 `id`/`hash`。 */
 function musicInfoOf(req: SongRequest): Record<string, unknown> {
   return {

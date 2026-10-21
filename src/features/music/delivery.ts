@@ -14,9 +14,10 @@ import { systemHttp } from '../../adapters/http/client.js'
 import { atomicWriteFile } from '../../adapters/fs-store/atomic.js'
 import { napcatFileArg } from '../../local-file.js'
 import { resolveDshHome } from '../../paths.js'
+import { searchSongs as neteaseSearch } from '../../adapters/providers/music-netease.js'
 import type { QQChannelConfig } from '../../config.js'
 import { MAX_DOWNLOAD_BYTES } from '../download-limit.js'
-import { parseLxSources, resolveSongAudio, type SongRequest } from './source.js'
+import { parseLxSources, resolveSongAudio, normalizeSongName, type SongRequest } from './source.js'
 
 export interface SavedAudio {
   /** 本地绝对路径。 */
@@ -72,8 +73,50 @@ export interface PreparedSong extends SavedAudio {
   readonly fileName: string
 }
 
-/** 解析 → 下载 → 可投递。音源与网易云的顺序见 `resolveSongAudio`。 */
+/** 解析 → 下载 → 可投递。音源与网易云的顺序见 `resolveSongAudio`。
+ *
+ * 指定 id 解析失败时，如果知道歌名就**按歌名重试前三个搜索命中**：模型有时会
+ * 挑到同名翻唱或不可播的条目（2026-10-21：`焚爱` 被点成另一个 id，两个音源都
+ * 返回 404，而正确条目其实两边都能解析）。
+ */
 export async function prepareSong(
+  req: SongRequest,
+  config: QQChannelConfig,
+  log: (line: string) => void,
+): Promise<PreparedSong> {
+  try {
+    return await prepareOnce(req, config, log)
+  } catch (error) {
+    if (req.name === undefined || req.name.trim() === '') throw error
+    const reason = error instanceof Error ? error.message : String(error)
+    log(`music: ${req.songId} 解析失败（${reason.slice(0, 80)}），按歌名重试`)
+    let hits
+    try {
+      hits = await neteaseSearch(`${req.name} ${req.artists ?? ''}`.trim(), 5)
+    } catch {
+      throw error
+    }
+    // 只认歌名对得上的命中："焚爱" 的搜索结果里第一首是《雨爱》，直接按顺序试
+    // 会把用户点的歌换成另一首（2026-10-21 实测）。对不上就不替换，原样报错。
+    const wanted = normalizeSongName(req.name)
+    const matches = hits.filter((hit) => {
+      const found = normalizeSongName(hit.name)
+      return found !== '' && (found.includes(wanted) || wanted.includes(found))
+    })
+    if (matches.length === 0) throw error
+    for (const hit of matches.slice(0, 3)) {
+      if (hit.id === req.songId) continue
+      try {
+        const prepared = await prepareOnce({ ...req, songId: hit.id, name: hit.name, artists: hit.artists }, config, log)
+        log(`music: 按歌名重试成功 ${hit.name} - ${hit.artists}（${hit.id}）`)
+        return prepared
+      } catch { /* 试下一个命中 */ }
+    }
+    throw error
+  }
+}
+
+async function prepareOnce(
   req: SongRequest,
   config: QQChannelConfig,
   log: (line: string) => void,
