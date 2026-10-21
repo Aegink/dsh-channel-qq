@@ -31,8 +31,9 @@
 - **每包注入运行环境事实**：模型/图片能力/上下文窗口 + 「历史里相反的说法作废」，
   防止模型把旧环境结论（例如「看不到图」）当事实自我强化
 - **回合卡死看门狗**：`maxTurnMinutes`（默认 10）——回合超过该时长仍未结束就强制换血。
-  无人值守时宿主的沙箱升级审批没人应答，会永久挂住该房间（2026-10-21 群会话卡死 5 小时），
-  线上同时把宿主审批策略设为 `policy: never`
+  无人值守时宿主的沙箱升级审批没人应答，会永久挂住该房间（2026-10-21 群会话卡死 5 小时）。
+  修法是把 `permission` 预设的 `workspace-write.approval` 设为 `never`——**不要**改
+  approval 的全局 policy，否则 permission-presets 匹配不到预设、channel-qq 无法启动
 - **定期换血**：`maxAgeDays`（默认 7 天，0 关闭），按 `session-reset-state.json`
   里每房间的上次换血时间判断
 - **激进房间**：`strictRooms` + `strictThresholdRatio`（默认 0.6），图片/工具多的

@@ -139,8 +139,23 @@ cordis.patch.yml（部署级）
 30 分钟内不重复触发。这条比「等 5 分钟一次的体积检查」更快。
 
 **回合卡死**：无人值守部署里，宿主的「升级沙箱」审批没有真人应答会**永久挂住回合**，
-该房间之后的所有消息都进不来（2026-10-21 群会话卡死 5 小时）。线上做法是把宿主的
-审批策略设为 `policy: never`（需要升级的动作直接拒绝、模型会收到明确提示），
+该房间之后的所有消息都进不来（2026-10-21 群会话卡死 5 小时）。
+
+正确修法是**改 permission 预设**，不是改 approval 的全局 `policy`：
+`permission-presets` 会用「沙箱默认 + 审批默认」反查预设，全局 policy 改成 never
+会匹配不到任何预设，整个 `permission` 服务起不来、channel-qq 永远 pending。
+线上配置：
+
+```yaml
+- id: permission
+  config:
+    defaultPreset: workspace-write
+    presets:
+      read-only: { sandbox: read-only, approval: ask }
+      workspace-write: { sandbox: workspace-write, approval: never }
+      danger-full-access: { sandbox: danger-full-access, approval: never }
+```
+
 再用 `maxTurnMinutes` 兜底：超时仍未结束的回合强制换血。
 
 **手动换血**：管理员在私聊里发 `/换血`（或 `重置会话` / `/reset`）——
