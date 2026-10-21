@@ -48,7 +48,7 @@ function playlistTranslate(args: Readonly<Record<string, unknown>>): Record<stri
 
 export const MUSIC_FACE: Face = {
   name: 'qq_music',
-  description: '音乐：搜索（search）、解析播放直链（resolve）、点歌发文件（send_card）、以语音条发歌（send_voice）、歌词（lyrics）、个人歌单（playlist）、扫码登录（login_start / login_poll）、登录状态（status）。send_card 发的是音频文件（现行 QQ 不再渲染旧音乐卡片）；想听语音条用 send_voice。',
+  description: '音乐：搜索（search）、解析播放直链（resolve）、点歌（send_card，默认发语音条，后台「点歌发文件」打开后发音频文件）、以语音条发歌（send_voice）、歌词（lyrics）、个人歌单（playlist）、扫码登录（login_start / login_poll）、登录状态（status）。',
   providerSelect: true,
   note: 'provider 默认 netease（网易云）；酷狗（kugou）只有 search / send_voice / login_start / login_poll，其余动作传 kugou 会报错。歌单 playlist 的子动作用 op：add / remove / list / clear，add 需要 songId 和 name。',
   branches: [

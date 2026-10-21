@@ -4,7 +4,7 @@
  * 由后台「音乐」页的扫码登录写入、更新与清除。这里只放"连哪里"这种非秘密参数。
  */
 
-import { s, type FieldGroup } from '../dsl.js'
+import { b, s, type FieldGroup } from '../dsl.js'
 
 /** 音乐相关的非秘密配置。 */
 export interface MusicConfig {
@@ -17,6 +17,14 @@ export interface MusicConfig {
   lxSources: string
   /** 点歌默认音质（给音源与网易云直链用）。 */
   quality: string
+  /**
+   * 点歌是否发音频文件。
+   *
+   * 默认 **false**（发语音条）：语音条在群里点开就能听，最接近"点歌"的体验；
+   * 但 QQ 对长语音有客户端限制，四分钟以上的歌可能播不完整——所以留一个开关，
+   * 需要完整音质/时长时在后台打开，改发 `.mp3` 文件。
+   */
+  sendFile: boolean
 }
 
 export const MUSIC_GROUPS: FieldGroup[] = [
@@ -39,6 +47,11 @@ export const MUSIC_GROUPS: FieldGroup[] = [
       quality: s('点歌音质', '320k', {
         hot: 'live',
         help: '128k / 320k / flac。音源不支持时会自己降级或报错，失败就换下一个音源。',
+      }),
+      sendFile: b('点歌发文件', false, {
+        hot: 'live',
+        help: '关（默认）= 点歌发语音条；开 = 发音频文件。长歌（四分钟以上）的语音条'
+          + '可能被 QQ 客户端截断，需要完整时长就打开这项。',
       }),
     },
   },

@@ -24,10 +24,11 @@
   先进音源解析播放直链，再退回网易云。脚本跑在受限 `vm` 上下文里（无 `process`/
   `require`/`fetch`，只有走 HTTP 闸门的 `lx.request`，禁 eval、带执行超时）；
   默认空 = 不启用
-- **点歌改发音频文件**：`qq_send_music_card` 不再发官方音乐卡片——SnowLuma 的签名
-  服务已下线，回退卡片在现行 QQ 上只显示「发送者版本过低，无法展示内容」
-  （SnowLuma #365）。现在解析 → 下载 → 以文件发送（文件名带歌名/歌手），
-  `qq_send_music_voice` 仍可发语音条
+- **点歌默认发语音条，文件由开关控制**：`qq_send_music_card` 不再发官方音乐卡片
+  ——SnowLuma 的签名服务已下线，回退卡片在现行 QQ 上只显示「发送者版本过低，
+  无法展示内容」（SnowLuma #365）。现在解析 → 下载 → **默认发语音条**；
+  后台「点歌发文件」（`music.sendFile`，默认关）打开后改发音频文件
+  （文件名带歌名/歌手）。`qq_send_music_voice` 始终发语音条
 
 - **技能系统（P0–P2）**：磁盘上的 Agent Skills 目录包（`<dshHome>/channel-qq/skills`），
   接进宿主的 `skill` 目录与 `/名字` 触发；新增 `qq_skill` 工具按房间列出/加载

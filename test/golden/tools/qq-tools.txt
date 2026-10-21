@@ -893,7 +893,7 @@
 }
 {
   "name": "qq_send_music_card",
-  "description": "点歌：解析音源后把歌曲以音频文件发到群/私聊（官方音乐卡片在现行 QQ 上会显示「版本过低」，所以改发文件；文件名带歌名与歌手）。",
+  "description": "点歌：解析音源后把歌曲发到群/私聊。默认发语音条；后台「点歌发文件」打开后改发音频文件。",
   "parameters": {
     "type": "object",
     "properties": {

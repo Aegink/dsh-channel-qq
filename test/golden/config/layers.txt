@@ -146,7 +146,8 @@ override = {}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -684,7 +685,8 @@ override = {}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -1220,7 +1222,8 @@ override = {"batching":{"windowMs":20000}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -1756,7 +1759,8 @@ override = {"admin":{"port":8790}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -2292,7 +2296,8 @@ override = {"imageGen":{"model":"flux"}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -2828,7 +2833,8 @@ override = {"tts":{"voice":"b"}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -3364,7 +3370,8 @@ override = {"flood":{"windowSec":30}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -3907,7 +3914,8 @@ override = {}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -4443,7 +4451,8 @@ override = {"keywordTriggers":[]}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -4986,7 +4995,8 @@ override = {"rss":{"pollIntervalMin":5}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -5522,7 +5532,8 @@ override = {"groupEnabled":false}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -6058,7 +6069,8 @@ override = {}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -6594,7 +6606,8 @@ override = {"groupEnabled":true}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -7130,7 +7143,8 @@ override = {"admin":{"host":"127.0.0.1"}}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -7666,7 +7680,8 @@ override = {}
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,
@@ -8202,7 +8217,8 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
-  "quality": "320k"
+  "quality": "320k",
+  "sendFile": false
  },
  "skills": {
   "enabled": true,

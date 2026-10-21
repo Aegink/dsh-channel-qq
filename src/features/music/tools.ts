@@ -77,18 +77,21 @@ function qqResolveMusic(deps: QQToolDeps): ToolSpec {
       }
 }
 
-/** `qq_send_music_card` — 点歌：解析音源 → 下载 → 以音频文件发送。
+/** `qq_send_music_card` — 点歌：解析音源 → 下载 → 发送。
+ *
+ * 投递方式由后台开关 `music.sendFile` 决定：
+ *   - **关（默认）**：语音条，群里点开就能听；
+ *   - **开**：`.mp3` 文件（长歌语音条可能被 QQ 客户端截断时用）。
  *
  * 为什么不发"官方音乐卡片"：SnowLuma 的 `music` 段依赖外部签名服务，默认签名
- * 地址已下线，回退生成的 `com.tencent.structmsg` 旧卡片在现行 QQ 上只显示
- * 「发送者版本过低，无法展示内容」（SnowLuma #365，2026-08 关闭为不修复）。
- * 所以默认发**文件**——任何版本都能播放/下载，文件名里带歌名与歌手。
+ * 地址已下线，回退的 `com.tencent.structmsg` 旧卡片在现行 QQ 上只显示
+ * 「发送者版本过低，无法展示内容」（SnowLuma #365）。
  */
 function qqSendMusicCard(deps: QQToolDeps): ToolSpec {
   const { api, out } = deps
   return {
         name: 'qq_send_music_card',
-        description: '点歌：解析音源后把歌曲以音频文件发到群/私聊（官方音乐卡片在现行 QQ 上会显示「版本过低」，所以改发文件；文件名带歌名与歌手）。',
+        description: '点歌：解析音源后把歌曲发到群/私聊。默认发语音条；后台「点歌发文件」打开后改发音频文件。',
         parameters: {
           type: 'object',
           properties: {
@@ -106,15 +109,21 @@ function qqSendMusicCard(deps: QQToolDeps): ToolSpec {
             ...(args.name === undefined ? {} : { name: String(args.name) }),
             ...(args.artists === undefined ? {} : { artists: String(args.artists) }),
           }, deps.config, deps.log)
-          const segment: OneBotMessageSegment[] = [{
-            type: 'file',
-            data: { file: prepared.arg, name: prepared.fileName },
-          }]
+          const asFile = deps.config.music.sendFile === true
+          const segment: OneBotMessageSegment[] = asFile
+            ? [{ type: 'file', data: { file: prepared.arg, name: prepared.fileName } }]
+            : [{ type: 'record', data: { file: prepared.arg } }]
           try {
             const result = (await out.push(() => (args.private === true
               ? api.sendPrivateMessage(Number(args.target), segment)
               : api.sendGroupMessage(Number(args.target), segment)))) as Record<string, unknown>
-            return { ...result, via: prepared.via, quality: prepared.quality, file: prepared.fileName, bytes: prepared.bytes }
+            return {
+              ...result,
+              delivery: asFile ? 'file' : 'voice',
+              via: prepared.via,
+              quality: prepared.quality,
+              ...(asFile ? { file: prepared.fileName, bytes: prepared.bytes } : {}),
+            }
           } finally {
             await prepared.cleanup()
           }

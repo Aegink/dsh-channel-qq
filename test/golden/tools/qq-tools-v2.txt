@@ -424,7 +424,7 @@
 }
 {
   "name": "qq_music",
-  "description": "音乐：搜索（search）、解析播放直链（resolve）、点歌发文件（send_card）、以语音条发歌（send_voice）、歌词（lyrics）、个人歌单（playlist）、扫码登录（login_start / login_poll）、登录状态（status）。send_card 发的是音频文件（现行 QQ 不再渲染旧音乐卡片）；想听语音条用 send_voice。\n动作（方括号是平台，括号里是必填字段）：search[netease]（keyword）｜search[kugou]（keyword）｜resolve[netease]（songId）｜send_card[netease]（target、songId）｜send_voice[netease]（target、songId）｜send_voice[kugou]（target、hash）｜lyrics[netease]（songId）｜playlist（op）｜login_start[netease]（无必填）｜login_poll[netease]（key）｜login_start[kugou]（无必填）｜login_poll[kugou]（key）｜status[netease]（无必填）\nprovider 默认 netease（网易云）；酷狗（kugou）只有 search / send_voice / login_start / login_poll，其余动作传 kugou 会报错。歌单 playlist 的子动作用 op：add / remove / list / clear，add 需要 songId 和 name。",
+  "description": "音乐：搜索（search）、解析播放直链（resolve）、点歌（send_card，默认发语音条，后台「点歌发文件」打开后发音频文件）、以语音条发歌（send_voice）、歌词（lyrics）、个人歌单（playlist）、扫码登录（login_start / login_poll）、登录状态（status）。\n动作（方括号是平台，括号里是必填字段）：search[netease]（keyword）｜search[kugou]（keyword）｜resolve[netease]（songId）｜send_card[netease]（target、songId）｜send_voice[netease]（target、songId）｜send_voice[kugou]（target、hash）｜lyrics[netease]（songId）｜playlist（op）｜login_start[netease]（无必填）｜login_poll[netease]（key）｜login_start[kugou]（无必填）｜login_poll[kugou]（key）｜status[netease]（无必填）\nprovider 默认 netease（网易云）；酷狗（kugou）只有 search / send_voice / login_start / login_poll，其余动作传 kugou 会报错。歌单 playlist 的子动作用 op：add / remove / list / clear，add 需要 songId 和 name。",
   "parameters": {
     "type": "object",
     "properties": {
