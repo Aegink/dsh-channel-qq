@@ -40,11 +40,24 @@ import * as path from 'node:path'
  */
 export const DEFAULT_MAX_INLINE_BYTES = 8 * 1024 * 1024
 
+/**
+ * 小于它的文件**一律内联**，不管配置的"可读根"怎么说。
+ *
+ * 为什么：`CHANNEL_QQ_NAPCAT_ROOTS` 只是运维的**声明**，容器里的用户/权限未必
+ * 允许读那个目录。线上踩过：`~/.dsh/channel-qq` 写进了根列表，但 `/root`
+ * 是 700，NapCat 直读路径直接 `EACCES`——表情包（几 KB）全部发送失败。
+ * 几百 KB 的 base64 代价可以忽略，却能把整类"配置说能读、实际读不到"的失败挡掉。
+ */
+const ALWAYS_INLINE_BYTES = 256 * 1024
+
 /** Host paths NapCat is configured to read (see the module doc). */
 export function napcatVisibleRoots(): string[] {
   const raw = process.env.CHANNEL_QQ_NAPCAT_ROOTS ?? ''
   return raw
-    .split(/[,:;]/)
+    // 逗号/分号/换行是主分隔符；冒号也支持（POSIX 习惯），但 **Windows 盘符**
+    // 的 `C:` 不能拆——`split(':')` 会把 `C:\Users\x` 切成两段（2026-10-21 测试踩到）。
+    .split(/[,;\n]+/)
+    .flatMap((part) => part.split(/:(?![\\/])/))
     .map((s) => s.trim())
     .filter((s) => s !== '')
     .map((s) => path.resolve(s))
@@ -103,6 +116,11 @@ export async function napcatFileArg(
 
   const stat = await fs.stat(abs) // throws ENOENT/EISDIR with the real path in it
   if (!stat.isFile()) throw new Error(`不是文件（是目录？）：${abs}`)
+
+  // 小文件先内联（见 ALWAYS_INLINE_BYTES）：表情包/短语音都走这里，不依赖容器权限。
+  if (stat.size <= ALWAYS_INLINE_BYTES) {
+    return `base64://${(await fs.readFile(abs)).toString('base64')}`
+  }
 
   if (underAnyRoot(abs, napcatVisibleRoots())) {
     // NapCat reads it directly; no copy and no size limit.

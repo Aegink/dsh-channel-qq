@@ -11,6 +11,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type { AttachmentsService } from '../../services.js'
 
 /** `ctx.tools` —— 全局工具注册表。 */
 export interface ToolRegistry {
@@ -38,6 +39,12 @@ export type LlmStream = AsyncIterable<{ text?: string }>
 export interface LlmSeam {
   llm?: { stream(options: Record<string, unknown>): LlmStream }
   agentDefaultModel?: { currentSelection(): { provider: string; model: string } }
+  /**
+   * 视觉消息要用的附件存储。`llm.stream` 的 content block 是**宿主形状**
+   * `{type:'image', attachment}`（附件由 `ctx.attachments.saveImage` 落盘），
+   * 不是 OpenAI 的 `image_url`——给错形状模型会回「未收到图片」。
+   */
+  attachments?: AttachmentsService
 }
 
 /** 全局工具注册表；这台机器没装 tools 服务时为 undefined。 */

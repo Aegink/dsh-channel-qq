@@ -20,6 +20,7 @@ export const stickersPlugin: SubPlugin = {
     const store = new EmojiStore(host.config.emoji, api, host.log, library)
     await store.init()
     host.provide('emoji', { library, store })
+    let retagging = false
     host.registerResource('emoji', {
       label: '表情包库',
       list: () => {
@@ -29,6 +30,20 @@ export const stickersPlugin: SubPlugin = {
       remove: async (id) => ({ removed: await library.remove(id) }),
       actions: {
         rescan: async () => await library.rescan(),
+        // 全库重新打标：视觉消息的形状修好后，旧标签要靠这一轮覆盖（见 retagAll）。
+        // 一次几十到几百张图，逐张调模型，后台跑、进度写日志。
+        retag: async () => {
+          if (retagging) return { started: false, note: '已经在重新打标了' }
+          const total = library.list(100000).length
+          if (total === 0) return { started: false, note: '表情库还是空的' }
+          retagging = true
+          void library.retagAll(host.bridge.tagContext(), (done, all) => {
+            if (done % 10 === 0 || done === all) host.log(`emoji retag 进度：${done}/${all}`)
+          }).catch((error: unknown) => {
+            host.log(`emoji retag 失败：${error instanceof Error ? error.message : String(error)}`)
+          }).finally(() => { retagging = false })
+          return { started: true, total, note: `已在后台重新打标 ${total} 张，进度看日志` }
+        },
       },
     })
     return () => { void library.save() }

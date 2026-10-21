@@ -20,6 +20,7 @@ import * as path from 'node:path'
 import { resolveDshHome } from './paths.js'
 import { createHash } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
+import { isPlaceholderTag, tagImage } from './emoji-tagging.js'
 import type { EmojiConfig } from './config.js'
 import { JsonStore } from './adapters/fs-store/json-store.js'
 import { llmSeam } from './adapters/dsh-host/services.js'
@@ -45,12 +46,6 @@ export interface EmojiSearchHit {
   tags: string[]
   score: number
 }
-
-const TAG_PROMPT = [
-  '你是表情包索引员。看这张表情包/图片，输出一行 JSON（不要多余文字）：',
-  '{"desc":"<20字内描述画面内容>","tags":["<情绪/用途标签1>","<标签2>","<标签3>"]}',
-  'tags 从这些常用维度挑3-5个：开心 大笑 哭 委屈 生气 嘲讽 无语 尴尬 害羞 点赞 摸鱼 吃瓜 惊讶 害怕 疑问 加油 睡觉。若图片有文字也写进 desc。',
-].join('\n')
 
 export class EmojiLibrary {
   private index: Map<string, EmojiIndexEntry> = new Map()
@@ -102,6 +97,16 @@ export class EmojiLibrary {
       return
     }
     this.index = new Map((raw.entries ?? []).map((e) => [e.md5, e]))
+    // 旧索引里可能混着提示符占位标签（情绪1/标签2），读的时候顺手清掉。
+    let cleaned = 0
+    for (const entry of this.index.values()) {
+      const tags = entry.tags.filter((tag) => !isPlaceholderTag(tag))
+      if (tags.length !== entry.tags.length) {
+        entry.tags = tags
+        cleaned += 1
+      }
+    }
+    if (cleaned > 0) this.dirty = true
     this.log(`emoji library loaded: ${String(this.index.size)} entries`)
   }
 
@@ -165,30 +170,25 @@ export class EmojiLibrary {
       const seam = llmSeam(ctx)
       const llm = seam.llm
       const selection = seam.agentDefaultModel?.currentSelection()
+      const attachments = seam.attachments
       if (llm === undefined || selection === undefined) return
-      const dataUrl = `data:${mediaType};base64,${imageData.toString('base64')}`
-      const stream = llm.stream({
-        provider: selection.provider,
-        model: selection.model,
-        maxTokens: 200,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image_url', image_url: { url: dataUrl } },
-            { type: 'text', text: TAG_PROMPT },
-          ],
-        }],
-      })
-      let text = ''
-      for await (const chunk of stream) {
-        if (typeof chunk?.text === 'string') text += chunk.text
+      if (attachments === undefined) {
+        this.log('emoji tagging skipped: 宿主没有 attachments 服务（视觉消息发不出去）')
+        return
       }
-      const stripped = text.replace(/```(?:json)?/g, '').trim()
-      const json = stripped.match(/\{[\s\S]*\}/)
-      if (json === null) return
-      const parsed = JSON.parse(json[0]) as { desc?: string; tags?: string[] }
-      if (typeof parsed.desc === 'string') entry.desc = parsed.desc.slice(0, 120)
-      if (Array.isArray(parsed.tags)) entry.tags = parsed.tags.map((t) => String(t).toLowerCase().slice(0, 12)).slice(0, 5)
+      // 形状、媒体类型、重试都在 `emoji-tagging.ts`（拆出去的那三个坑）。
+      const result = await tagImage({
+        attachments,
+        llm,
+        selection,
+        data: imageData,
+        mediaType,
+        name: `emoji-${entry.md5}`,
+        log: this.log,
+      })
+      if (result === null) return
+      entry.desc = result.desc
+      entry.tags = result.tags
       this.dirty = true
       this.log(`emoji tagged [${entry.tags.join(',')}] ${entry.desc}`)
     } catch (error) {
@@ -305,5 +305,36 @@ export class EmojiLibrary {
     }
     await this.save()
     return { added, duplicates }
+  }
+
+  /**
+   * 全部重新打标（后台「重新打标」按钮）。
+   *
+   * 为什么需要它：2026-10-21 之前视觉消息的形状给错了（`image_url` 而非宿主
+   * 的 `{type:'image', attachment}`），模型收到的是"没有图片的图片消息"，于是
+   * 库里 60 多条全是「疑问/无语/尴尬」这类兜底标签——检索自然永远搜不到合适的。
+   * 修好形状之后，这些旧标签要靠这一轮重打覆盖。
+   */
+  async retagAll(ctx: Context, onProgress?: (done: number, total: number) => void): Promise<{ done: number; failed: number; total: number }> {
+    const entries = [...this.index.values()]
+    let done = 0
+    let failed = 0
+    for (const entry of entries) {
+      try {
+        const buf = await fs.readFile(entry.file)
+        entry.desc = ''
+        entry.tags = []
+        await this.tagEntry(ctx, entry, buf, 'image/jpeg')
+        if (entry.tags.length > 0 || entry.desc !== '') done += 1
+        else failed += 1
+      } catch {
+        failed += 1
+      }
+      onProgress?.(done + failed, entries.length)
+    }
+    this.dirty = true
+    await this.save()
+    this.log(`emoji retag: ${done}/${entries.length} 成功，${failed} 失败`)
+    return { done, failed, total: entries.length }
   }
 }
