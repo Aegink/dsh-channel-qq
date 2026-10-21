@@ -26,23 +26,11 @@ export interface SegmentationConfig {
   removeTrailingPeriod: boolean
 }
 
-export interface PokeConfig {
-  enabled: boolean
-  /**
-   * Coalescing window: pokes inside it collapse into one adjudication, so a
-   * sticker-tap storm does not submit a turn per tap.
-   *
-   * `patience` and `pokeBack` used to live here — "how many pokes before 诺诺
-   * reacts" and "poke the sender back". Adjudication mode removed auto-reaction
-   * entirely (the plugin never pokes or speaks on its own; the model decides via
-   * `qq_send_poke`), so both were read by nothing while still being rendered as
-   * live controls in the admin panel. They are gone rather than left lying.
-   */
-  windowSec: number
-}
 export interface ImageConfig {
   /** Download inbound images and attach them to the model prompt (vision). */
   enabled: boolean
+  /** Register the server-side OCR tool (`qq_read_image_text`). */
+  serverOcr: boolean
   /** Max images attached per message (extras stay noted as [图片]). */
   maxPerMessage: number
 }
@@ -55,6 +43,8 @@ export interface GroupModelConfig {
 
 export interface STTConfig {
   enabled: boolean
+  /** 本地 Whisper 不可用时，改用协议端的语音转文字。 */
+  serverFallback: boolean
   /** OpenAI-compatible /audio/transcriptions base, e.g. https://host/v1 */
   baseUrl: string | null
   /** API key (plain, or $ENV to read from environment). */
@@ -263,6 +253,8 @@ export interface ImageGenConfig {
 /** 群聊学习/口癖. */
 export interface LearnConfig {
   enabled: boolean
+  /** 黑话词典：注册 qq_learn_word / qq_slang 两个工具。 */
+  slang: boolean
   /** Learned-phrase store; null = <workspace>/learned-phrases.json. */
   file: string | null
   /** Passively collect candidate phrases from group traffic. */
@@ -281,6 +273,8 @@ export interface MemoryConfig extends MemoryVectorConfig, MemoryExtractorConfig 
   maxRecords: number
   /** 每回合最多注入多少字。 */
   maxChars: number
+  /** 每回合附带当前发言人的人物侧写（3–5 行，5 分钟缓存）。 */
+  profiles: boolean
 }
 
 /** 群事件监控 → 主动性话题素材. */
@@ -317,9 +311,9 @@ export interface QQChannelConfig extends SwitchSections {
   selfId: number
   /** QQ numbers allowed to use admin-flavoured tools. */
   admins: number[]
-  /** Master switch for group-chat handling (DMs unaffected). */
   /** Loopback port of the master-only affection dashboard; 0 disables. */
   affectionPort: number
+  /** Master switch for group-chat handling (DMs unaffected). */
   groupEnabled: boolean
   /** The core group; talkValue/emoji/steal semantics key off it. */
   primaryGroup: number | null
@@ -337,7 +331,13 @@ export interface QQChannelConfig extends SwitchSections {
   batching: BatchingConfig
   injectMode: InjectModeConfig
   imageRecognition: ImageConfig
-  poke: PokeConfig
+  poke: import('./config/sections/poke.js').PokeConfig
+  interaction: import('./config/sections/interaction.js').InteractionConfig
+  forward: import('./config/sections/forward.js').ForwardConfig
+  metrics: import('./config/sections/metrics.js').MetricsConfig
+  history: import('./config/sections/history.js').HistoryConfig
+  reliability: import('./config/sections/reliability.js').ReliabilityConfig
+  dailyReport: import('./config/sections/daily-report.js').DailyReportConfig
   stt: STTConfig
   groupModel: GroupModelConfig
   /** Additional group-level or user-level name triggers. */

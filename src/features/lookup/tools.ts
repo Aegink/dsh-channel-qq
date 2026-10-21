@@ -116,27 +116,28 @@ function qqSearchHistory(deps: QQToolDeps): ToolSpec {
             return { error: '会话日志不可读: ' + String(error).slice(0, 120) }
           }
           if (jsonl === null) {
-            return {
-              error: `找不到会话日志 ${sid}（工作区 ${config.workspacePath ?? '未设置'}，日志根 ${resolveSessionsRoot()}）`,
+            // 本地没有会话日志（重启后/新房间）：如果开了服务端历史，就靠它。
+            if (deps.history === undefined) {
+              return {
+                error: `找不到会话日志 ${sid}（工作区 ${config.workspacePath ?? '未设置'}，日志根 ${resolveSessionsRoot()}）`,
+              }
             }
+            jsonl = ''
           }
-          const keyword = args.keyword === undefined ? null : String(args.keyword)
-          const sender = args.senderId === undefined ? null : Number(args.senderId)
-          const since = args.sinceDate === undefined ? null : String(args.sinceDate)
-          const until = args.untilDate === undefined ? null : String(args.untilDate)
-          // 夹取到 [1, 50]：`0` 会变成 0 条、`abc` 会变成 NaN（`hits.length >= NaN`
-          // 恒假 ⇒ 上限形同虚设）、负数直接不返回（2026-10-19 排查）。
-          const requested = Number(args.limit ?? 20)
-          const limit = Number.isFinite(requested) ? Math.max(1, Math.min(Math.trunc(requested), 50)) : 20
-          const filter = { keyword, sender, since, until }
-          const hits: Array<{ time: string; sender: string; userId: number; msgId: string; text: string }> = []
+          const { filter, limit } = parseSearchArgs(args)
+          const hits: SearchHit[] = []
           for (const line of jsonl.split('\n')) {
             const hit = parseHistoryLine(line, filter)
             if (hit === null) continue
             hits.push(hit)
             if (hits.length >= limit) break
           }
-          return { count: hits.length, sessionId: sid, hits }
+          // A4：本地没有命中时回源一次服务端历史（同一房间 60 秒只拉一次）。
+          const source = hits.length === 0 && deps.history !== undefined ? 'server' : 'session-log'
+          if (source === 'server') {
+            hits.push(...await remoteHistoryHits(deps, sid, isGroup, target, filter, limit))
+          }
+          return { count: hits.length, sessionId: sid, source, hits }
         },
       }
 }
@@ -151,6 +152,66 @@ export function lookupTools(deps: QQToolDeps): ToolSpec[] {
     qqGetFriendList(deps),
     qqSearchHistory(deps),
   ]
+}
+
+/** 参数 → 过滤条件与上限（`limit` 夹取到 [1, 50]）。 */
+function parseSearchArgs(args: Record<string, unknown>): {
+  filter: { keyword: string | null; sender: number | null; since: string | null; until: string | null }
+  limit: number
+} {
+  const requested = Number(args.limit ?? 20)
+  return {
+    filter: {
+      keyword: args.keyword === undefined ? null : String(args.keyword),
+      sender: args.senderId === undefined ? null : Number(args.senderId),
+      since: args.sinceDate === undefined ? null : String(args.sinceDate),
+      until: args.untilDate === undefined ? null : String(args.untilDate),
+    },
+    // `0` 会变成 0 条、`abc` 会变成 NaN（`hits.length >= NaN` 恒假 ⇒ 上限形同虚设）、
+    // 负数直接不返回（2026-10-19 排查）。
+    limit: Number.isFinite(requested) ? Math.max(1, Math.min(Math.trunc(requested), 50)) : 20,
+  }
+}
+
+/** 服务端历史里的一条命中（与本地日志行同一形状）。 */
+interface SearchHit {
+  time: string
+  sender: string
+  userId: number
+  msgId: string
+  text: string
+}
+
+/** A4：回源 + 检索服务端历史，转成与本地日志一致的命中形状。 */
+async function remoteHistoryHits(
+  deps: QQToolDeps,
+  room: string,
+  isGroup: boolean,
+  target: number,
+  filter: { keyword: string | null; sender: number | null; since: string | null; until: string | null },
+  limit: number,
+): Promise<SearchHit[]> {
+  const history = deps.history
+  if (history === undefined) return []
+  await history.sync(room, isGroup, target).catch(() => 0)
+  const remote = await history.search(room, filter).catch(() => [])
+  return remote.slice(-limit).map((entry) => ({
+    time: formatHhMm(entry.time),
+    sender: entry.name,
+    userId: entry.userId,
+    msgId: String(entry.id),
+    text: entry.text,
+  }))
+}
+
+/**
+ * 服务端历史的秒级时间戳 → 本地 HH:MM（与本地日志行的格式一致）。
+ * 时间戳缺失（0）时返回 '--:--'，不假装知道几点。
+ */
+function formatHhMm(seconds: number): string {
+  if (seconds <= 0) return '--:--'
+  const date = new Date(seconds * 1000)
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
 /** 一条会话日志行 → 一条命中记录；不是聊天行或不符合过滤条件时为 null。 */

@@ -28,14 +28,14 @@
 
 import type { OneBotClient } from '../../onebot.js'
 import type {
-  ActionAck, EssenceEntry, FileEntry, FileUrl, FetchedMessage, FriendInfo,
-  GroupInfo, GroupMemberInfo, ImageFile, QQApi, RecordFile, SendResult,
+  ActionAck, EssenceEntry, FileEntry, FileUrl, FetchedMessage, ForwardNode, FriendInfo,
+  GroupInfo, GroupMemberInfo, ImageFile, LoginInfo, QQApi, RecordFile, SendResult,
 } from '../../ports/platform.js'
 
 // 类型从端口转发出来，调用方既可以 import 端口，也可以继续从这里拿。
 export type {
-  ActionAck, EssenceEntry, FileEntry, FileUrl, FetchedMessage, FriendInfo,
-  GroupInfo, GroupMemberInfo, ImageFile, QQApi, RecordFile, SendResult,
+  ActionAck, EssenceEntry, FileEntry, FileUrl, FetchedMessage, ForwardNode, FriendInfo,
+  GroupInfo, GroupMemberInfo, ImageFile, LoginInfo, QQApi, RecordFile, SendResult,
 }
 
 /** 把字符串动作名与松散参数收敛到一个地方。 */
@@ -64,6 +64,13 @@ type FileSlice = Pick<
 >
 
 type VoiceSlice = Pick<QQApi, 'canSendRecord' | 'getAiRecord' | 'sendGroupAiRecord'>
+
+/** 交互提示：输入状态与消息表情回应（A1）。 */
+type InteractionSlice = Pick<
+  QQApi,
+  | 'setInputStatus' | 'setMessageEmojiLike' | 'getLoginInfo' | 'sendGroupForward' | 'sendPrivateForward'
+  | 'getGroupMsgHistory' | 'getFriendMsgHistory' | 'getVoiceText' | 'ocrImage'
+>
 
 /** 消息收发与"取一个东西"。 */
 function messageActions(call: Call): MessageSlice {
@@ -183,6 +190,47 @@ function voiceActions(call: Call): VoiceSlice {
   }
 }
 
+/** 交互提示：输入状态与消息表情回应（A1）。 */
+function interactionActions(call: Call): InteractionSlice {
+  return {
+    // SnowLuma v2.1.0 `set_input_status`：event_type 1 = 正在输入、0 = 取消。
+    setInputStatus: (userId, eventType) =>
+      call<ActionAck>('set_input_status', { user_id: userId, event_type: eventType }),
+    // SnowLuma v2.1.0 `set_msg_emoji_like`：emoji_id 是字符串，set=false 撤销。
+    setMessageEmojiLike: (messageId, emojiId, enable) =>
+      call<ActionAck>('set_msg_emoji_like', { message_id: messageId, emoji_id: emojiId, set: enable }),
+    getLoginInfo: () => call<LoginInfo>('get_login_info', {}, 8_000),
+    // SnowLuma v2.1.0：messages 是 node 段数组；节点里的 content 是普通消息段。
+    sendGroupForward: (groupId, nodes) =>
+      call<SendResult>('send_group_forward_msg', { group_id: groupId, messages: nodes }, 30_000),
+    sendPrivateForward: (userId, nodes) =>
+      call<SendResult>('send_private_forward_msg', { user_id: userId, messages: nodes }, 30_000),
+    getGroupMsgHistory: (groupId, count, messageId, reverseOrder) => call<{ messages?: FetchedMessage[] }>(
+      'get_group_msg_history',
+      {
+        group_id: groupId,
+        count,
+        ...(messageId === undefined ? {} : { message_id: messageId }),
+        ...(reverseOrder === undefined ? {} : { reverse_order: reverseOrder }),
+      },
+      20_000,
+    ),
+    getFriendMsgHistory: (userId, count, messageId, reverseOrder) => call<{ messages?: FetchedMessage[] }>(
+      'get_friend_msg_history',
+      {
+        user_id: userId,
+        count,
+        ...(messageId === undefined ? {} : { message_id: messageId }),
+        ...(reverseOrder === undefined ? {} : { reverse_order: reverseOrder }),
+      },
+      20_000,
+    ),
+    // SnowLuma：fetch_ptt_text（NapCat 同名），返回 { text }。
+    getVoiceText: (messageId) => call<{ text?: string }>('fetch_ptt_text', { message_id: messageId }, 15_000),
+    ocrImage: (image) => call<{ texts?: Array<{ text?: string }>; language?: string }>('ocr_image', { image }, 20_000),
+  }
+}
+
 export function createQQApi(client: OneBotClient): QQApi {
   const call: Call = (action, params = {}, timeoutMs) => client.call(action, params, timeoutMs) as never
   return {
@@ -190,5 +238,6 @@ export function createQQApi(client: OneBotClient): QQApi {
     ...groupActions(call),
     ...fileActions(call),
     ...voiceActions(call),
+    ...interactionActions(call),
   }
 }

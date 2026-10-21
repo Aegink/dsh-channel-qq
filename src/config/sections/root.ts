@@ -59,6 +59,12 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
   ['injectMode', section('实时注入', 'injectMode')],
   ['imageRecognition', section('看图', 'imageRecognition')],
   ['poke', section('戳一戳', 'poke')],
+  ['interaction', section('交互提示', 'interaction')],
+  ['forward', section('合并转发', 'forward')],
+  ['metrics', section('指标采集', 'metrics')],
+  ['history', section('服务端历史', 'history')],
+  ['reliability', section('回合告知', 'reliability')],
+  ['dailyReport', section('群日报', 'dailyReport')],
   ['stt', section('语音转文字', 'stt')],
   ['groupModel', section('群聊模型', 'groupModel')],
   ['keywordTriggers', list('唤醒关键词', [], {

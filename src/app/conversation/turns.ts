@@ -18,6 +18,7 @@ import type { PromptPart } from '../../ports/agent-gateway.js'
 import type { ConversationRecord, ConversationRegistry } from './registry.js'
 import { ADMIN, PROACTIVE, type TurnOrigin } from './origins.js'
 import type { PromptComposer } from './prompt-composer.js'
+import type { TurnHooks } from '../../ports/turn-hooks.js'
 
 /** "她最近说过什么"的一段渲染结果（按房间取）。 */
 export interface SentLogReader {
@@ -41,6 +42,8 @@ export interface TurnLauncherDeps {
   readonly openSentLog: (room: string) => Promise<SentLogReader>
   /** 每回合开头的运行环境事实（模型 / 图片能力 / 窗口）；缺省 = 不加。 */
   readonly runtimeNote?: () => string
+  /** 回合生命周期钩子（A1 交互提示）；缺省 = 什么都不做。 */
+  readonly hooks?: TurnHooks
 }
 
 export class TurnLauncher {
@@ -71,6 +74,8 @@ export class TurnLauncher {
     const text = note === '' ? prompt : `${note}
 ${prompt}`
     // 新的一包顶掉旧的网关重试：旧包的问题已经被新内容取代了。
+    // A1：只有用户消息引起的回合才有"对方正在等"——主动/定时/后台不提示。
+    if (origin.kind === 'user') this.deps.hooks?.begin(conversation.key, conversation.lastEvent)
     conversation.tracker.begin(text, imageRefs.length > 0)
     // 记下是谁引起的这一轮（P6 的信任分级会读它；现在只记录）。
     conversation.lastOrigin = origin

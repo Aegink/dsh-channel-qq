@@ -29,7 +29,7 @@ const CASES: Array<{ name: string; patch?: Record<string, unknown>; override?: R
     patch: {
       selfId: 1000000001, admins: [1000000002], primaryGroup: 1000000003,
       workspacePath: '/tmp/ws', requireMention: true,
-      imageRecognition: { enabled: false, maxPerMessage: 2 },
+      imageRecognition: { enabled: false, serverOcr: false, maxPerMessage: 2 },
     },
   },
   { name: '02-后台只改一个字段', override: { batching: { windowMs: 20000 } } },

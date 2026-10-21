@@ -74,6 +74,44 @@ function qqForgetPhrase(config: QQChannelConfig, store: LearnStore, disabled: Di
   }
 }
 
+/** `qq_learn_word` — 记一条黑话/新词（带释义）。 */
+function qqLearnWord(config: QQChannelConfig, store: LearnStore, disabled: Disabled): ToolSpec {
+  return {
+    name: 'qq_learn_word',
+    description: '记一条群里的黑话/新词，并写清它在群里是什么意思。遇到看不懂或明显是小圈子用法的词时，先问清楚再用它记下来；之后见到这个词能想起释义。',
+    parameters: params({
+      text: { type: 'string', description: '词条本身（群里实际用的写法，2–20 字）' },
+      meaning: { type: 'string', description: '一句释义：在群里是什么意思、怎么用' },
+      groupId: { type: 'number', description: '属于哪个群；不传 = 主群' },
+    }, ['text', 'meaning']),
+    run: async (args) => {
+      if (!config.learn.enabled) return disabled
+      const groupId = Number.isFinite(Number(args.groupId)) ? Number(args.groupId) : (config.primaryGroup ?? 0)
+      const word = await store.rememberWord(String(args.text ?? ''), String(args.meaning ?? ''), groupId)
+      return { ok: true, word }
+    },
+  }
+}
+
+/** `qq_slang` — 查群里的黑话词条。 */
+function qqSlang(config: QQChannelConfig, store: LearnStore, disabled: Disabled): ToolSpec {
+  return {
+    name: 'qq_slang',
+    description: '查群里记过的黑话/新词（带释义与出现次数）。聊天里遇到这些词时按释义理解，不要按字面猜。',
+    parameters: params({
+      limit: { type: 'number', description: '返回几条，默认 50' },
+      groupId: { type: 'number', description: '只看某个群；不传 = 所有群' },
+    }),
+    run: (args) => {
+      if (!config.learn.enabled) return disabled
+      const limit = Number.isFinite(Number(args.limit)) ? Math.max(1, Math.min(200, Math.round(Number(args.limit)))) : 50
+      const groupId = Number.isFinite(Number(args.groupId)) ? Number(args.groupId) : undefined
+      const words = store.slang(limit, groupId)
+      return { count: words.length, words }
+    },
+  }
+}
+
 /** `qq_learn_stats` — 群聊学习的运行状态。 */
 function qqLearnStats(config: QQChannelConfig, store: LearnStore, disabled: Disabled): ToolSpec {
   return {
@@ -113,6 +151,8 @@ export function registerLearnTools(
     qqLearnPhrase(config, store, disabled),
     qqForgetPhrase(config, store, disabled),
     qqLearnStats(config, store, disabled),
+    // B4：默认不注册（关着时工具面与旧版逐字节一致）。
+    ...(config.learn.slang ? [qqLearnWord(config, store, disabled), qqSlang(config, store, disabled)] : []),
   ]
   return registerSpecs(ctx, specs, log, 'learn')
 }

@@ -15,6 +15,7 @@
 import * as path from 'node:path'
 import { registerSpecs } from '../../adapters/dsh-host/tools.js'
 import { createEmbedAdapter } from '../../adapters/providers/embed.js'
+import { ingestUrl } from './url-ingest.js'
 import { parseScopes } from '../../core/kb/score.js'
 import type { EmbedPort } from '../../ports/memory.js'
 import type { SubPlugin, SubHost } from '../plugin-kit.js'
@@ -30,6 +31,25 @@ import { KbVectors } from './vectors.js'
 const FIRST_SCAN_DELAY_MS = 8_000
 /** 批量建索引的超时（配置里的 800ms 是"不拖住一回合"的上限，不是批量任务的上限）。 */
 const BULK_EMBED_TIMEOUT_MS = 15_000
+
+/** 后台资源：清单与动作（扫描/重建/删除/URL 入库）。 */
+function registerKbResource(host: SubHost, service: ReturnType<typeof createKbService>): void {
+  const workspacePath = host.config.workspacePath
+  host.registerResource('kb', kbResource({
+    service,
+    log: host.log,
+    scopes: () => parseScopes(host.config.kb.scopes),
+    ingestUrls: () => host.config.kb.ingestUrls,
+    ...(workspacePath === null ? {} : {
+      ingestUrl: (url: string) => ingestUrl({
+        workspacePath,
+        maxBytes: host.config.kb.maxFileBytes,
+        log: host.log,
+        scan: () => service.ingest(true),
+      }, url),
+    }),
+  }))
+}
 
 export const kbPlugin: SubPlugin = {
   name: 'kb',
@@ -49,6 +69,7 @@ export const kbPlugin: SubPlugin = {
     const retriever = new KbRetriever({
       store, vectors, embed, log: host.log,
       vectorWeight: () => host.config.kb.vectorWeight,
+      rerankWeight: () => host.config.kb.rerankWeight,
       scopes: () => parseScopes(host.config.kb.scopes).scopes,
     })
     let reindexing = false
@@ -74,9 +95,7 @@ export const kbPlugin: SubPlugin = {
     })
     host.provide('kb', service)
     host.provide('kbEvidence', async (input) => await service.evidence(input))
-    host.registerResource('kb', kbResource({
-      service, log: host.log, scopes: () => parseScopes(host.config.kb.scopes),
-    }))
+    registerKbResource(host, service)
     const stopTools = cfg.enabled
       ? registerSpecs(host.bridge.toolHost(), [qqKbSearch(service)], host.log, 'kb')
       : ((): void => {})

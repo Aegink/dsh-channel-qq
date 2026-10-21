@@ -24,6 +24,10 @@ export const CONTENT_GROUPS: FieldGroup[] = [
       // 读法：LearnStore 构造时解析存储文件（restart）。
       file: s('存储文件', null, { help: '留空 = <工作区>/learned-phrases.json。改它需重启插件才换存储位置。', hot: 'restart' }),
       autoCapture: b('被动收集', true, { hot: 'live' }),
+      slang: b('黑话词典工具', false, {
+        hot: 'reload',
+        help: '默认关。打开后多两个工具：qq_learn_word（记词条+释义）、qq_slang（查词条）。',
+      }),
       minOccurrences: n('出现几次才推荐给模型', 3, { min: 1, max: 50, hot: 'live' }),
     },
   },

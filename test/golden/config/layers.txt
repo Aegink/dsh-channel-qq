@@ -33,14 +33,42 @@ override = {}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -127,6 +155,7 @@ override = {}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -134,6 +163,7 @@ override = {}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -165,6 +195,8 @@ override = {}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -536,7 +568,7 @@ override = {}
 }
 
 ════ 01-黄金用例（主群 + 学弟 + 关视觉）
-patch    = {"selfId":1000000001,"admins":[1000000002],"primaryGroup":1000000003,"workspacePath":"/tmp/ws","requireMention":true,"imageRecognition":{"enabled":false,"maxPerMessage":2}}
+patch    = {"selfId":1000000001,"admins":[1000000002],"primaryGroup":1000000003,"workspacePath":"/tmp/ws","requireMention":true,"imageRecognition":{"enabled":false,"serverOcr":false,"maxPerMessage":2}}
 override = {}
 {
  "connection": {
@@ -572,14 +604,42 @@ override = {}
  },
  "imageRecognition": {
   "enabled": false,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -666,6 +726,7 @@ override = {}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -673,6 +734,7 @@ override = {}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -704,6 +766,8 @@ override = {}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -1109,14 +1173,42 @@ override = {"batching":{"windowMs":20000}}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -1203,6 +1295,7 @@ override = {"batching":{"windowMs":20000}}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -1210,6 +1303,7 @@ override = {"batching":{"windowMs":20000}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -1241,6 +1335,8 @@ override = {"batching":{"windowMs":20000}}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -1646,14 +1742,42 @@ override = {"admin":{"port":8790}}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -1740,6 +1864,7 @@ override = {"admin":{"port":8790}}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -1747,6 +1872,7 @@ override = {"admin":{"port":8790}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -1778,6 +1904,8 @@ override = {"admin":{"port":8790}}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -2183,14 +2311,42 @@ override = {"imageGen":{"model":"flux"}}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -2277,6 +2433,7 @@ override = {"imageGen":{"model":"flux"}}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -2284,6 +2441,7 @@ override = {"imageGen":{"model":"flux"}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -2315,6 +2473,8 @@ override = {"imageGen":{"model":"flux"}}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -2720,14 +2880,42 @@ override = {"tts":{"voice":"b"}}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -2814,6 +3002,7 @@ override = {"tts":{"voice":"b"}}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -2821,6 +3010,7 @@ override = {"tts":{"voice":"b"}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -2852,6 +3042,8 @@ override = {"tts":{"voice":"b"}}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -3257,14 +3449,42 @@ override = {"flood":{"windowSec":30}}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -3351,6 +3571,7 @@ override = {"flood":{"windowSec":30}}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -3358,6 +3579,7 @@ override = {"flood":{"windowSec":30}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -3389,6 +3611,8 @@ override = {"flood":{"windowSec":30}}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -3794,14 +4018,42 @@ override = {}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -3895,6 +4147,7 @@ override = {}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -3902,6 +4155,7 @@ override = {}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -3933,6 +4187,8 @@ override = {}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -4338,14 +4594,42 @@ override = {"keywordTriggers":[]}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -4432,6 +4716,7 @@ override = {"keywordTriggers":[]}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -4439,6 +4724,7 @@ override = {"keywordTriggers":[]}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -4470,6 +4756,8 @@ override = {"keywordTriggers":[]}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -4875,14 +5163,42 @@ override = {"rss":{"pollIntervalMin":5}}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -4976,6 +5292,7 @@ override = {"rss":{"pollIntervalMin":5}}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -4983,6 +5300,7 @@ override = {"rss":{"pollIntervalMin":5}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -5014,6 +5332,8 @@ override = {"rss":{"pollIntervalMin":5}}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -5419,14 +5739,42 @@ override = {"groupEnabled":false}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -5513,6 +5861,7 @@ override = {"groupEnabled":false}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -5520,6 +5869,7 @@ override = {"groupEnabled":false}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -5551,6 +5901,8 @@ override = {"groupEnabled":false}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -5956,14 +6308,42 @@ override = {}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -6050,6 +6430,7 @@ override = {}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -6057,6 +6438,7 @@ override = {}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -6088,6 +6470,8 @@ override = {}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -6493,14 +6877,42 @@ override = {"groupEnabled":true}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -6587,6 +6999,7 @@ override = {"groupEnabled":true}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -6594,6 +7007,7 @@ override = {"groupEnabled":true}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -6625,6 +7039,8 @@ override = {"groupEnabled":true}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -7030,14 +7446,42 @@ override = {"admin":{"host":"127.0.0.1"}}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -7124,6 +7568,7 @@ override = {"admin":{"host":"127.0.0.1"}}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -7131,6 +7576,7 @@ override = {"admin":{"host":"127.0.0.1"}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -7162,6 +7608,8 @@ override = {"admin":{"host":"127.0.0.1"}}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -7567,14 +8015,42 @@ override = {}
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -7661,6 +8137,7 @@ override = {}
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -7668,6 +8145,7 @@ override = {}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -7699,6 +8177,8 @@ override = {}
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {
@@ -8104,14 +8584,42 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
  },
  "imageRecognition": {
   "enabled": true,
+  "serverOcr": false,
   "maxPerMessage": 2
  },
  "poke": {
   "enabled": true,
   "windowSec": 300
  },
+ "interaction": {
+  "typingIndicator": false,
+  "ackReaction": false,
+  "ackEmojiId": "424"
+ },
+ "forward": {
+  "longReplyThreshold": 0,
+  "maxNodes": 20
+ },
+ "metrics": {
+  "enabled": false
+ },
+ "history": {
+  "serverBackfill": false,
+  "maxMessages": 100
+ },
+ "reliability": {
+  "slowNotice": false,
+  "slowAfterMs": 120000,
+  "failureNotice": false
+ },
+ "dailyReport": {
+  "enabled": false,
+  "time": "22:30",
+  "target": "primary-group"
+ },
  "stt": {
   "enabled": true,
+  "serverFallback": false,
   "baseUrl": null,
   "apiKey": null,
   "model": "whisper-1"
@@ -8198,6 +8706,7 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "enabled": true,
   "file": null,
   "autoCapture": true,
+  "slang": false,
   "minOccurrences": 3
  },
  "memory": {
@@ -8205,6 +8714,7 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
   "extractorApiKey": "",
@@ -8236,6 +8746,8 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "injectTop": 0,
   "injectChars": 400,
   "vectorWeight": 0.6,
+  "rerankWeight": 0,
+  "ingestUrls": false,
   "scopes": ""
  },
  "eventMonitor": {

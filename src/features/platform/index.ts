@@ -22,7 +22,11 @@ export const platformPlugin: SubPlugin = {
     const { config } = host
     const client = new OneBotClient(config.connection, config.accessToken, host.log)
     const platform = platformOf(client)
-    const out = new OutboundQueue(platform.api, config, host.log)
+    // 指标插件晚于本插件挂载，计数用惰性取值。
+    const out = new OutboundQueue(platform.api, config, host.log, {
+      sent: () => host.get('metrics')?.sendOk(),
+      failed: () => host.get('metrics')?.sendFailed(),
+    })
     client.on('connect', () => {
       host.log('QQ link ready')
     })

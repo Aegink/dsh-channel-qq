@@ -67,6 +67,22 @@ export interface FriendInfo {
   remark?: string
 }
 
+/** `get_login_info` 的窄返回（合并转发节点要机器人自己的昵称）。 */
+export interface LoginInfo {
+  user_id?: number
+  nickname?: string
+}
+
+/** 合并转发的一个节点（SnowLuma / OneBot v11 的 `node` 段）。 */
+export interface ForwardNode {
+  type: 'node'
+  data: {
+    user_id?: number
+    nickname?: string
+    content: OneBotMessage
+  }
+}
+
 /** 一条群/好友文件记录。 */
 export interface FileEntry {
   file_id?: string
@@ -139,6 +155,33 @@ export interface QQApi {
    * 走的是同一条协议链路，能落在地上就说明这条链路还活着。
    */
   getStatus(): Promise<{ online?: boolean; good?: boolean }>
+
+  // ── 交互提示（A1）────────────────────────────────────────────────────
+  /**
+   * 私聊「正在输入」。`eventType` 用 SnowLuma/NapCat 的约定：`1` 开始、`0` 取消。
+   *
+   * 这是**感知延迟**，不是消息：失败只在日志里留一行，绝不影响回合。
+   */
+  setInputStatus(userId: number, eventType: 0 | 1): Promise<ActionAck>
+  /** 给一条消息贴/撤表情回应（`set_msg_emoji_like`；`emojiId` 是 QQ 表情 id 的字符串）。 */
+  setMessageEmojiLike(messageId: number, emojiId: string, enable: boolean): Promise<ActionAck>
+  /** 机器人自己的登录信息（合并转发节点要用昵称）。 */
+  getLoginInfo(): Promise<LoginInfo>
+  /** 合并转发（群/私聊各一个动作；节点内容在 `send` 之前由调用方拼好）。 */
+  sendGroupForward(groupId: number, nodes: readonly ForwardNode[]): Promise<SendResult>
+  sendPrivateForward(userId: number, nodes: readonly ForwardNode[]): Promise<SendResult>
+  /**
+   * 服务端消息历史（A4）。
+   *
+   * `messageId` 省略或 0 = 取最新；`reverseOrder` 只在有锚点时生效。
+   * 返回的是 OneBot 消息事件对象数组，字段不固定（SnowLuma 原样透传）。
+   */
+  getGroupMsgHistory(groupId: number, count: number, messageId?: number, reverseOrder?: boolean): Promise<{ messages?: FetchedMessage[] }>
+  getFriendMsgHistory(userId: number, count: number, messageId?: number, reverseOrder?: boolean): Promise<{ messages?: FetchedMessage[] }>
+  /** 协议端语音转文字（SnowLuma `fetch_ptt_text`）；本地 STT 不可用时的兜底。 */
+  getVoiceText(messageId: number): Promise<{ text?: string }>
+  /** 服务端 OCR（SnowLuma `ocr_image`）：image 是 http(s) URL 或已缓存的图片 file_id。 */
+  ocrImage(image: string): Promise<{ texts?: Array<{ text?: string }>; language?: string }>
 
   // ── 群信息 ────────────────────────────────────────────────────────────
   getGroupList(): Promise<GroupInfo[]>

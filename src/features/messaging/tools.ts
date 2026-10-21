@@ -44,6 +44,47 @@ async function recordSent(
   await sentLog.add({ messageId: typeof mid === 'number' ? mid : null, quotedId: null, text, time: Date.now() })
 }
 
+
+/**
+ * A3：长回复改合并转发。
+ *
+ * 返回 null = 不走转发（开关关着 / 条数不够 / 超过 maxNodes / 有单条超长 / 转发失败），
+ * 调用方据此回退逐条发送——**不能因为一张卡片丢掉内容**。
+ */
+async function tryForward(
+  deps: QQToolDeps,
+  isGroup: boolean,
+  target: number,
+  pieces: readonly string[],
+): Promise<Record<string, unknown> | null> {
+  const config = deps.config.forward
+  if (config.longReplyThreshold <= 0) return null
+  if (pieces.length < 2 || pieces.length < config.longReplyThreshold) return null
+  if (pieces.length > config.maxNodes) return null
+  if (pieces.some((piece) => piece.length > deps.config.maxMessageLength)) return null
+  // 节点上要显示发送者昵称；取不到就用「我」，不让整次发送因此失败。
+  const info = await deps.api.getLoginInfo().catch(() => null)
+  const nickname = info?.nickname === undefined || info.nickname === '' ? '我' : info.nickname
+  const nodes = pieces.map((piece) => ({
+    type: 'node' as const,
+    data: {
+      ...(typeof info?.user_id === 'number' ? { user_id: info.user_id } : {}),
+      nickname,
+      content: [{ type: 'text', data: { text: piece } }] as OneBotMessageSegment[],
+    },
+  }))
+  try {
+    const result = isGroup
+      ? await deps.out.push(() => deps.api.sendGroupForward(target, nodes))
+      : await deps.out.push(() => deps.api.sendPrivateForward(target, nodes))
+    await recordSent(await sentLogFor(deps, isGroup, target), result, pieces.join('\n'))
+    return { ...(result as Record<string, unknown> | null), forwarded: true }
+  } catch (error) {
+    deps.log(`forward failed, falling back to segments: ${error instanceof Error ? error.message : String(error)}`)
+    return null
+  }
+}
+
 /** `qq_send_text` — 发送一条QQ文本消息。isGroup=true 时 target 为群号，否则为好友QQ号。当前会话窗口的归属见系统包里… */
 function qqSendText(deps: QQToolDeps): ToolSpec {
   const { api, out, config, log, sentLog } = deps
@@ -70,6 +111,9 @@ function qqSendText(deps: QQToolDeps): ToolSpec {
           const pieces = segmentText(text, config.segmentation)
           const isGroup = args.isGroup === true
           const target = Number(args.target)
+          // A3：够长就改一张合并转发卡片；不走（关着/超限/失败）就继续逐条发。
+          const forwarded = await tryForward(deps, isGroup, target, pieces)
+          if (forwarded !== null) return { ...forwarded, segments: pieces.length }
           let last: unknown = null
           for (const piece of pieces) {
             // 单条仍然要过硬切分：分段之后再长过 OneBot 上限的，只能按长度切。

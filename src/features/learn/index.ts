@@ -12,7 +12,8 @@ import type { SubPlugin } from '../plugin-kit.js'
 
 export const learnPlugin: SubPlugin = {
   name: 'learn',
-  watches: [],
+  // learn.slang 决定额外的两个工具是否注册；其余开关由 store 现取，但重挂一次也安全。
+  watches: ['learn'],
   requires: ['platform'],
   async apply(host) {
     const store = new LearnStore(host.config.learn, storeOptions(host))
@@ -20,7 +21,7 @@ export const learnPlugin: SubPlugin = {
     host.provide('learn', store)
     host.registerResource('learned', {
       label: '学到的口癖',
-      list: () => ({ count: store.stats().tracked, phrases: store.top(200) }),
+      list: () => ({ count: store.stats().tracked, phrases: store.top(200), slang: store.slang(200) }),
       create: async (body) => await store.remember(
         String(body.text ?? ''),
         Number(body.groupId ?? host.config.primaryGroup ?? 0),

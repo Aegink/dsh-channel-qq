@@ -179,6 +179,44 @@ test('私聊文件与 AI 语音的参数形状', async () => {
   })
 })
 
+test('交互提示：输入状态与表情回应的 wire 形状', async () => {
+  assert.deepEqual(await wireOf((a) => a.setInputStatus(22, 1)), {
+    action: 'set_input_status', params: { user_id: 22, event_type: 1 },
+  })
+  assert.deepEqual(await wireOf((a) => a.setInputStatus(22, 0)), {
+    action: 'set_input_status', params: { user_id: 22, event_type: 0 },
+  })
+  assert.deepEqual(await wireOf((a) => a.setMessageEmojiLike(33, '424', true)), {
+    action: 'set_msg_emoji_like', params: { message_id: 33, emoji_id: '424', set: true },
+  })
+  assert.deepEqual(await wireOf((a) => a.setMessageEmojiLike(33, '424', false)), {
+    action: 'set_msg_emoji_like', params: { message_id: 33, emoji_id: '424', set: false },
+  })
+})
+
+test('合并转发与登录信息：wire 形状', async () => {
+  const nodes = [{ type: 'node' as const, data: { user_id: 1, nickname: '诺诺', content: [{ type: 'text' as const, data: { text: 'hi' } }] } }]
+  assert.deepEqual(await wireOf((a) => a.getLoginInfo()), { action: 'get_login_info', params: {} })
+  assert.deepEqual(await wireOf((a) => a.sendGroupForward(123, nodes)), {
+    action: 'send_group_forward_msg', params: { group_id: 123, messages: nodes },
+  })
+  assert.deepEqual(await wireOf((a) => a.sendPrivateForward(456, nodes)), {
+    action: 'send_private_forward_msg', params: { user_id: 456, messages: nodes },
+  })
+})
+
+test('服务端历史：wire 形状（锚点与排序可选）', async () => {
+  assert.deepEqual(await wireOf((a) => a.getGroupMsgHistory(123, 20)), {
+    action: 'get_group_msg_history', params: { group_id: 123, count: 20 },
+  })
+  assert.deepEqual(await wireOf((a) => a.getGroupMsgHistory(123, 20, -5, false)), {
+    action: 'get_group_msg_history', params: { group_id: 123, count: 20, message_id: -5, reverse_order: false },
+  })
+  assert.deepEqual(await wireOf((a) => a.getFriendMsgHistory(456, 10)), {
+    action: 'get_friend_msg_history', params: { user_id: 456, count: 10 },
+  })
+})
+
 test('sendTo：一个三元收口成一个方法，两个方向都钉住', async () => {
   const message: OneBotMessageSegment[] = [{ type: 'text', data: { text: 'hi' } }]
   assert.deepEqual(await wireOf((a) => a.sendTo(true, 123, message)), {
@@ -189,18 +227,20 @@ test('sendTo：一个三元收口成一个方法，两个方向都钉住', async
   })
 })
 
-/** 门面上的全部方法名（消息 10 + 群 13 + 文件 10 + 语音 3 = 36 个，对应 35 个动作）。 */
+/** 门面上的全部方法名（消息 10 + 交互 9 + 群 13 + 文件 10 + 语音 3 = 45 个，对应 44 个动作）。 */
 const ALL_METHODS = [
   'canSendRecord', 'createGroupFileFolder', 'deleteEssence', 'deleteGroupFile', 'deleteMessage',
   'getAiRecord', 'getEssenceList', 'getFile', 'getFriendList', 'getGroupFileUrl',
   'getGroupFilesByFolder', 'getGroupInfo', 'getGroupList', 'getGroupMemberInfo', 'getStatus',
   'getGroupRootFiles', 'getImage', 'getMessage', 'getPrivateFileUrl', 'getRecord', 'groupPoke',
   'moveGroupFile', 'renameGroupFile', 'sendGroupAiRecord', 'sendGroupMessage', 'sendLike',
+  'setInputStatus', 'setMessageEmojiLike', 'getLoginInfo', 'sendGroupForward', 'sendPrivateForward',
+  'getGroupMsgHistory', 'getFriendMsgHistory', 'getVoiceText', 'ocrImage',
   'sendPrivateMessage', 'sendTo', 'setEssence', 'setGroupAdmin', 'setGroupBan', 'setGroupCard',
   'setGroupKick', 'setGroupWholeBan', 'uploadGroupFile', 'uploadPrivateFile',
 ].sort()
 
-test('门面就是这张表：35 个动作 / 36 个方法，多一个少一个都失败', async () => {
+test('门面就是这张表：44 个动作 / 45 个方法，多一个少一个都失败', async () => {
   const { api } = recorder()
   // 这一条防的是"加了方法但没在这组用例里钉住 wire 形状"——
   // 上一组用例按动作逐个断言参数，方法名在这条里对齐。

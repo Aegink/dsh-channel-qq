@@ -30,14 +30,42 @@
   },
   "imageRecognition": {
     "enabled": true,
+    "serverOcr": false,
     "maxPerMessage": 2
   },
   "poke": {
     "enabled": true,
     "windowSec": 300
   },
+  "interaction": {
+    "typingIndicator": false,
+    "ackReaction": false,
+    "ackEmojiId": "424"
+  },
+  "forward": {
+    "longReplyThreshold": 0,
+    "maxNodes": 20
+  },
+  "metrics": {
+    "enabled": false
+  },
+  "history": {
+    "serverBackfill": false,
+    "maxMessages": 100
+  },
+  "reliability": {
+    "slowNotice": false,
+    "slowAfterMs": 120000,
+    "failureNotice": false
+  },
+  "dailyReport": {
+    "enabled": false,
+    "time": "22:30",
+    "target": "primary-group"
+  },
   "stt": {
     "enabled": true,
+    "serverFallback": false,
     "baseUrl": null,
     "apiKey": null,
     "model": "whisper-1"
@@ -124,6 +152,7 @@
     "enabled": true,
     "file": null,
     "autoCapture": true,
+    "slang": false,
     "minOccurrences": 3
   },
   "memory": {
@@ -131,6 +160,7 @@
     "threshold": 0.35,
     "maxRecords": 8,
     "maxChars": 600,
+    "profiles": false,
     "extractorUrl": "",
     "extractorModel": "",
     "extractorApiKey": "",
@@ -162,6 +192,8 @@
     "injectTop": 0,
     "injectChars": 400,
     "vectorWeight": 0.6,
+    "rerankWeight": 0,
+    "ingestUrls": false,
     "scopes": ""
   },
   "eventMonitor": {

@@ -15,7 +15,7 @@ function config(overrides: Record<string, unknown> = {}) {
     requireMention: false,
     debug: false,
     injectMode: { enabled: false, wakeIdle: true },
-    imageRecognition: { enabled: false, maxPerMessage: 0 },
+    imageRecognition: { enabled: false, serverOcr: false, maxPerMessage: 0 },
     batching: { windowMs: 1000, maxMessages: 10, maxChars: 1000 },
     contextBudget: { compactChars: 1000 },
     primaryGroup: 1,

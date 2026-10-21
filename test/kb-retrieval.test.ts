@@ -46,6 +46,7 @@ async function fixture() {
   const retriever = new KbRetriever({
     store, vectors: null, embed: null, log: () => {},
     vectorWeight: () => 0,
+    rerankWeight: () => 0,
     scopes: () => scopes,
   })
   return { dir, store, retriever, cleanup: () => rmSync(dir, { recursive: true, force: true }) }

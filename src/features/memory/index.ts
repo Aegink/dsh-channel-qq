@@ -28,6 +28,7 @@ import { promoteToSkill } from './promote.js'
 import { registerNightlyJobs } from './nightly.js'
 import { MemoryStore } from './store.js'
 import { importLegacyEntries } from './import-legacy.js'
+import { buildProfile, renderProfile } from '../../core/memory/profile.js'
 import { createMemoryService } from './service.js'
 import { VEC_MANIFEST_NAME } from './vector-store.js'
 import { setupVectors } from './vectors-setup.js'
@@ -114,6 +115,26 @@ export const memoryPlugin: SubPlugin = {
  * 注入预算（条数/字数/阈值）取自配置：`segmentText` 那一课的教训是"面板上能改的
  * 东西必须真的被读到"，所以这里显式传下去，而不是用模块常量。
  */
+/** B2：人物侧写解析器（5 分钟缓存，最多 500 人）。 */
+function createProfileResolver(host: SubHost, store: MemoryStore): (id: number, name: string) => string {
+  const cache = new Map<number, { at: number; text: string }>()
+  const TTL_MS = 5 * 60_000
+  const MAX = 500
+  return (id, name) => {
+    if (host.config.memory.profiles !== true) return ''
+    const now = Date.now()
+    const cached = cache.get(id)
+    if (cached !== undefined && now - cached.at < TTL_MS) return cached.text
+    const text = renderProfile(name === '' ? String(id) : name, buildProfile(store.all(), id))
+    if (cache.size >= MAX) {
+      const oldest = cache.keys().next().value
+      if (typeof oldest === 'number') cache.delete(oldest)
+    }
+    cache.set(id, { at: now, text })
+    return text
+  }
+}
+
 async function attachMemoryV2(
   host: SubHost,
   legacy: KnowledgeStore,
@@ -144,6 +165,7 @@ async function attachMemoryV2(
   })
 
   host.provide('memory', service)
+  const profileFor = createProfileResolver(host, store)
   host.provide('memoryEvidence', async (input) => {
     const got = await retriever.retrieve({
       text: input.text,
@@ -157,7 +179,12 @@ async function attachMemoryV2(
       // 原文块只留给深召回：600 字预算装一块就满了。
       accept: (record: MemoryRecord) => !isChunkRecord(record),
     })
-    return got.evidence
+    const profile = input.speakerId === undefined
+      ? ''
+      : profileFor(input.speakerId, input.speakerName ?? '')
+    if (profile === '') return got.evidence
+    return got.evidence === '' ? profile : `${profile}
+${got.evidence}`
   })
   provideMemorySearch(host, retriever, renderTime)
 }

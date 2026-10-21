@@ -144,7 +144,7 @@ test('记忆段（P6e）：字段落在 memory 页；v2 四项 live、向量与�
   const refs = fieldRefs().filter((ref) => ref.path.startsWith('memory.'))
   assert.deepEqual(refs.map((ref) => ref.path).sort(), [
     'memory.extractorApiKey', 'memory.extractorModel', 'memory.extractorUrl',
-    'memory.maxChars', 'memory.maxRecords', 'memory.threshold', 'memory.v2',
+    'memory.maxChars', 'memory.maxRecords', 'memory.profiles', 'memory.threshold', 'memory.v2',
     'memory.vectorDim', 'memory.vectorEnabled', 'memory.vectorTimeoutMs', 'memory.vectorUrl', 'memory.vectorWeight',
   ])
   for (const ref of refs) assert.equal(ref.page, 'memory', `${ref.path} 必须落在记忆页`)

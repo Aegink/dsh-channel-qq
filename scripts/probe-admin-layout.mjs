@@ -21,7 +21,7 @@ import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { spawn, spawnSync } from 'node:child_process'
 import * as os from 'node:os'
 import * as path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { loadAdminUi } from './build-admin-html.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -30,6 +30,11 @@ const argv = process.argv.slice(2)
 const flag = (name) => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : null }
 const keep = argv.includes('--keep')
 const verbose = argv.includes('--verbose')
+
+// 导航项数从 ADMIN_PAGES 现算，不写死：加一页就改这里的老做法已经漏过一次
+// （28 页 vs 硬编码 27），探针的职责是发现页面坏了，不是维护一份副本。
+const { ADMIN_PAGES } = await import(pathToFileURL(path.join(root, 'build', 'lib', 'config', 'pages.js')).href)
+const EXPECTED_NAV = ADMIN_PAGES.length
 
 const candidates = [
   flag('--chrome'),
@@ -482,7 +487,7 @@ for (const width of WIDTHS) {
 
   const where = (msg) => problems.push(`${width}px: ${msg}`)
   if (!report.login.loginShown || !report.login.appHidden) where('初始没有显示登录页或应用没有隐藏')
-  if (report.navCount !== 27) where(`导航有 ${report.navCount} 项（应为 27）`)
+  if (report.navCount !== EXPECTED_NAV) where(`导航有 ${report.navCount} 项（应为 ${EXPECTED_NAV}）`)
   if (report.schemaError) where('拉取 /api/schema 失败：' + report.schemaError)
 
   for (const rt of report.routes) {

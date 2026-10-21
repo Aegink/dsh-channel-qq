@@ -55,6 +55,12 @@ export function smartSplitMessage(text: string, limit: number): string[] {
   return chunks.filter((chunk) => chunk !== '')
 }
 
+/** 出站计数（指标页用）：每次 send 成功/失败各记一次。 */
+export interface OutboundStats {
+  sent(): void
+  failed(): void
+}
+
 /** Serialises sends so the configured rate limit holds across segments and tools. */
 export class OutboundQueue {
   private chain: Promise<void> = Promise.resolve()
@@ -65,6 +71,7 @@ export class OutboundQueue {
     private readonly api: QQApi,
     private readonly config: QQChannelConfig,
     private readonly log: (line: string) => void,
+    private readonly stats?: OutboundStats,
   ) {}
 
   /** Queue one send; trailing nullish segments are skipped silently. */
@@ -72,7 +79,11 @@ export class OutboundQueue {
     this.chain = this.chain
       .then(() => new Promise<void>((resolve) => setTimeout(resolve, this.config.rateLimitMs)))
       .then(send)
-      .catch((error: Error) => this.log(`send failed: ${error.message}`))
+      .then(() => this.stats?.sent())
+      .catch((error: Error) => {
+        this.stats?.failed()
+        this.log(`send failed: ${error.message}`)
+      })
       .then(() => {})
   }
 
@@ -83,8 +94,14 @@ export class OutboundQueue {
       this.chain = this.chain
         .then(() => new Promise<void>((resolve) => setTimeout(resolve, this.config.rateLimitMs)))
         .then(() => task())
-        .then((value) => resolve(value))
-        .catch((error: Error) => reject(error))
+        .then((value) => {
+          this.stats?.sent()
+          resolve(value)
+        })
+        .catch((error: Error) => {
+          this.stats?.failed()
+          reject(error)
+        })
     })
   }
 }

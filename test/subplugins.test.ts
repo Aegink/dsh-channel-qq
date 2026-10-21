@@ -112,7 +112,7 @@ test('P5.1：requires 未满足的段挂不上（inject 的等价断言）；卸
 
 test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 applyEffects）', () => {
   assert.deepEqual(SECTION_PLUGINS.map((p) => p.name), [
-    'persona', 'observers', 'platform', 'inbound', 'session-reset', 'stickers', 'memory', 'affection',
+    'persona', 'observers', 'platform', 'interaction', 'metrics', 'history', 'reliability', 'daily-report', 'inbound', 'session-reset', 'stickers', 'memory', 'affection',
     'qq-tools', 'links', 'meme', 'voice', 'quotes', 'reminders', 'rss', 'imagegen',
     'flood', 'learn', 'music', 'skills', 'kb', 'proactive', 'admin',
   ])
@@ -121,6 +121,11 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
     .map((p) => [p.name, [...p.watches]])
   assert.deepEqual(watched, [
     ['platform', ['connection', 'accessToken']],
+    ['interaction', ['interaction']],
+    ['metrics', ['metrics']],
+    ['history', ['history']],
+    ['reliability', ['reliability']],
+    ['daily-report', ['dailyReport']],
     ['inbound', ['context.v2', 'tools.v2']],
     ['session-reset', ['sessionReset']],
     ['stickers', ['emoji.dir', 'emoji.registeredDir']],
@@ -130,7 +135,8 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
       'memory.extractorUrl', 'memory.extractorModel', 'memory.extractorApiKey',
     ]],
     ['affection', ['affectionPort']],
-    ['qq-tools', ['tools.v2', 'memory.v2']],
+    ['qq-tools', ['tools.v2', 'memory.v2', 'imageRecognition.serverOcr']],
+    ['learn', ['learn']],
     // P6f：事件书开关或书改了都要重挂（实现选型与书的校验都在装配期完成）。
     // 技能：段开关/目录/脚本/导入四个旋钮变了要重挂 provider（可见范围在技能自己身上，不需要）。
     ['skills', ['skills']],

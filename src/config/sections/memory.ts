@@ -62,6 +62,10 @@ export const MEMORY_GROUPS: FieldGroup[] = [
       threshold: n('检索分数阈值', 0.35, { min: 0, max: 1, step: 0.05, hot: 'live' }),
       maxRecords: n('每回合最多注入几条', 8, { min: 1, max: 20, hot: 'live' }),
       maxChars: n('每回合最多注入多少字', 600, { min: 100, max: 2000, hot: 'live' }),
+      profiles: b('注入当前发言人侧写', false, {
+        hot: 'live',
+        help: '默认关。打开后每回合在证据前加一段「关于这个人」的 3–5 行侧写（5 分钟缓存）。',
+      }),
       // ── 知识抽取器（原先只有环境变量）────────────────────────────────────────
       // 读法：装配记忆模块时取值；改完由 watches 触发重载。留空 = 沿用环境变量。
       extractorUrl: s('抽取器地址', '', {

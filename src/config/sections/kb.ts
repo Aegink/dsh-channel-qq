@@ -25,6 +25,10 @@ export interface KbConfig {
   injectChars: number
   /** 向量相对关键词的权重（0 = 纯关键词）。 */
   vectorWeight: number
+  /** 二阶重排权重（0 = 关；向量余弦 + 标题覆盖）。 */
+  rerankWeight: number
+  /** 允许把 URL 抓成 Markdown 入库（SSRF 守卫）。 */
+  ingestUrls: boolean
   /** 集合 → 房间白名单（JSON；空 = 所有房间可见）。 */
   scopes: string
 }
@@ -66,6 +70,14 @@ export const KB_GROUPS: FieldGroup[] = [
       vectorWeight: n('向量权重', 0.6, {
         hot: 'live', min: 0, max: 1, step: 0.05,
         help: '检索时向量相对关键词的权重（需要打开记忆的向量检索并配置 embed 服务）。',
+      }),
+      rerankWeight: n('二阶重排权重', 0, {
+        hot: 'live', min: 0, max: 1, step: 0.05, advanced: true,
+        help: '0 = 关。打开后按「向量余弦 + 标题覆盖」再排一次；关闭时排序不变。',
+      }),
+      ingestUrls: b('允许 URL 入库', false, {
+        hot: 'live',
+        help: '默认关。打开后后台知识库页可以把一个网页抓成 Markdown 入库（有 SSRF 守卫）。',
       }),
       scopes: s('集合可见范围', '', {
         hot: 'live', advanced: true,

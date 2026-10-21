@@ -73,6 +73,24 @@ export function headingCoverage(
 }
 
 /**
+ * 二阶重排（B6）：把"稠密相似度 + 标题覆盖"再混一次。
+ *
+ * 与融合不同，这一刀只看**与关键词路径无关的信号**：向量余弦与标题覆盖。权重 0
+ * 时原样返回（关着时排序逐字节不变）。
+ */
+export function rerankScore(
+  base: number,
+  cosine: number | null,
+  heading: number,
+  weight: number,
+): number {
+  const w = clamp01(weight)
+  if (w === 0) return base
+  const dense = cosine === null ? 0 : clamp01(cosine)
+  return clamp01(base * (1 - w) + w * (0.7 * dense + 0.3 * clamp01(heading)))
+}
+
+/**
  * 两路融合：`weight × 余弦 + (1 − weight) × 关键词`。
  *
  * 没有向量（未开 embed、索引里没这块）时**整项退回关键词**——缺向量不该让一块

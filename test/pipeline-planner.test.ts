@@ -38,7 +38,7 @@ function harness(opts: { planner: boolean; requireMention?: boolean; selfId?: nu
     requireMention: opts.requireMention === true,
     debug: false,
     injectMode: { enabled: false, wakeIdle: true },
-    imageRecognition: { enabled: false, maxPerMessage: 2 },
+    imageRecognition: { enabled: false, serverOcr: false, maxPerMessage: 2 },
     batching: { windowMs: 1000, maxMessages: 20, maxChars: 4000 },
     contextBudget: { compactChars: 0 },
     primaryGroup: 1,

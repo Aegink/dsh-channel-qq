@@ -16,6 +16,10 @@ export interface MemoryEvidenceInput {
   /** 房间键（`qq-group-1000000003` 这种），用于房间级记忆的过滤。 */
   readonly room: string
   readonly isGroup: boolean
+  /** 当前发言人的 QQ 号（`memory.profiles` 打开时用于侧写注入）。 */
+  readonly speakerId?: number
+  /** 当前发言人的显示名（没有就用 QQ 号）。 */
+  readonly speakerName?: string
 }
 
 /** 返回可注入的证据块（含抬头），或空串。 */

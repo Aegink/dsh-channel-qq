@@ -10,7 +10,7 @@
 
 import { collectionVisibleIn, renderHit, type KbChunk, type KbDocument, type KbHit } from '../../core/kb/model.js'
 import {
-  fuseScore, idfOf, kbQueryTerms, keywordScore, termPlacement,
+  fuseScore, headingCoverage, idfOf, kbQueryTerms, keywordScore, rerankScore, termPlacement,
 } from '../../core/kb/score.js'
 import type { EmbedPort } from '../../ports/memory.js'
 import type { KbStore } from './store.js'
@@ -32,6 +32,8 @@ export interface KbRetrieverDeps {
   readonly log: (line: string) => void
   /** 现取配置：后台改完下一回合生效。 */
   readonly vectorWeight: () => number
+  /** 二阶重排权重（0 = 关，排序与旧版一致）。 */
+  readonly rerankWeight: () => number
   readonly scopes: () => Readonly<Record<string, readonly string[]>>
 }
 
@@ -62,7 +64,7 @@ export class KbRetriever {
     const idf = this.idfTable(terms, chunks)
     const keyword = this.keywordScores(terms, chunks, idf)
     const cosine = await this.vectorScores(input.text, chunks)
-    const hits = this.fuse(chunks, keyword, cosine)
+    const hits = this.fuse(chunks, keyword, cosine, terms, idf)
     return hits.sort((a, b) => b.score - a.score || a.chunk.id.localeCompare(b.chunk.id)).slice(0, limit)
   }
 
@@ -170,14 +172,18 @@ export class KbRetriever {
     chunks: readonly VisibleChunk[],
     keyword: ReadonlyMap<string, number>,
     cosine: ReadonlyMap<string, number>,
+    terms: readonly string[],
+    idf: (term: string) => number,
   ): KbHit[] {
     const weight = this.deps.vectorWeight()
+    const rerank = this.deps.rerankWeight()
     const out: KbHit[] = []
     for (const { chunk, doc } of chunks) {
       const kw = keyword.get(chunk.id) ?? 0
       const cos = cosine.get(chunk.id) ?? null
       if (kw === 0 && (cos === null || cos < MIN_VECTOR_ONLY)) continue
-      const score = fuseScore(kw, cos, weight)
+      const base = fuseScore(kw, cos, weight)
+      const score = rerankScore(base, cos, headingCoverage(terms, chunk, idf), rerank)
       if (score < MIN_SCORE) continue
       out.push({ chunk, document: doc, score })
     }

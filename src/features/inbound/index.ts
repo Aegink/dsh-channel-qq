@@ -23,7 +23,7 @@ import { createBlobStore } from '../../adapters/fs-store/blob-store.js'
 import { findPackageRoot } from '../../adapters/persona/fs-pack.js'
 import { systemClock, systemRandom } from '../../ports/clock.js'
 import { systemHttp } from '../../adapters/http/client.js'
-import { transcribeVoiceMessage } from '../../adapters/providers/stt.js'
+import { transcribeOne, turnHooksOf } from './runtime-helpers.js'
 import { createSentLogHub } from '../../sent-log.js'
 import { readJson } from '../../read-json.js'
 import { atomicWriteFile, readTextFileOrNull } from '../../adapters/fs-store/atomic.js'
@@ -43,6 +43,7 @@ import type { ChatPlatform } from '../../ports/platform.js'
 import type { MemoryEvidence } from '../../ports/memory.js'
 import type { KbEvidence } from '../../ports/kb.js'
 import type { GatewayErrorBus, PlatformParts, SubHost, SubPlugin } from '../plugin-kit.js'
+import type { TurnHooks } from '../../ports/turn-hooks.js'
 import { createAdminCommand, startReceiptPoller } from '../approval/index.js'
 import { maybeHandleResetCommand } from './reset-command.js'
 import { createRuntimeNoteRefresher } from './runtime-note.js'
@@ -82,6 +83,8 @@ interface RuntimeDeps {
   readonly onGatewayError?: (room: string, detail: string) => void
   /** 每包开头的运行环境事实（模型 / 图片能力 / 窗口）。 */
   readonly runtimeNote?: () => string
+  /** 回合生命周期钩子（A1 交互提示；interaction 子插件提供）。 */
+  readonly turnHooks?: TurnHooks
 }
 
 /** 会话登记表：房间 → 会话，四条件路径共用同一份并发保护。 */
@@ -95,6 +98,7 @@ function createRegistry(deps: RuntimeDeps, gateway: ReturnType<typeof createAgen
     config: () => deps.config,
     nudge: () => deps.prompts.gatewayNudge(),
     ...deps.onGatewayError === undefined ? {} : { onGatewayError: deps.onGatewayError },
+    ...deps.turnHooks === undefined ? {} : { turnHooks: deps.turnHooks },
   })
 }
 
@@ -109,6 +113,7 @@ function createTurns(registry: ConversationRegistry, deps: RuntimeDeps): TurnLau
     config: () => deps.config,
     openSentLog: deps.openSentLog,
     ...deps.runtimeNote === undefined ? {} : { runtimeNote: deps.runtimeNote },
+    ...deps.turnHooks === undefined ? {} : { hooks: deps.turnHooks },
   }, {
     ledger: turnTrust,
     admins: () => deps.config.admins,
@@ -322,13 +327,11 @@ export const inboundPlugin: SubPlugin = {
       knowledge: () => host.get('knowledge')?.store ?? null,
       ...lazyEvidence(host),
       screen: { scanner: bundle === null ? null : bundle.scanner },
-      transcribe: async (messageId: number) => {
-        const result = await transcribeVoiceMessage(parts.api, config.stt, messageId, host.log)
-        return result === null ? null : result[0]
-      },
+      transcribe: (messageId: number) => transcribeOne(parts.api, config.stt, messageId, host.log),
       openSentLog: (room: string) => sentLogHub.for(room),
       onGatewayError: (room, detail) => gatewayErrors.handler?.(room, detail),
       runtimeNote: runtimeNotes.note,
+      turnHooks: turnHooksOf(host),
       // 审批网关（默认关；CHANNEL_QQ_APPROVAL=1 时生效）。命令先于 agent 处理、不经模型。
       // 传取值函数而不是 `config.admins`：撤掉管理员后必须立刻失效。
       ...approvalEnabled() ? { adminCommand: createAdminCommand(() => host.config.admins, host.log) } : {},

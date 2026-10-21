@@ -19,8 +19,10 @@ import type { LogSink } from './ports/logger.js'
 import { createAgentGateway } from './adapters/dsh-host/agents.js'
 import { createProvidersSurface } from './adapters/dsh-host/providers.js'
 import { agentRegistry, installToolGate, presetRegistry } from './adapters/dsh-host/services.js'
+import { toolStats } from './adapters/dsh-host/tools.js'
 import { installSkills } from './adapters/dsh-host/skills.js'
 import { createSessionSizeProbe } from './adapters/dsh-host/session-size.js'
+import { createUsageProbe } from './adapters/dsh-host/usage.js'
 import { readRuntimeFacts } from './adapters/dsh-host/runtime-info.js'
 import { guardTemplateKey, policyEnabled } from './app/policy/tool-policy.js'
 import { toolsV2Enabled } from './features/tools-v2/index.js'
@@ -183,6 +185,8 @@ export class ChannelQQ extends Service {
       }),
       // 会话换血看门狗：tokenMeter 的估算 + 路由模型声明的窗口。
       sessionSize: () => createSessionSizeProbe(this.ctx),
+      usage: () => createUsageProbe(this.ctx),
+      toolStats,
       runtimeFacts: async () => await readRuntimeFacts(this.ctx),
       providersSurface: () => createProvidersSurface({
         // settings / credentials 用 get（可选查询）：宿主没装这两个服务时整页降级，

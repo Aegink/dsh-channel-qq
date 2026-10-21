@@ -48,6 +48,8 @@ import { memoryTools } from '../memory/tools.js'
 import { affectionTools } from '../affection/tools.js'
 import { approvalEnabled } from '../approval/store.js'
 import { selfHarmHint, selfHarmReason } from '../../core/approval/self-harm.js'
+import { visionTools } from '../vision/tools.js'
+import type { HistoryService } from '../history/service.js'
 
 export type { QQToolDeps, AffectionPort } from '../tool-deps.js'
 
@@ -69,6 +71,7 @@ export interface RegisterToolsArgs {
   readonly memory?: MemoryService
   readonly memorySearch?: MemorySearch
   readonly extract?: (source: string, text: string) => Promise<unknown>
+  readonly history?: HistoryService
 }
 
 /** 建一套工具依赖（跨组共享的两条规则在这里落地）。 */
@@ -118,6 +121,7 @@ function toolDeps(args: RegisterToolsArgs): QQToolDeps {
     memory: args.memory,
     memorySearch: args.memorySearch,
     extract: args.extract,
+    history: args.history,
     knownGroups,
     assertDangerous,
   }
@@ -207,6 +211,8 @@ function allSpecs(deps: QQToolDeps): ToolSpec[] {
     ...musicTools(deps),
     ...memoryTools(deps),
     ...affectionTools(deps),
+    // B5：默认不注册（关着时工具面与旧版逐字节一致）。
+    ...(deps.config.imageRecognition.serverOcr ? visionTools(deps) : []),
   ]
   const rank = new Map(REGISTRATION_ORDER.map((name, index) => [name, index]))
   for (const spec of specs) {
@@ -236,8 +242,9 @@ export function registerQQTools(
   memory?: MemoryService,
   memorySearch?: MemorySearch,
   sentLogHub?: SentLogHub,
+  history?: HistoryService,
 ): () => void {
-  const deps = toolDeps({ ctx, config, api, out, log, library, affection, sentLog, sentLogHub, knowledge, extract, memory, memorySearch })
+  const deps = toolDeps({ ctx, config, api, out, log, library, affection, sentLog, sentLogHub, knowledge, extract, memory, memorySearch, history })
   const specs = allSpecs(deps)
   // tools.v2 打开时换面：旧 spec 全被收编、只上宿主 17 个合并工具。
   if (toolsV2Enabled(config)) return registerMergedSurface({ ctx, specs, log })

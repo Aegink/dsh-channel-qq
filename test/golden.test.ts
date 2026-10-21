@@ -86,7 +86,7 @@ function harness(overrides: Record<string, unknown> = {}, hostOptions: Construct
     workspacePath: path.join(HOME, 'workspace'),
     requireMention: true,
     // 视觉默认会去下载图片；黄金测试不碰网络。
-    imageRecognition: { enabled: false, maxPerMessage: 2 },
+    imageRecognition: { enabled: false, serverOcr: false, maxPerMessage: 2 },
     ...overrides,
   })
   const client = fakeClient()

@@ -12,6 +12,9 @@ import type { KbService } from './service.js'
 export interface KbResourceDeps {
   readonly service: KbService
   readonly log: (line: string) => void
+  /** URL 入库开关（默认关）与实现；缺实现时动作给出可读拒绝。 */
+  readonly ingestUrls: () => boolean
+  readonly ingestUrl?: (url: string) => Promise<unknown>
   /** 现取集合可见范围（配置里是 JSON 字符串；坏 JSON 的原因也一并给后台）。 */
   readonly scopes: () => { scopes: Record<string, readonly string[]>; error: string }
 }
@@ -56,6 +59,7 @@ export function kbResource(deps: KbResourceDeps): AdminResource {
         .sort((a, b) => Number(b.updatedAt) - Number(a.updatedAt))
       const scope = deps.scopes()
       return {
+        ingestUrls: deps.ingestUrls(),
         documents: docs,
         collections: service.collections(),
         stats: service.stats(),
@@ -71,6 +75,13 @@ export function kbResource(deps: KbResourceDeps): AdminResource {
       reindex: async () => await deps.service.reindexVectors(),
       remove: async (body) => ({ removed: await deps.service.remove(idOf(body)) }),
       restore: async (body) => ({ restored: await deps.service.restore(idOf(body)) }),
+      ingestUrl: async (body) => {
+        if (!deps.ingestUrls()) throw new Error('URL 入库未启用（后台「知识库」页打开 kb.ingestUrls）')
+        if (deps.ingestUrl === undefined) throw new Error('当前部署没有配置 URL 入库')
+        const url = String(bodyOf(body).url ?? '').trim()
+        if (url === '') throw new Error('缺少 url')
+        return await deps.ingestUrl(url)
+      },
       preview: async (body) => {
         const preview = deps.service.preview(idOf(body))
         if (preview === null) throw new Error('没有这份文档')

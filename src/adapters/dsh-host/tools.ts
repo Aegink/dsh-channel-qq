@@ -22,10 +22,18 @@ import { toolRegistry } from './services.js'
  * 执行减一（重复注销不重复减）。
  */
 let liveToolCount = 0
+/** 进程内的工具调用/失败计数（C2 指标页；重启归零）。 */
+let toolCallCount = 0
+let toolFailureCount = 0
 
 /** 当前在册的工具数（由 `registerSpecs` 维护）。 */
 export function registeredToolCount(): number {
   return liveToolCount
+}
+
+/** 工具调用与失败计数（失败 = `run` 抛错，含闸门拒绝）。 */
+export function toolStats(): { calls: number; failures: number } {
+  return { calls: toolCallCount, failures: toolFailureCount }
 }
 
 /**
@@ -94,7 +102,14 @@ export function registerSpecs(ctx: ToolHost, specs: ToolSpec[], log: (line: stri
         },
         async execute(args: unknown, exec?: { readonly agent?: { readonly id?: string } }) {
           const context: ToolRunContext = exec?.agent?.id === undefined ? {} : { agentId: exec.agent.id }
-          const value = await spec.run((args ?? {}) as Record<string, unknown>, context)
+          toolCallCount += 1
+          let value: unknown
+          try {
+            value = await spec.run((args ?? {}) as Record<string, unknown>, context)
+          } catch (error) {
+            toolFailureCount += 1
+            throw error
+          }
           if (value === undefined || value === null) return { ok: true }
           // Prune anything a strict JSON encoder cannot round-trip, or the
           // harness rejects the whole call as "not lossless JSON".

@@ -123,10 +123,45 @@ export const kbPage = {
     const status = note('')
     listCard.body.appendChild(status)
 
+    // B6：从 URL 入库（抓取 → kb/raw/web/*.md → 扫描）。默认关，开关在下方设置里。
+    const urlCard = section({
+      title: '从 URL 入库',
+      icon: 'link',
+      blurb: '抓取网页正文存成 kb/raw/web/*.md（有 SSRF 守卫；重定向逐跳校验）。',
+    })
+    const urlInput = el('input', { class: 'input', placeholder: 'https://example.com/article' })
+    const urlBtn = button('抓取入库', 'small primary', 'link')
+    const urlNote = note('')
+    urlCard.body.appendChild(el('div', { class: 'rowflex' }, [urlInput, urlBtn]))
+    urlCard.body.appendChild(urlNote)
+    host.appendChild(urlCard.node)
+    urlBtn.addEventListener('click', async () => {
+      const url = urlInput.value.trim()
+      if (url === '') { setNote(urlNote, 'bad', '先填 URL。'); return }
+      urlBtn.disabled = true
+      setNote(urlNote, '', '抓取中…')
+      try {
+        const result = await act('ingestUrl', { url })
+        setNote(urlNote, 'ok', `已入库：${result?.title ?? url}`)
+        urlInput.value = ''
+        await reload()
+      } catch (error) {
+        setNote(urlNote, 'bad', error instanceof Error ? error.message : String(error))
+      } finally {
+        urlBtn.disabled = false
+      }
+    })
+
     const reload = async () => {
       const res = await api('/api/resource/kb')
       if (res.status !== 200) { setNote(status, 'bad', errText(res, '读取失败')); return }
       const data = res.body?.data ?? {}
+      const urlsAllowed = data.ingestUrls === true
+      urlInput.disabled = !urlsAllowed
+      urlBtn.disabled = !urlsAllowed
+      if (!urlsAllowed && (urlNote.textContent ?? '') === '') {
+        setNote(urlNote, '', '未启用：在下方「知识库」设置里打开「允许 URL 入库」。')
+      }
       const docs = Array.isArray(data.documents) ? data.documents : []
       listCard.body.textContent = ''
       listCard.body.appendChild(status)

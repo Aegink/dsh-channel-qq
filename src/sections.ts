@@ -19,6 +19,11 @@ import { affectionPlugin } from './features/affection/index.js'
 import { floodPlugin } from './features/flood/index.js'
 import { imagegenPlugin } from './features/imagegen/index.js'
 import { inboundPlugin } from './features/inbound/index.js'
+import { interactionPlugin } from './features/interaction/index.js'
+import { metricsPlugin } from './features/metrics/index.js'
+import { historyPlugin } from './features/history/index.js'
+import { reliabilityPlugin } from './features/reliability/index.js'
+import { dailyReportPlugin } from './features/daily-report/index.js'
 import { learnPlugin } from './features/learn/index.js'
 import { linksPlugin } from './features/links/index.js'
 import { memePlugin } from './features/meme/index.js'
@@ -43,6 +48,11 @@ export const SECTION_PLUGINS: readonly SubPlugin[] = [
   personaPlugin,
   observersPlugin,
   platformPlugin,
+  interactionPlugin,
+  metricsPlugin,
+  historyPlugin,
+  reliabilityPlugin,
+  dailyReportPlugin,
   inboundPlugin,
   sessionResetPlugin,
   stickersPlugin,

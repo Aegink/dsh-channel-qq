@@ -32,6 +32,10 @@ export interface TurnTrackerDeps {
   readonly roll: () => number
   /** 每次模型错误都投递一次（换血看门狗据此识别连续 400）。 */
   readonly onGatewayError?: (room: string, detail: string) => void
+  /** 回合结束（A1 交互提示撤销）；没开始过的回合调到它应当是空操作。 */
+  readonly onTurnEnd?: (room: string) => void
+  /** 回合出错（C2 指标标记 / A2 失败告知）。 */
+  readonly onTurnError?: (room: string, kind: 'retry' | 'permanent') => void
 }
 
 export class TurnTracker implements TurnListener {
@@ -116,11 +120,14 @@ export class TurnTracker implements TurnListener {
 
   /** 宿主报 idle：这一轮结束了。 */
   onIdle(): void {
-    if (this.pending || this.liveSubmitted) {
+    const wasRunning = this.pending || this.liveSubmitted
+    if (wasRunning) {
       this.pending = false
       this.liveSubmitted = false
       this.startedAt = 0
       this.deps.log(`turn done for ${this.deps.room}`)
+      // A1：先撤销提示，再走重试判断——失败重试期间不该继续显示"正在输入"。
+      this.deps.onTurnEnd?.(this.deps.room)
     }
     if (!this.turnErrored) {
       // 干净地跑完了：这一包到位了，重试链不再需要。
@@ -138,6 +145,7 @@ export class TurnTracker implements TurnListener {
       hadImages: this.lastPromptHadImages,
       textOnlyRetryDone: this.textOnlyRetryDone,
     })
+    this.deps.onTurnError?.(this.deps.room, action.kind === 'permanent' ? 'permanent' : 'retry')
     if (action.kind === 'retry-text-only') {
       this.retryTextOnly()
       return
@@ -164,6 +172,8 @@ export class TurnTracker implements TurnListener {
   /** 卸载：取消重试定时器（攒批定时器由调用方管）。 */
   dispose(): void {
     this.clearRetry()
+    // 会话被释放时也要撤销提示，否则「正在输入」会一直挂在对方窗口上。
+    this.deps.onTurnEnd?.(this.deps.room)
   }
 
   /** 带图的请求被整个拒了：正文还在，改发一次纯文本，而不是丢掉这一轮。 */

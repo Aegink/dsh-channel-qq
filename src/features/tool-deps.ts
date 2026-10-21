@@ -16,6 +16,7 @@ import type { EmojiLibrary } from '../emoji-library.js'
 import type { SentLog, SentLogHub } from '../sent-log.js'
 import type { KnowledgeStore } from '../knowledge.js'
 import type { MemorySearch, MemoryService } from '../ports/memory.js'
+import type { HistoryService } from './history/service.js'
 
 /** 好感度与阶段：`AffectionStore` 里工具真正用到的那几个方法。 */
 export interface AffectionPort {
@@ -46,6 +47,8 @@ export interface QQToolDeps {
   readonly memory: MemoryService | undefined
   /** 深召回（原文块）：agent 主动搜索用。 */
   readonly memorySearch?: MemorySearch | undefined
+  /** 服务端历史（A4）：本地会话日志没命中时回源。 */
+  readonly history?: HistoryService | undefined
   /** 从一段文字里抽取知识条目（知识库没配抽取器时为 undefined）。 */
   readonly extract: ((source: string, text: string) => Promise<unknown>) | undefined
   /**

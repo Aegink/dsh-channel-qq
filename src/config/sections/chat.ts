@@ -5,6 +5,13 @@
  */
 
 import { b, e, json, n, s, type FieldGroup } from '../dsl.js'
+import { INTERACTION_GROUPS } from './interaction.js'
+import { POKE_GROUPS } from './poke.js'
+import { FORWARD_GROUPS } from './forward.js'
+import { METRICS_GROUPS } from './metrics.js'
+import { HISTORY_GROUPS } from './history.js'
+import { RELIABILITY_GROUPS } from './reliability.js'
+import { DAILY_REPORT_GROUPS } from './daily-report.js'
 
 export const CHAT_GROUPS: FieldGroup[] = [
   {
@@ -74,19 +81,20 @@ export const CHAT_GROUPS: FieldGroup[] = [
     help: '把群友发的图片下载下来附进提示词（视觉）。',
     fields: {
       enabled: b('启用', true, { hot: 'live' }),
+      serverOcr: b('注册图片 OCR 工具', false, {
+        hot: 'reload',
+        help: '默认关。打开后多一个 qq_read_image_text（协议端 OCR），适合截图/海报里的字。',
+      }),
       maxPerMessage: n('每条消息最多几张', 2, { min: 0, max: 10, hot: 'live' }),
     },
   },
-  {
-    id: 'poke',
-    label: '戳一戳',
-    page: 'events',
-    fields: {
-      // 读法：notice 处理每事件现取（live）。
-      enabled: b('启用', true, { hot: 'live' }),
-      windowSec: n('合并窗口（秒）', 300, { help: '窗口内的多次戳合并成一次处理。', min: 0, max: 3600, hot: 'live' }),
-    },
-  },
+  ...POKE_GROUPS,
+  ...INTERACTION_GROUPS,
+  ...FORWARD_GROUPS,
+  ...METRICS_GROUPS,
+  ...HISTORY_GROUPS,
+  ...RELIABILITY_GROUPS,
+  ...DAILY_REPORT_GROUPS,
   {
     id: 'stt',
     label: '语音转文字',
@@ -94,6 +102,10 @@ export const CHAT_GROUPS: FieldGroup[] = [
     fields: {
       // 读法：转写时整个 `config.stt` 子对象按引用传入（live）。
       enabled: b('启用', true, { hot: 'live' }),
+      serverFallback: b('本地失败时用协议端转写', false, {
+        hot: 'live',
+        help: '默认关。打开后本地 STT 没配或转写失败，会调用协议端的语音转文字（SnowLuma fetch_ptt_text）。',
+      }),
       baseUrl: s('接口地址', null, { help: 'OpenAI 兼容的 /audio/transcriptions，例如本机 whisper。', hot: 'live' }),
       apiKey: s('接口密钥', null, { secret: true, hot: 'live' }),
       model: s('模型名', 'whisper-1', { hot: 'live', advanced: true }),

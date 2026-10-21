@@ -32,6 +32,10 @@ export interface LearnedPhrase {
   groupId: number
   /** 最近一次出现在什么语境里（原文片段），给模型判断用法用。 */
   note: string
+  /** `slang` = 黑话词条（带释义）；缺省/`phrase` = 口癖。 */
+  kind?: 'phrase' | 'slang'
+  /** 黑话释义（只有 slang 有）。 */
+  meaning?: string
 }
 
 /** 内存里最多跟踪多少候选：超出就丢 count 最低的，防止长跑进程内存膨胀。 */
@@ -156,6 +160,8 @@ export class LearnStore {
           last: Number.isFinite(last) ? last : Date.now(),
           groupId,
           note: typeof record.note === 'string' ? record.note : '',
+          ...(record.kind === 'slang' ? { kind: 'slang' as const } : {}),
+          ...(typeof record.meaning === 'string' && record.meaning !== '' ? { meaning: record.meaning } : {}),
         }
         const key = keyOf(phrase.groupId, phrase.text)
         this.entries.set(key, phrase)
@@ -241,6 +247,44 @@ export class LearnStore {
    * 手动记住一句（模型判断某个梗值得学）。手动动作低频，直接落盘不等 flush；
    * count 直接抬到 `minOccurrences`，否则刚学会的短语在 top() 里排不上，等于没学。
    */
+  /** 记一条黑话词条（带释义）。与口癖分开存、分开查。 */
+  async rememberWord(text: string, meaning: string, groupId: number, note = '模型记下的黑话'): Promise<LearnedPhrase> {
+    const word = stripEdges(text).slice(0, 20)
+    if (word.length < TAIL_MIN) throw new Error('词条太短或全是标点；写群里实际用的那个词。')
+    const gloss = meaning.trim().slice(0, 200)
+    if (gloss === '') throw new Error('黑话要带一句释义，写清它在群里是什么意思。')
+    const now = Date.now()
+    const key = keyOf(groupId, word)
+    const floor = Math.max(1, Math.round(this.config.minOccurrences))
+    const existing = this.entries.get(key)
+    let phrase: LearnedPhrase
+    if (existing !== undefined) {
+      existing.count = Math.max(existing.count + 1, floor)
+      existing.last = now
+      existing.note = note
+      existing.kind = 'slang'
+      existing.meaning = gloss
+      phrase = existing
+    } else {
+      phrase = { text: word, count: floor, speakers: [], first: now, last: now, groupId, note, kind: 'slang', meaning: gloss }
+      this.entries.set(key, phrase)
+    }
+    this.dirty = true
+    this.prune()
+    await this.save()
+    return { ...phrase, speakers: [...phrase.speakers] }
+  }
+
+  /** 黑话词条（按出现次数降序）。 */
+  slang(limit = 50, groupId?: number): LearnedPhrase[] {
+    return [...this.entries.values()]
+      .filter((phrase) => phrase.kind === 'slang')
+      .filter((phrase) => groupId === undefined || phrase.groupId === groupId)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit)
+      .map((phrase) => ({ ...phrase, speakers: [...phrase.speakers] }))
+  }
+
   async remember(text: string, groupId: number, note = '模型手动记下的'): Promise<LearnedPhrase> {
     const candidate = stripEdges(normalizePhraseSource(text)).slice(0, WHOLE_MESSAGE_MAX)
     if (candidate.length < TAIL_MIN) throw new Error('这句太短或者全是表情/标点，学不了——换成群里真实说过的那句短话。')
@@ -287,6 +331,7 @@ export class LearnStore {
   top(limit = 20, groupId?: number): LearnedPhrase[] {
     const floor = Math.max(1, Math.round(this.config.minOccurrences))
     return [...this.entries.values()]
+      .filter((phrase) => (phrase.kind ?? 'phrase') === 'phrase')
       .filter((phrase) => groupId === undefined || phrase.groupId === groupId)
       .sort((a, b) => {
         const aQualified = a.count >= floor ? 1 : 0

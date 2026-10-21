@@ -173,10 +173,14 @@ export class PacketComposer {
     const evidence = this.deps.memoryEvidence
     if (evidence !== undefined) {
       try {
+        const speakerId = conversation.lastEvent?.user_id
+        const speakerName = conversation.lastEvent?.sender?.card ?? conversation.lastEvent?.sender?.nickname
         const block = await evidence({
           text: rawContext,
           room: conversation.key,
           isGroup: conversation.isGroup,
+          ...(typeof speakerId === 'number' ? { speakerId } : {}),
+          ...(typeof speakerName === 'string' && speakerName !== '' ? { speakerName } : {}),
         })
         if (block !== '') return block
       } catch (error) {
