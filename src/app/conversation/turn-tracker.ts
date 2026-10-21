@@ -43,6 +43,8 @@ export class TurnTracker implements TurnListener {
   private liveSubmitted = false
   /** 正在跑一轮（宿主 idle 之前一直为真）。 */
   private pending = false
+  /** 这一轮是什么时候开始的（看门狗判断「卡住了」用）。 */
+  private startedAt = 0
   /** 刚结束的那一轮是不是网关形状的失败。 */
   private turnErrored = false
   /** 重试链已武装（攒批要给它让路，别把包塞进来）。 */
@@ -68,6 +70,11 @@ export class TurnTracker implements TurnListener {
     return this.pending
   }
 
+  /** 这一轮开始的时间戳；没在跑时为 0。看门狗用它判断"卡住了"。 */
+  runningSince(): number {
+    return this.pending ? this.startedAt : 0
+  }
+
   /**
    * 开始一轮：把这一包记下来，武装"忙"标记。
    *
@@ -76,6 +83,7 @@ export class TurnTracker implements TurnListener {
   begin(prompt: string, hadImages: boolean): void {
     this.clearRetry()
     this.pending = true
+    this.startedAt = this.deps.clock.now()
     this.lastPrompt = prompt
     this.lastPromptHadImages = hadImages
     this.textOnlyRetryDone = false
@@ -111,6 +119,7 @@ export class TurnTracker implements TurnListener {
     if (this.pending || this.liveSubmitted) {
       this.pending = false
       this.liveSubmitted = false
+      this.startedAt = 0
       this.deps.log(`turn done for ${this.deps.room}`)
     }
     if (!this.turnErrored) {

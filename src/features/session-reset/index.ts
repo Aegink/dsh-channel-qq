@@ -44,14 +44,19 @@ async function readResetState(host: SubHost): Promise<Record<string, number>> {
   }
 }
 
+/** 写回换血时间表。 */
+async function writeResetState(host: SubHost, state: Record<string, number>): Promise<void> {
+  await atomicWriteFile(
+    path.join(host.dshHome, 'channel-qq', 'session-reset-state.json'),
+    JSON.stringify(state, null, 2),
+  ).catch(() => {})
+}
+
 /** 记下这个房间刚换过血。 */
 async function markReset(host: SubHost, room: string): Promise<void> {
   const state = await readResetState(host)
   state[room] = Date.now()
-  await atomicWriteFile(
-    path.join(host.dshHome, 'channel-qq', 'session-reset-state.json'),
-    JSON.stringify(state, null, 2),
-  )
+  await writeResetState(host, state)
 }
 
 /** 换血：备份历史 → 释放会话 → 写种子。下一次消息会用新会话。 */
@@ -140,6 +145,25 @@ async function forceReset(
   }
 }
 
+/** 回合卡死（例如等待一个永远不会来的审批）：超时后强制换血。 */
+async function handleHungTurn(
+  host: SubHost,
+  registry: ConversationRegistry,
+  room: string,
+  since: number,
+  config: SessionResetConfig,
+): Promise<void> {
+  const limitMs = Math.max(0, Number(config.maxTurnMinutes ?? 0)) * 60_000
+  if (limitMs <= 0 || since <= 0 || Date.now() - since <= limitMs) return
+  host.log(`session-reset: ${room} 回合已运行 ${Math.round((Date.now() - since) / 60_000)} 分钟，判定卡死，强制换血`)
+  const size: SessionSize = { tokens: 0, contextWindow: null, provider: 'unknown', model: 'unknown' }
+  try {
+    await resetRoom(host, registry, room, size, config)
+  } catch (error) {
+    host.log(`session-reset: 强制换血 ${room} 失败：${(error as Error).message}`)
+  }
+}
+
 /** 一轮检查。 */
 async function tick(host: SubHost, seen: Set<string>): Promise<void> {
   const config = host.config.sessionReset as SessionResetConfig
@@ -163,7 +187,11 @@ async function tick(host: SubHost, seen: Set<string>): Promise<void> {
   let stateDirty = false
   for (const room of rooms) {
     const record = registry.get(room)
-    if (record === undefined || record.tracker.running()) continue
+    if (record === undefined) continue
+    if (record.tracker.running()) {
+      await handleHungTurn(host, registry, room, record.tracker.runningSince(), config)
+      continue
+    }
     let size
     try {
       size = await probe.measure(`qq-${room}`)
@@ -192,12 +220,7 @@ async function tick(host: SubHost, seen: Set<string>): Promise<void> {
       host.log(`session-reset: 处理 ${room} 失败：${(error as Error).message}`)
     }
   }
-  if (stateDirty) {
-    await atomicWriteFile(
-      path.join(host.dshHome, 'channel-qq', 'session-reset-state.json'),
-      JSON.stringify(state, null, 2),
-    ).catch(() => {})
-  }
+  if (stateDirty) await writeResetState(host, state)
 }
 
 /** 后台「指标」页读它画体积曲线：最近 500 行，按房间分组。 */

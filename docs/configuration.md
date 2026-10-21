@@ -118,6 +118,7 @@ cordis.patch.yml（部署级）
 | `sessionReset.thresholdRatio` | `0.85` | `tokens ≥ 窗口 × ratio` 时换血；刻意排在压缩（约 0.8）之后 |
 | `sessionReset.checkIntervalMin` | `5` | 每轮检查活跃会话；只在回合空闲时动手 |
 | `sessionReset.maxAgeDays` | `7` | 距上次换血超过 N 天强制换一次（`0` = 关闭） |
+| `sessionReset.maxTurnMinutes` | `10` | 单回合跑这么久还没结束就强制换血（`0` = 关闭），兜住"等待审批"这类永久挂起 |
 | `sessionReset.strictRooms` | 空 | 图片/工具特别多的房间（逗号分隔），用更低的阈值 |
 | `sessionReset.strictThresholdRatio` | `0.6` | 上面这些房间使用的比例 |
 | `sessionReset.seed` | 空 | 换血后注入下一轮的一句话（空 = 内置文案，会提示先补记 MEMORY.md） |
@@ -136,6 +137,11 @@ cordis.patch.yml（部署级）
 宿主的溢出恢复认不出来。看门狗订阅 `agent/error`：同一房间 10 分钟内出现 2 次同类
 错误（`bad_response_status_code` / `context_length_exceeded` 等）就主动换血，
 30 分钟内不重复触发。这条比「等 5 分钟一次的体积检查」更快。
+
+**回合卡死**：无人值守部署里，宿主的「升级沙箱」审批没有真人应答会**永久挂住回合**，
+该房间之后的所有消息都进不来（2026-10-21 群会话卡死 5 小时）。线上做法是把宿主的
+审批策略设为 `policy: never`（需要升级的动作直接拒绝、模型会收到明确提示），
+再用 `maxTurnMinutes` 兜底：超时仍未结束的回合强制换血。
 
 **手动换血**：管理员在私聊里发 `/换血`（或 `重置会话` / `/reset`）——
 **确定性处理、不经模型**（模型能看到群友的文字，不能把"清空历史"交给它决定）。

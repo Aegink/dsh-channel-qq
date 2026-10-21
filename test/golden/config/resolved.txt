@@ -178,6 +178,7 @@
     "thresholdRatio": 0.85,
     "checkIntervalMin": 5,
     "maxAgeDays": 7,
+    "maxTurnMinutes": 10,
     "strictRooms": "",
     "strictThresholdRatio": 0.6,
     "seed": ""

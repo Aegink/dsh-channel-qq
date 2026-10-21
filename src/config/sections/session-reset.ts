@@ -15,6 +15,8 @@ export interface SessionResetConfig {
   checkIntervalMin: number
   /** 定期换血：多少天强制换一次（0 = 关闭）。 */
   maxAgeDays: number
+  /** 单回合最长运行时间（分钟）；超时强制换血（0 = 关闭）。 */
+  maxTurnMinutes: number
   /** 需要更激进阈值的房间（逗号分隔：`dm-1000000002,group-145335503`）。 */
   strictRooms: string
   /** 上面这些房间使用的更低比例。 */
@@ -44,6 +46,10 @@ export const SESSION_RESET_GROUPS: FieldGroup[] = [
       maxAgeDays: n('定期换血', 7, {
         hot: 'live', min: 0, max: 365, unit: '天',
         help: '距上次换血超过这么多天就重置一次（0 = 关闭）。上下文腐化是渐进的，定期重置比等出事便宜。',
+      }),
+      maxTurnMinutes: n('回合超时', 10, {
+        hot: 'live', min: 0, max: 240, unit: '分钟',
+        help: '一个回合跑这么久还没结束就强制换血（0 = 关闭）。用来兜住「等待审批」这类永久挂起的回合。',
       }),
       strictRooms: s('激进房间', '', {
         hot: 'live',
