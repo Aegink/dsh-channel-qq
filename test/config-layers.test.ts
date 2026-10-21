@@ -74,15 +74,15 @@ test('P2.7 配置解析：默认值本身就是一份可用配置', () => {
 })
 
 test('配置归一：字符串数字按 schema 变成数字（主群号/群号列表/概率）', () => {
-  // 2026-10-19 线上实证：admin-config.json 里 primaryGroup 是字符串 "145335503"，
+  // 2026-10-19 线上实证：admin-config.json 里 primaryGroup 是字符串 "1000000004"，
   // 而消费方全是 `chatId === primaryGroup` 的严格比较 ⇒ 偷表情包、主群专用回复、
   // 按群覆盖全部恒假且完全静默。
   const config = resolveConfig({}, {
-    primaryGroup: '145335503' as never,
+    primaryGroup: '1000000004' as never,
     talkValue: '0.5' as never,
     linkResolve: { autoGroups: ['123', '456'] as never },
   } as never)
-  assert.equal(config.primaryGroup, 145335503)
+  assert.equal(config.primaryGroup, 1000000004)
   assert.equal(typeof config.primaryGroup, 'number')
   assert.equal(config.talkValue, 0.5)
   assert.deepEqual(config.linkResolve.autoGroups, [123, 456])

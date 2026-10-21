@@ -19,7 +19,7 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
     hot: 'live', page: 'connection', itemsKind: 'number',
   })],
   // 类型必须是 number：消费方全是 `chatId === primaryGroup` 这类严格比较，
-  // 存成字符串会让它们**恒假**（2026-10-19 排查：线上实际值就是 "145335503"）。
+  // 存成字符串会让它们**恒假**（2026-10-19 排查：线上实际值就是 "1000000004"）。
   ['primaryGroup', n('主群号', null, {
     help: '偷表情包 / 自动出卡 / 好感度都以它为准。',
     hot: 'live', page: 'groups',

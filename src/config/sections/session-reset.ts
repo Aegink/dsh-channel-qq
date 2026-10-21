@@ -17,7 +17,7 @@ export interface SessionResetConfig {
   maxAgeDays: number
   /** 单回合最长运行时间（分钟）；超时强制换血（0 = 关闭）。 */
   maxTurnMinutes: number
-  /** 需要更激进阈值的房间（逗号分隔：`dm-1000000002,group-145335503`）。 */
+  /** 需要更激进阈值的房间（逗号分隔：`dm-1000000002,group-1000000004`）。 */
   strictRooms: string
   /** 上面这些房间使用的更低比例。 */
   strictThresholdRatio: number
