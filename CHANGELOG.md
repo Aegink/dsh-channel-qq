@@ -2,6 +2,25 @@
 
 ### 新增
 
+- **交互提示（A1，默认关）**：`chat.interaction` —— 私聊回合设置「正在输入」、
+  群聊给触发消息贴表情回应，回合结束撤销（私聊不支持表情回应，已在实测后限定群聊）
+- **合并转发（A3，默认关）**：`chat.forward.longReplyThreshold` —— 分段条数达到阈值
+  时改发一张聊天记录卡片；超限/失败回退逐条，内容不丢
+- **指标（C1/C2，默认关）**：`metrics.enabled` —— 每回合耗时、token 四桶、
+  发送/工具失败；后台「指标」页看近 7 天 p50/p90、按房间与按天
+- **回合告知（A2，默认关）**：`reliability` —— 慢回合说一句「还在处理」，
+  永久失败说一句「没处理完」（重试中不说）
+- **服务端历史（A4，默认关）**：`history.serverBackfill` —— 本地会话日志没有命中时
+  回源 `get_group_msg_history`，按房间去重落盘并供检索
+- **群日报（B1，默认关）**：`dailyReport` —— 每天定时发当天条数/活跃人/金句，
+  空数据不发
+- **人物侧写（B2，默认关）**：`memory.profiles` —— 每回合在证据前加当前发言人的
+  3–5 行侧写（5 分钟缓存）
+- **黑话词典（B4，默认关）**：`learn.slang` —— `qq_learn_word` / `qq_slang`
+- **兜底链（B5，默认关）**：`stt.serverFallback` 走协议端语音转文字；
+  `imageRecognition.serverOcr` 注册 `qq_read_image_text`
+- **知识库增强（B6，默认关）**：`kb.rerankWeight` 二阶重排、`kb.ingestUrls`
+  网页抓取入库（SSRF 守卫）
 - **知识库（P0–P2）**：工作区 `inbox/`、`downloads/`、`kb/raw/` 的文档被增量摄取
   （sha256 判变、串行队列、单文件失败不影响整轮）；原生解析 md/txt/html，
   PDF/Office/图片走可选的 Docling sidecar（`kb.doclingUrl`，没配时图片直接跳过）
