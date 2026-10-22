@@ -180,6 +180,21 @@ override = {}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "people": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
@@ -744,6 +759,21 @@ override = {}
   "minOccurrences": 3
  },
  "memory": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
+ "people": {
   "v2": false,
   "threshold": 0.35,
   "maxRecords": 8,
@@ -1334,6 +1364,21 @@ override = {"batching":{"windowMs":20000}}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "people": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
@@ -1896,6 +1941,21 @@ override = {"admin":{"port":8790}}
   "minOccurrences": 3
  },
  "memory": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
+ "people": {
   "v2": false,
   "threshold": 0.35,
   "maxRecords": 8,
@@ -2486,6 +2546,21 @@ override = {"imageGen":{"model":"flux"}}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "people": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
@@ -3062,6 +3137,21 @@ override = {"tts":{"voice":"b"}}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "people": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
@@ -3624,6 +3714,21 @@ override = {"flood":{"windowSec":30}}
   "minOccurrences": 3
  },
  "memory": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
+ "people": {
   "v2": false,
   "threshold": 0.35,
   "maxRecords": 8,
@@ -4221,6 +4326,21 @@ override = {}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "people": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
@@ -4783,6 +4903,21 @@ override = {"keywordTriggers":[]}
   "minOccurrences": 3
  },
  "memory": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
+ "people": {
   "v2": false,
   "threshold": 0.35,
   "maxRecords": 8,
@@ -5380,6 +5515,21 @@ override = {"rss":{"pollIntervalMin":5}}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "people": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
@@ -5942,6 +6092,21 @@ override = {"groupEnabled":false}
   "minOccurrences": 3
  },
  "memory": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
+ "people": {
   "v2": false,
   "threshold": 0.35,
   "maxRecords": 8,
@@ -6532,6 +6697,21 @@ override = {}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "people": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
@@ -7094,6 +7274,21 @@ override = {"groupEnabled":true}
   "minOccurrences": 3
  },
  "memory": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
+ "people": {
   "v2": false,
   "threshold": 0.35,
   "maxRecords": 8,
@@ -7684,6 +7879,21 @@ override = {"admin":{"host":"127.0.0.1"}}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "people": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
@@ -8260,6 +8470,21 @@ override = {}
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
  },
+ "people": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
   "lxSources": "",
@@ -8822,6 +9047,21 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "minOccurrences": 3
  },
  "memory": {
+  "v2": false,
+  "threshold": 0.35,
+  "maxRecords": 8,
+  "maxChars": 600,
+  "profiles": false,
+  "extractorUrl": "",
+  "extractorModel": "",
+  "extractorApiKey": "",
+  "vectorEnabled": false,
+  "vectorUrl": "http://127.0.0.1:8801",
+  "vectorDim": 512,
+  "vectorTimeoutMs": 800,
+  "vectorWeight": 1
+ },
+ "people": {
   "v2": false,
   "threshold": 0.35,
   "maxRecords": 8,

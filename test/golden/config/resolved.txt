@@ -177,6 +177,21 @@
     "vectorTimeoutMs": 800,
     "vectorWeight": 1
   },
+  "people": {
+    "v2": false,
+    "threshold": 0.35,
+    "maxRecords": 8,
+    "maxChars": 600,
+    "profiles": false,
+    "extractorUrl": "",
+    "extractorModel": "",
+    "extractorApiKey": "",
+    "vectorEnabled": false,
+    "vectorUrl": "http://127.0.0.1:8801",
+    "vectorDim": 512,
+    "vectorTimeoutMs": 800,
+    "vectorWeight": 1
+  },
   "music": {
     "kugouApiBase": "http://127.0.0.1:4000",
     "lxSources": "",

@@ -49,6 +49,13 @@ export interface MemoryExtractorConfig {
   extractorApiKey: string
 }
 
+/** 人物档：按房间记录认人线索（默认关）。 */
+export interface PeopleConfig {
+  enabled: boolean
+  /** Storage directory; null = <workspace>/memory/people. */
+  dir: string | null
+}
+
 export const MEMORY_GROUPS: FieldGroup[] = [
   {
     id: 'memory',
@@ -105,6 +112,18 @@ export const MEMORY_GROUPS: FieldGroup[] = [
         min: 0, max: 1, step: 0.05, hot: 'reload', advanced: true,
         help: '有向量时相关性 = 权重×余弦 + (1−权重)×关键词；1 = 纯余弦（默认，09 §5.2）。',
       }),
+    },
+  },
+  {
+    id: 'people',
+    label: '人物档',
+    page: 'memory',
+    fields: {
+      enabled: b('启用', false, {
+        hot: 'live',
+        help: '默认关。打开后注册 qq_person_note 工具：按房间记录「谁爱用什么说法、忌讳什么」，只用于认人接话，不当证据引用。',
+      }),
+      dir: s('存储目录', null, { help: '留空 = <工作区>/memory/people。', hot: 'restart' }),
     },
   },
 ]

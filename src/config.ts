@@ -343,6 +343,7 @@ export interface QQChannelConfig extends SwitchSections {
   linkResolve: LinkResolveConfig
   meme: MemeConfig
   quotes: QuoteConfig
+  people: import('./config/sections/memory.js').PeopleConfig
   tts: TtsConfig
   reminders: ReminderConfig
   rss: RssConfig
