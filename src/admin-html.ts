@@ -3045,7 +3045,7 @@ const UI_FILE_LIST: ReadonlyArray<{ path: string; lines: readonly string[] }> = 
       "  const card = section({",
       "    title: '按群覆盖',",
       "    icon: 'people',",
-      "    blurb: '搜索群号或群名加入管理列表；只对列表里的群生效，留空 = 跟上面的全局默认。',",
+      "    blurb: '这里只是「按群覆盖」：列表里的群用单独设置，没列的群跟上面的全局默认——它不是白名单。要限制哪些群能触发，去「安全 → 访问门控」（access.allowGroups / 配对审批）。',",
       "  })",
       "  const box = el('div', { class: 'stack' })",
       "  card.body.appendChild(box)",

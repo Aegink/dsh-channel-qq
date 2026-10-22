@@ -40,7 +40,8 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
   })],
   ['rooms', json('按群覆盖', NO_DEFAULT, {
     help: '数组：[{ id: 群号, enabled?, requireMention?, talkValue? }]，只写要覆盖的字段。'
-      + '后台「群聊与房间」页可以搜索群号加入管理列表。',
+      + '后台「群聊与房间」页可以搜索群号加入管理列表。注意它只是覆盖，不是白名单；'
+      + '要限制哪些群能触发，用「安全 → 访问门控」的 allowGroups 或配对审批。',
     hot: 'live', page: 'groups',
   })],
   ['rateLimitMs', n('发送间隔', 300, {

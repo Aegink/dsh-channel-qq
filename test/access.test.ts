@@ -12,6 +12,7 @@ import * as path from 'node:path'
 
 const { AccessStore } = await import('../src/features/access/store.js')
 const { AccessService } = await import('../src/features/access/service.js')
+const { parseAccessCommand, renderPending, maybeHandleAccessCommand } = await import('../src/features/access/commands.js')
 
 const OWNER = 280
 const STRANGER = 999
@@ -99,7 +100,7 @@ test('门控：陌生私聊 → 不进 agent、记请求、回一句、只通知
   assert.deepEqual(h.store.pending()[0]?.kind, 'user')
   assert.deepEqual(h.sent.map((m) => `${m.kind}:${m.id}:${m.text}`), [
     `user:${STRANGER}:[access/pending]`,
-    `user:${OWNER}:新的访问请求：QQ ${STRANGER}（陌生人）。后台「安全」页可批准。`,
+    `user:${OWNER}:新的访问请求：QQ ${STRANGER}（陌生人）。回复「放行 ${STRANGER}」或在后台「安全」页批准。`,
   ])
 
   // 冷却期内再来一条：不重复回复、不重复通知
@@ -161,5 +162,58 @@ test('门控仓库：批准/拒绝落盘，重开能读回', async () => {
   assert.deepEqual(again.users(), [111])
   assert.deepEqual(again.groups(), [222])
   assert.equal(again.pending().length, 1)
+  h.cleanup()
+})
+
+
+// ── 管理员 QQ 命令 ──────────────────────────────────────────────────────────
+
+test('QQ 命令解析：待批/放行/放行群/拒绝访问/拒绝访问群，其余不认', () => {
+  assert.deepEqual(parseAccessCommand('待批访问'), { verb: 'list' })
+  assert.deepEqual(parseAccessCommand('/访问请求'), { verb: 'list' })
+  assert.deepEqual(parseAccessCommand('放行 999'), { verb: 'approve', kind: 'user', id: 999 })
+  assert.deepEqual(parseAccessCommand('放行群 107'), { verb: 'approve', kind: 'group', id: 107 })
+  assert.deepEqual(parseAccessCommand('拒绝访问 999'), { verb: 'reject', kind: 'user', id: 999 })
+  assert.deepEqual(parseAccessCommand('拒绝访问群 107'), { verb: 'reject', kind: 'group', id: 107 })
+  assert.equal(parseAccessCommand('放行'), null, '缺 id')
+  assert.equal(parseAccessCommand('批准 999'), null, '不抢审批网关的动词')
+  assert.equal(parseAccessCommand('你好'), null)
+})
+
+test('QQ 命令：列表带可复制命令；管理员私聊放行后立即生效', async () => {
+  const h = harness()
+  await h.store.request('user', STRANGER, '陌生人', 1)
+  const list = h.service.list()
+  const text = renderPending(list)
+  assert.match(text, /待批 1 条/)
+  assert.match(text, /放行 999/)
+
+  const sent: string[] = []
+  const host = {
+    config: { admins: [OWNER], access: h.config },
+    get: (name: string) => name === 'access' ? h.service : name === 'platform'
+      ? {
+          api: { sendPrivateMessage: async (_id: number, message: Array<{ data: { text: string } }>) => {
+            sent.push(message[0]!.data.text)
+            return { message_id: 1 }
+          } },
+          out: { push: async (task: () => Promise<unknown>) => await task() },
+        }
+      : undefined,
+    log: () => {},
+  } as never
+  const event = {
+    time: 0, self_id: 1, post_type: 'message', message_type: 'private', message_id: 9,
+    user_id: OWNER, message: [{ type: 'text', data: { text: '放行 999' } }],
+  } as never
+  assert.equal(await maybeHandleAccessCommand(host, event), true)
+  assert.equal(h.service.allow(dm()), true, '放行后陌生人私聊直接通过')
+  assert.match(sent.at(-1) ?? '', /已放行私聊 999/)
+
+  const strangerEvent = {
+    time: 0, self_id: 1, post_type: 'message', message_type: 'private', message_id: 10,
+    user_id: STRANGER, message: [{ type: 'text', data: { text: '放行 999' } }],
+  } as never
+  assert.equal(await maybeHandleAccessCommand(host, strangerEvent), false, '非管理员不处理')
   h.cleanup()
 })

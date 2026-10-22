@@ -91,6 +91,7 @@ export class AccessService {
     const existing = this.deps.store.pending().find((item) => item.kind === kind && item.id === id)
     const shouldReply = existing === undefined || now - existing.lastNoticeAt >= cooldown
     const { isNew } = await this.deps.store.request(kind, id, name, now)
+    if (isNew) this.deps.log(`access: pending ${kind} ${id}${name === '' ? '' : ` (${name})`}`)
     if (shouldReply) this.replyPending(kind, id, event)
     if (isNew && this.deps.config().notifyOwner) this.notifyOwner(kind, id, name)
   }
@@ -106,7 +107,9 @@ export class AccessService {
     const out = this.deps.out()
     if (owner === undefined || api === null || out === null) return
     if (kind === 'user' && owner === id) return
-    const text = `新的访问请求：${kind === 'user' ? 'QQ' : '群'} ${id}${name === '' ? '' : `（${name}）`}。后台「安全」页可批准。`
+    const cmd = kind === 'group' ? `放行群 ${id}` : `放行 ${id}`
+    const text = `新的访问请求：${kind === 'user' ? 'QQ' : '群'} ${id}${name === '' ? '' : `（${name}）`}。`
+      + `回复「${cmd}」或在后台「安全」页批准。`
     void out.push(() => api.sendPrivateMessage(owner, [{ type: 'text', data: { text } }]))
       .catch((error: unknown) => this.deps.log(`access: 通知主人失败：${error instanceof Error ? error.message : String(error)}`))
   }

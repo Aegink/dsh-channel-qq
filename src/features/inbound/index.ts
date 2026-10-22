@@ -24,6 +24,7 @@ import { findPackageRoot } from '../../adapters/persona/fs-pack.js'
 import { systemClock, systemRandom } from '../../ports/clock.js'
 import { systemHttp } from '../../adapters/http/client.js'
 import { transcribeOne, turnHooksOf } from './runtime-helpers.js'
+import { maybeHandleAccessCommand } from '../access/commands.js'
 import { createSentLogHub } from '../../sent-log.js'
 import { readJson } from '../../read-json.js'
 import { atomicWriteFile, readTextFileOrNull } from '../../adapters/fs-store/atomic.js'
@@ -267,6 +268,8 @@ async function dispatch(host: SubHost, runtime: ChannelRuntime, event: OneBotEve
   try {
     // 安全门控在一切之前：不通过的消息不进观察者、不进组包、不进 agent。
     if (host.get('access')?.allow(event) === false) return
+    // 管理员私聊命令（待批访问/放行/拒绝）在模型之前处理。
+    if (await maybeHandleAccessCommand(host, event)) return
     if (event.post_type === 'message' && event.message_type === 'group') {
       host.get('observers')?.observe(event)
     }
