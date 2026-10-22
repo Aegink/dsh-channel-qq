@@ -7,6 +7,8 @@
  */
 
 import type { OneBotEvent } from '../../types.js'
+import { parseInbound } from '../../core/message/parse.js'
+import { isCalled } from '../../core/trigger.js'
 import type { QQChannelConfig } from '../../config.js'
 import type { PersonaPack } from '../../ports/persona.js'
 import type { QQApi } from '../../ports/platform.js'
@@ -18,6 +20,8 @@ export interface AccessDeps {
   readonly out: () => OutboundQueue | null
   readonly persona: () => PersonaPack | null
   readonly config: () => QQChannelConfig['access']
+  /** 根配置（判断群里这条消息是否真的叫了咱）。 */
+  readonly rootConfig: () => QQChannelConfig
   readonly admins: () => readonly number[]
   readonly store: AccessStore
   readonly now: () => number
@@ -38,7 +42,7 @@ export class AccessService {
       || (event.post_type === 'notice' && typeof event.group_id === 'number')
     const id = isGroup ? event.group_id : event.user_id
     if (typeof id !== 'number') return true
-    if (isGroup) return this.allowGroup(id, config)
+    if (isGroup) return this.allowGroup(id, config, event)
     if (this.userAllowed(id, config)) return true
     if (config.mode === 'pairing') {
       void this.request('user', id, this.nameOf(event, false), event)
@@ -78,15 +82,25 @@ export class AccessService {
   }
 
   /** 群：member 直接放行（加群是主人操作）；pairing 逐群审批；allowlist 只认名单。 */
-  private allowGroup(id: number, config: QQChannelConfig['access']): boolean {
+  private allowGroup(id: number, config: QQChannelConfig['access'], event: OneBotEvent): boolean {
     if (config.allowGroups.includes(id) || this.deps.store.groupApproved(id)) return true
     if (config.groupPolicy === 'member') return true
+    // 没人叫咱的群消息直接放掉（planner 本来也会 ignore）：不建请求、不回话。
+    if (!this.addressed(event)) return false
     if (config.groupPolicy === 'pairing') {
-      void this.request('group', id, `群 ${id}`, undefined)
+      void this.request('group', id, `群 ${id}`, event)
     } else {
       this.deps.log(`access: 拒绝 group ${id}（群策略 allowlist 未命中）`)
     }
     return false
+  }
+
+  /** 群里这条消息是否真的叫了咱（@ 或关键词）；不要求 @ 的部署视为叫了。 */
+  private addressed(event: OneBotEvent): boolean {
+    if (event.message_type !== 'group') return true
+    const root = this.deps.rootConfig()
+    if (root.requireMention !== true) return true
+    return isCalled(event, parseInbound(event), root)
   }
 
   private nameOf(event: OneBotEvent, isGroup: boolean): string {
@@ -116,8 +130,14 @@ export class AccessService {
     const display = existing === undefined && kind === 'group' ? await this.groupName(id) : name
     const { isNew } = await this.deps.store.request(kind, id, display, now)
     if (isNew) this.deps.log(`access: pending ${kind} ${id}${display === '' ? '' : ` (${display})`}`)
-    if (shouldReply && event !== undefined) this.replyPending(kind, id, event)
-    else if (shouldReply) this.send(id, kind, 'access/pending')
+    // 私聊：首次 + 冷却后的提醒；群：默认完全不回，打开开关也只回一次。
+    if (kind === 'user' && (isNew || shouldReply)) {
+      if (event !== undefined) this.replyPending(kind, id, event)
+      else this.send(id, kind, 'access/pending')
+    } else if (kind === 'group' && isNew && this.deps.config().replyPendingInGroups) {
+      if (event !== undefined) this.replyPending(kind, id, event)
+      else this.send(id, kind, 'access/pending')
+    }
     if (isNew && this.deps.config().notifyOwner) this.notifyOwner(kind, id, display)
   }
 

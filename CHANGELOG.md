@@ -12,7 +12,8 @@
   （见 [docs/memory-standalone.md](docs/memory-standalone.md)）
 - **记忆卫生**：库文件被外部改写后按 mtime 惰性重载；超长内容先归一化再判重
 - **访问门控（默认开）**：`access.mode` = `pairing`（默认）/ `allowlist` / `open`；
-  `access.groupPolicy` = `member`（在群里就允许，推荐）/ `pairing`（逐群审批，默认）/ `allowlist`。
+  `access.groupPolicy` = `member`（在群里就允许，推荐）/ `pairing`（逐群审批，默认）/ `allowlist`；
+  未批准的群默认只通知主人、不在群里回「待批准」；只有 @/关键词才生成请求。
   陌生私聊与未批准的群只回「待主人批准」，不进 agent；主人后台「安全」页批准后放行，
   管理员始终允许。修掉「任何私聊都能触发 agent」的暴露面（awesome-dsh-plugin 审核意见）
 - **交互提示（A1，默认关）**：`chat.interaction` —— 私聊回合设置「正在输入」、

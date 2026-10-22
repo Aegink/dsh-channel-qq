@@ -77,6 +77,7 @@ override = {}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -671,6 +672,7 @@ override = {}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -1263,6 +1265,7 @@ override = {"batching":{"windowMs":20000}}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -1855,6 +1858,7 @@ override = {"admin":{"port":8790}}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -2447,6 +2451,7 @@ override = {"imageGen":{"model":"flux"}}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -3039,6 +3044,7 @@ override = {"tts":{"voice":"b"}}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -3631,6 +3637,7 @@ override = {"flood":{"windowSec":30}}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -4223,6 +4230,7 @@ override = {}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -4822,6 +4830,7 @@ override = {"keywordTriggers":[]}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -5414,6 +5423,7 @@ override = {"rss":{"pollIntervalMin":5}}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -6013,6 +6023,7 @@ override = {"groupEnabled":false}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -6605,6 +6616,7 @@ override = {}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -7197,6 +7209,7 @@ override = {"groupEnabled":true}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -7789,6 +7802,7 @@ override = {"admin":{"host":"127.0.0.1"}}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -8381,6 +8395,7 @@ override = {}
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {
@@ -8973,6 +8988,7 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
+  "replyPendingInGroups": false,
   "replyCooldownMin": 30
  },
  "stt": {

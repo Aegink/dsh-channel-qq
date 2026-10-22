@@ -17,8 +17,10 @@ export interface AccessConfig {
   allowGroups: number[]
   /** 新请求私聊通知主人。 */
   notifyOwner: boolean
-  /** 同一请求者两次「待批准」回复的最小间隔（分钟）。 */
+  /** 同一请求者两次「待批准」回复的最小间隔（分钟）；只对私聊生效。 */
   replyCooldownMin: number
+  /** 未批准的群里也回一句「待主人批准」（默认关；群里回这句话很容易刷屏）。 */
+  replyPendingInGroups: boolean
 }
 
 export const ACCESS_GROUPS: FieldGroup[] = [
@@ -53,6 +55,11 @@ export const ACCESS_GROUPS: FieldGroup[] = [
         help: '群白名单；与后台已批准列表合并。',
       }),
       notifyOwner: b('新请求通知主人', true, { hot: 'live' }),
+      replyPendingInGroups: b('未批准的群里也回「待批准」', false, {
+        hot: 'live',
+        help: '默认关。关着时未批准的群只在主人侧通知，群里完全安静；打开后每个请求只回一次。',
+        hiddenIf: { field: 'access.groupPolicy', notEquals: 'pairing' },
+      }),
       replyCooldownMin: n('待批准回复间隔（分钟）', 30, {
         min: 1, max: 1440, hot: 'live', unit: '分钟',
         help: '同一个人/同一个群在这个时间内只回一次「待主人批准」。',

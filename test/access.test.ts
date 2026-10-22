@@ -40,7 +40,16 @@ function harness(mode: 'pairing' | 'allowlist' | 'open' = 'pairing', overrides: 
     allowGroups: [] as number[],
     notifyOwner: true,
     replyCooldownMin: 30,
+    replyPendingInGroups: false,
     ...overrides,
+  }
+  const root = {
+    ...config,
+    requireMention: true,
+    keywordTriggers: [] as string[],
+    primaryGroup: 107,
+    talkValue: 0.6,
+    primaryTalkValue: null,
   }
   const service = new AccessService({
     api: () => ({
@@ -57,6 +66,7 @@ function harness(mode: 'pairing' | 'allowlist' | 'open' = 'pairing', overrides: 
     out: () => ({ push: async (task: () => Promise<unknown>) => await task() }) as never,
     persona: () => ({ render: (key: string) => `[${key}]` }) as never,
     config: () => config,
+    rootConfig: () => root as never,
     admins: () => [OWNER],
     store,
     now: () => now,
@@ -81,6 +91,14 @@ const dm = (userId = STRANGER) => ({
 const group = (groupId = GROUP) => ({
   time: 0, self_id: 1, post_type: 'message', message_type: 'group', message_id: 2, user_id: STRANGER,
   group_id: groupId, sender: { user_id: STRANGER, nickname: '群友' },
+  message: [{ type: 'text', data: { text: '随便聊聊' } }],
+}) as never
+
+/** 群里叫了咱的一条消息（@）。 */
+const groupAt = (groupId = GROUP) => ({
+  time: 0, self_id: 1, post_type: 'message', message_type: 'group', message_id: 3, user_id: STRANGER,
+  group_id: groupId, sender: { user_id: STRANGER, nickname: '群友' },
+  message: [{ type: 'at', data: { qq: '1' } }, { type: 'text', data: { text: ' 在吗' } }],
 }) as never
 
 test('门控：open 全部放行；pairing 下管理员与主人私聊放行', async () => {
@@ -149,9 +167,39 @@ test('门控：groupPolicy=allowlist 时未列名单的群直接拒绝、不配�
   h.cleanup()
 })
 
-test('门控：群按房间批准，未批准时整群不触发（带群名）', async () => {
+test('门控：未批准的群里，没人叫咱的消息不建请求、不回话', async () => {
   const h = harness()
   assert.equal(h.service.allow(group()), false)
+  await wait()
+  assert.equal(h.store.pending().length, 0)
+  assert.equal(h.sent.length, 0)
+  h.cleanup()
+})
+
+test('门控：未批准的群里被 @ → 建请求但默认不在群里回话', async () => {
+  const h = harness()
+  assert.equal(h.service.allow(groupAt()), false)
+  await waitFor(() => h.sent.some((m) => m.id === OWNER))
+  assert.equal(h.sent.some((m) => m.kind === 'group'), false, '默认群里安静')
+  assert.equal(h.sent.some((m) => m.id === OWNER), true, '主人收到通知')
+  h.cleanup()
+})
+
+test('门控：打开 replyPendingInGroups 后每个请求只回一次', async () => {
+  const h = harness('pairing', { replyPendingInGroups: true })
+  assert.equal(h.service.allow(groupAt()), false)
+  await waitFor(() => h.sent.some((m) => m.kind === 'group'))
+  const count = h.sent.filter((m) => m.kind === 'group').length
+  assert.equal(count, 1)
+  assert.equal(h.service.allow(groupAt()), false)
+  await wait()
+  assert.equal(h.sent.filter((m) => m.kind === 'group').length, 1, 'pending 期间不重复回')
+  h.cleanup()
+})
+
+test('门控：群按房间批准，未批准时整群不触发（带群名）', async () => {
+  const h = harness()
+  assert.equal(h.service.allow(groupAt()), false)
   await waitFor(() => h.store.pending().length === 1)
   assert.equal(h.store.pending()[0]?.kind, 'group')
   assert.equal(h.store.pending()[0]?.id, GROUP)

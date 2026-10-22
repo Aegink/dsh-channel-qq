@@ -74,6 +74,7 @@
     "allowUsers": [],
     "allowGroups": [],
     "notifyOwner": true,
+    "replyPendingInGroups": false,
     "replyCooldownMin": 30
   },
   "stt": {

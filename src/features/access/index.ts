@@ -17,6 +17,7 @@ export const accessPlugin: SubPlugin = {
       out: () => host.get('platform')?.out ?? null,
       persona: () => host.get('persona')?.pack ?? null,
       config: () => host.config.access,
+      rootConfig: () => host.config,
       admins: () => host.config.admins,
       store,
       now: () => Date.now(),
