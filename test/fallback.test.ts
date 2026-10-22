@@ -57,6 +57,19 @@ test('OCR：开关关着 → 工具不存在', () => {
   assert.equal(definitions.some((d) => d.name === 'qq_read_image_text'), false)
 })
 
+test('OCR：tools.v2 打开时也没被合并面吞掉（单独注册）', () => {
+  const { ctx, definitions } = toolRecorder()
+  const { api } = apiWith({})
+  const config = resolveConfig({
+    selfId: SELF, admins: [MASTER], primaryGroup: GROUP,
+    tools: { v2: true },
+    imageRecognition: { enabled: true, serverOcr: true, maxPerMessage: 2 },
+  })
+  registerQQTools(ctx, config, api, fakeOut() as never, () => {})
+  assert.equal(definitions.some((d) => d.name === 'qq_image'), true, '17 个合并工具照旧')
+  assert.equal(definitions.some((d) => d.name === 'qq_read_image_text'), true, 'OCR 单独注册')
+})
+
 test('OCR：开关打开 → 从消息里取图片并识别文字', async () => {
   const { ctx, definitions } = toolRecorder()
   const { client, api } = apiWith({

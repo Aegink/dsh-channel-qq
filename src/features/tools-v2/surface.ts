@@ -58,8 +58,14 @@ export interface MergedSurfaceArgs {
  */
 export function registerMergedSurface(args: MergedSurfaceArgs): () => void {
   const legacy = new Map<string, ToolSpec>()
-  // 本组的 57 个就在手边：直接进表，不绕采集口。
-  for (const spec of args.specs) legacy.set(spec.name, spec)
+  // 本组里被合并表收编的：直接进表，不绕采集口。
+  for (const spec of args.specs) {
+    if (isLegacyToolName(spec.name)) legacy.set(spec.name, spec)
+  }
+  // 本组里**不在合并表**的新工具（例如 serverOcr 打开后的 qq_read_image_text）：
+  // 单独注册，否则会进 legacy 表却没有任何合并工具能委派到它（等于消失）。
+  const extra = args.specs.filter((spec) => !isLegacyToolName(spec.name))
+  const disposeExtra = extra.length === 0 ? (() => {}) : registerSpecs(args.ctx, extra, args.log, 'tools-v2-extra')
   // 17 个先在采集口**之外**注册：合并名与旧名有一处相撞（合并后的 `qq_remind`
   // 与旧工具 `qq_remind` 同名），先注册再把口子张开——既不会自己收编自己，
   // 也不会让后挂的旧 spec 与合并工具在宿主上撞名（撞名的旧 spec 会被收编进表）。
@@ -75,6 +81,7 @@ export function registerMergedSurface(args: MergedSurfaceArgs): () => void {
     if (stopped) return
     stopped = true
     dispose()
+    disposeExtra()
     setToolSpecSink(null)
   }
 }
