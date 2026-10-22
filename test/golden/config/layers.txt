@@ -122,6 +122,11 @@ override = {}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -700,6 +705,11 @@ override = {}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -1275,6 +1285,11 @@ override = {"batching":{"windowMs":20000}}
   "enabled": true,
   "dir": null,
   "autoCapture": false
+ },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
  },
  "tts": {
   "enabled": true,
@@ -1852,6 +1867,11 @@ override = {"admin":{"port":8790}}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -2427,6 +2447,11 @@ override = {"imageGen":{"model":"flux"}}
   "enabled": true,
   "dir": null,
   "autoCapture": false
+ },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
  },
  "tts": {
   "enabled": true,
@@ -3004,6 +3029,11 @@ override = {"tts":{"voice":"b"}}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
+ },
  "tts": {
   "enabled": true,
   "voice": "b",
@@ -3579,6 +3609,11 @@ override = {"flood":{"windowSec":30}}
   "enabled": true,
   "dir": null,
   "autoCapture": false
+ },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
  },
  "tts": {
   "enabled": true,
@@ -4163,6 +4198,11 @@ override = {}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -4739,6 +4779,11 @@ override = {"keywordTriggers":[]}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -5314,6 +5359,11 @@ override = {"rss":{"pollIntervalMin":5}}
   "enabled": true,
   "dir": null,
   "autoCapture": false
+ },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
  },
  "tts": {
   "enabled": true,
@@ -5898,6 +5948,11 @@ override = {"groupEnabled":false}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -6473,6 +6528,11 @@ override = {}
   "enabled": true,
   "dir": null,
   "autoCapture": false
+ },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
  },
  "tts": {
   "enabled": true,
@@ -7050,6 +7110,11 @@ override = {"groupEnabled":true}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -7625,6 +7690,11 @@ override = {"admin":{"host":"127.0.0.1"}}
   "enabled": true,
   "dir": null,
   "autoCapture": false
+ },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
  },
  "tts": {
   "enabled": true,
@@ -8202,6 +8272,11 @@ override = {}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -8777,6 +8852,11 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "enabled": true,
   "dir": null,
   "autoCapture": false
+ },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800
  },
  "tts": {
   "enabled": true,

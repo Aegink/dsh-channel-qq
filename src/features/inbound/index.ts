@@ -273,6 +273,10 @@ async function dispatch(host: SubHost, runtime: ChannelRuntime, event: OneBotEve
     if (event.post_type === 'message' && event.message_type === 'group') {
       host.get('observers')?.observe(event)
     }
+    if (event.post_type === 'message' && (event.message_type === 'group' || event.message_type === 'private')) {
+      // 原话簿：群与私聊都记原文流水（默认关，打开后才开始积累）。
+      host.get('chatlog')?.record(event)
+    }
     if (event.post_type === 'notice') {
       await runtime.notices.handle(event)
       return

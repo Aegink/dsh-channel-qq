@@ -119,6 +119,11 @@
     "dir": null,
     "autoCapture": false
   },
+  "chatlog": {
+    "enabled": false,
+    "dir": null,
+    "maxChars": 800
+  },
   "tts": {
     "enabled": true,
     "voice": "zh-CN-XiaoxiaoNeural",

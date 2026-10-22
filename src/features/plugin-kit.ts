@@ -41,6 +41,7 @@ import type { AffectionStore } from '../affection.js'
 import type { QuoteStore } from './quotes/store.js'
 import type { ReminderStore } from './reminders/store.js'
 import type { LearnStore } from './learn/store.js'
+import type { ChatLogRecorder } from './chatlog/index.js'
 import type { FloodGuard } from './flood/guard.js'
 import type { createAgentGateway } from '../adapters/dsh-host/agents.js'
 import type { AgentRegistry, PresetRegistry } from '../adapters/dsh-host/services.js'
@@ -129,6 +130,8 @@ export interface ServiceBag {
   reminders?: ReminderStore
   learn?: LearnStore
   flood?: FloodGuard
+  /** 原话簿（chatlog 提供；inbound 事件分发时调用 record）。 */
+  chatlog?: ChatLogRecorder
   observers?: InboundObservers
   /** 发送侧健康探测（platform 提供；后台 `/api/healthz` 与运维脚本读它）。 */
   health?: HealthProbe

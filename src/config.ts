@@ -166,6 +166,8 @@ export interface QuoteConfig {
   autoCapture: boolean
 }
 
+/** 原话簿：按群按日保留原始消息流水（默认关）。 */
+
 /** edge-tts voice replies (free, no key, CPU-only). */
 export interface TtsConfig {
   enabled: boolean
@@ -343,6 +345,7 @@ export interface QQChannelConfig extends SwitchSections {
   linkResolve: LinkResolveConfig
   meme: MemeConfig
   quotes: QuoteConfig
+  chatlog: import('./config/sections/content.js').ChatLogConfig
   tts: TtsConfig
   reminders: ReminderConfig
   rss: RssConfig
