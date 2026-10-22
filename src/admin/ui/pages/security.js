@@ -60,10 +60,12 @@ function accessCard() {
     const data = res.body?.data ?? {}
     const pending = Array.isArray(data.pending) ? data.pending : []
     const mode = String(data.mode ?? 'pairing')
+    const groupPolicy = String(data.groupPolicy ?? 'pairing')
+    const groupLabel = groupPolicy === 'member' ? '在群里就允许' : groupPolicy === 'allowlist' ? '只认群名单' : '逐群审批'
     const header = el('div', { class: 'rowflex access-row' }, [
       el('b', { text: '模式' }),
       pill(mode === 'pairing' ? '配对审批' : mode === 'allowlist' ? '仅白名单' : '全部放行', mode === 'open' ? 'bad' : 'ok'),
-      el('span', { class: 'tiny mute', text: `已批准 ${Array.isArray(data.users) ? data.users.length : 0} 人 / ${Array.isArray(data.groups) ? data.groups.length : 0} 群` }),
+      el('span', { class: 'tiny mute', text: `群：${groupLabel} · 已批准 ${Array.isArray(data.users) ? data.users.length : 0} 人 / ${Array.isArray(data.groups) ? data.groups.length : 0} 群` }),
     ])
     box.appendChild(header)
     if (pending.length === 0) {

@@ -11,6 +11,8 @@ import { b, e, list, n, type FieldGroup } from '../dsl.js'
 
 export interface AccessConfig {
   mode: 'pairing' | 'allowlist' | 'open'
+  /** 群的门控策略：member=在群里就允许；pairing=逐群审批；allowlist=只认名单。 */
+  groupPolicy: 'member' | 'pairing' | 'allowlist'
   allowUsers: number[]
   allowGroups: number[]
   /** 新请求私聊通知主人。 */
@@ -33,6 +35,14 @@ export const ACCESS_GROUPS: FieldGroup[] = [
       ], {
         hot: 'live',
         help: 'pairing：陌生私聊/未批准的群只回「待主人批准」；allowlist：只认下面的名单；open：任何人都能触发。',
+      }),
+      groupPolicy: e('群策略', 'pairing', [
+        ['member', '在群里就允许（推荐）'],
+        ['pairing', '逐群审批'],
+        ['allowlist', '只认群名单'],
+      ], {
+        hot: 'live',
+        help: 'member：机器人已经在的群直接放行（加群本身就是主人操作）；pairing：未批准的群先申请；allowlist：只认下面的群名单与已批准列表。',
       }),
       allowUsers: list('额外允许的 QQ 号', [], {
         hot: 'live', page: 'security', itemsKind: 'number',

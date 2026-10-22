@@ -86,7 +86,7 @@ function roomsCard() {
   const card = section({
     title: '按群覆盖',
     icon: 'people',
-    blurb: '这里只是「按群覆盖」：列表里的群用单独设置，没列的群跟上面的全局默认——它不是白名单。要限制哪些群能触发，去「安全 → 访问门控」（access.allowGroups / 配对审批）。',
+    blurb: '这里只是「按群覆盖」：列表里的群用单独设置，没列的群跟上面的全局默认——它不是白名单。哪些群能触发由「安全 → 访问门控」的群策略决定（在群里就允许 / 逐群审批 / 只认名单）。',
   })
   const box = el('div', { class: 'stack' })
   card.body.appendChild(box)

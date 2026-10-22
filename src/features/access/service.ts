@@ -38,11 +38,12 @@ export class AccessService {
       || (event.post_type === 'notice' && typeof event.group_id === 'number')
     const id = isGroup ? event.group_id : event.user_id
     if (typeof id !== 'number') return true
-    if (isGroup ? this.groupAllowed(id, config) : this.userAllowed(id, config)) return true
+    if (isGroup) return this.allowGroup(id, config)
+    if (this.userAllowed(id, config)) return true
     if (config.mode === 'pairing') {
-      void this.request(isGroup ? 'group' : 'user', id, this.nameOf(event, isGroup), event)
+      void this.request('user', id, this.nameOf(event, false), event)
     } else {
-      this.deps.log(`access: 拒绝 ${isGroup ? 'group' : 'user'} ${id}（allowlist 未命中）`)
+      this.deps.log(`access: 拒绝 user ${id}（allowlist 未命中）`)
     }
     return false
   }
@@ -62,9 +63,10 @@ export class AccessService {
     return { ok: true }
   }
 
-  list(): { mode: string; users: readonly number[]; groups: readonly number[]; pending: readonly unknown[] } {
+  list(): { mode: string; groupPolicy: string; users: readonly number[]; groups: readonly number[]; pending: readonly unknown[] } {
     return {
       mode: this.deps.config().mode,
+      groupPolicy: this.deps.config().groupPolicy,
       users: this.deps.store.users(),
       groups: this.deps.store.groups(),
       pending: this.deps.store.pending(),
@@ -75,8 +77,16 @@ export class AccessService {
     return this.deps.admins().includes(id) || config.allowUsers.includes(id) || this.deps.store.userApproved(id)
   }
 
-  private groupAllowed(id: number, config: QQChannelConfig['access']): boolean {
-    return config.allowGroups.includes(id) || this.deps.store.groupApproved(id)
+  /** 群：member 直接放行（加群是主人操作）；pairing 逐群审批；allowlist 只认名单。 */
+  private allowGroup(id: number, config: QQChannelConfig['access']): boolean {
+    if (config.allowGroups.includes(id) || this.deps.store.groupApproved(id)) return true
+    if (config.groupPolicy === 'member') return true
+    if (config.groupPolicy === 'pairing') {
+      void this.request('group', id, `群 ${id}`, undefined)
+    } else {
+      this.deps.log(`access: 拒绝 group ${id}（群策略 allowlist 未命中）`)
+    }
+    return false
   }
 
   private nameOf(event: OneBotEvent, isGroup: boolean): string {
@@ -84,16 +94,31 @@ export class AccessService {
     return event.sender?.card ?? event.sender?.nickname ?? ''
   }
 
+  /** 群名：首次请求时查一次，查不到就用「群 <号>」。 */
+  private async groupName(id: number): Promise<string> {
+    const api = this.deps.api()
+    if (api === null) return `群 ${id}`
+    try {
+      const info = await api.getGroupInfo(id)
+      const name = typeof info?.group_name === 'string' ? info.group_name.trim() : ''
+      return name === '' ? `群 ${id}` : name
+    } catch {
+      return `群 ${id}`
+    }
+  }
+
   /** 记请求、按冷却回一句、只在首次通知主人。 */
-  private async request(kind: AccessKind, id: number, name: string, event: OneBotEvent): Promise<void> {
+  private async request(kind: AccessKind, id: number, name: string, event: OneBotEvent | undefined): Promise<void> {
     const now = this.deps.now()
     const cooldown = Math.max(1, this.deps.config().replyCooldownMin) * 60_000
     const existing = this.deps.store.pending().find((item) => item.kind === kind && item.id === id)
     const shouldReply = existing === undefined || now - existing.lastNoticeAt >= cooldown
-    const { isNew } = await this.deps.store.request(kind, id, name, now)
-    if (isNew) this.deps.log(`access: pending ${kind} ${id}${name === '' ? '' : ` (${name})`}`)
-    if (shouldReply) this.replyPending(kind, id, event)
-    if (isNew && this.deps.config().notifyOwner) this.notifyOwner(kind, id, name)
+    const display = existing === undefined && kind === 'group' ? await this.groupName(id) : name
+    const { isNew } = await this.deps.store.request(kind, id, display, now)
+    if (isNew) this.deps.log(`access: pending ${kind} ${id}${display === '' ? '' : ` (${display})`}`)
+    if (shouldReply && event !== undefined) this.replyPending(kind, id, event)
+    else if (shouldReply) this.send(id, kind, 'access/pending')
+    if (isNew && this.deps.config().notifyOwner) this.notifyOwner(kind, id, display)
   }
 
   private replyPending(kind: AccessKind, id: number, event: OneBotEvent): void {
@@ -108,7 +133,8 @@ export class AccessService {
     if (owner === undefined || api === null || out === null) return
     if (kind === 'user' && owner === id) return
     const cmd = kind === 'group' ? `放行群 ${id}` : `放行 ${id}`
-    const text = `新的访问请求：${kind === 'user' ? 'QQ' : '群'} ${id}${name === '' ? '' : `（${name}）`}。`
+    const label = name === '' || name === `群 ${id}` ? '' : `（${name}）`
+    const text = `新的访问请求：${kind === 'user' ? 'QQ' : '群'} ${id}${label}。`
       + `回复「${cmd}」或在后台「安全」页批准。`
     void out.push(() => api.sendPrivateMessage(owner, [{ type: 'text', data: { text } }]))
       .catch((error: unknown) => this.deps.log(`access: 通知主人失败：${error instanceof Error ? error.message : String(error)}`))

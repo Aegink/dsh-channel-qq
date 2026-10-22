@@ -73,6 +73,7 @@ override = {}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -666,6 +667,7 @@ override = {}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -1257,6 +1259,7 @@ override = {"batching":{"windowMs":20000}}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -1848,6 +1851,7 @@ override = {"admin":{"port":8790}}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -2439,6 +2443,7 @@ override = {"imageGen":{"model":"flux"}}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -3030,6 +3035,7 @@ override = {"tts":{"voice":"b"}}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -3621,6 +3627,7 @@ override = {"flood":{"windowSec":30}}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -4212,6 +4219,7 @@ override = {}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -4810,6 +4818,7 @@ override = {"keywordTriggers":[]}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -5401,6 +5410,7 @@ override = {"rss":{"pollIntervalMin":5}}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -5999,6 +6009,7 @@ override = {"groupEnabled":false}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -6590,6 +6601,7 @@ override = {}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -7181,6 +7193,7 @@ override = {"groupEnabled":true}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -7772,6 +7785,7 @@ override = {"admin":{"host":"127.0.0.1"}}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -8363,6 +8377,7 @@ override = {}
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,
@@ -8954,6 +8969,7 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
  },
  "access": {
   "mode": "pairing",
+  "groupPolicy": "pairing",
   "allowUsers": [],
   "allowGroups": [],
   "notifyOwner": true,

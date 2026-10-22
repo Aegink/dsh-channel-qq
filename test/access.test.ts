@@ -35,6 +35,7 @@ function harness(mode: 'pairing' | 'allowlist' | 'open' = 'pairing', overrides: 
   let now = 1_000_000
   const config = {
     mode,
+    groupPolicy: 'pairing' as 'pairing' | 'member' | 'allowlist',
     allowUsers: [] as number[],
     allowGroups: [] as number[],
     notifyOwner: true,
@@ -51,6 +52,7 @@ function harness(mode: 'pairing' | 'allowlist' | 'open' = 'pairing', overrides: 
         sent.push({ kind: 'group', id, text: message[0]!.data.text })
         return { message_id: sent.length }
       },
+      getGroupInfo: async () => ({ group_id: 107, group_name: '测试群' }),
     }) as never,
     out: () => ({ push: async (task: () => Promise<unknown>) => await task() }) as never,
     persona: () => ({ render: (key: string) => `[${key}]` }) as never,
@@ -130,12 +132,30 @@ test('门控：批准后放行并通知对方；拒绝后仍拒绝', async () =>
   h.cleanup()
 })
 
-test('门控：群按房间批准，未批准时整群不触发', async () => {
+test('门控：groupPolicy=member 时在群里就放行，不产生待批', async () => {
+  const h = harness('pairing', { groupPolicy: 'member' })
+  assert.equal(h.service.allow(group()), true)
+  await wait()
+  assert.equal(h.store.pending().length, 0)
+  assert.equal(h.sent.length, 0)
+  h.cleanup()
+})
+
+test('门控：groupPolicy=allowlist 时未列名单的群直接拒绝、不配对', async () => {
+  const h = harness('pairing', { groupPolicy: 'allowlist' })
+  assert.equal(h.service.allow(group()), false)
+  await wait()
+  assert.equal(h.store.pending().length, 0)
+  h.cleanup()
+})
+
+test('门控：群按房间批准，未批准时整群不触发（带群名）', async () => {
   const h = harness()
   assert.equal(h.service.allow(group()), false)
   await waitFor(() => h.store.pending().length === 1)
   assert.equal(h.store.pending()[0]?.kind, 'group')
   assert.equal(h.store.pending()[0]?.id, GROUP)
+  assert.equal(h.store.pending()[0]?.name, '测试群')
   await h.service.approve('group', GROUP)
   assert.equal(h.service.allow(group()), true)
   h.cleanup()
