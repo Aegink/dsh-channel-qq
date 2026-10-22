@@ -43,6 +43,8 @@ export class MemoryStore {
   /** 倒排索引：检索词 → 记录 id。候选生成靠它，不靠全表扫描。 */
   private readonly inverted = new Map<string, Set<string>>()
   private pendingAppends = 0
+  /** 上次读/写时文件的 mtime，用于惰性重载检测。 */
+  private loadedMtimeMs = 0
 
   constructor(private readonly opts: MemoryStoreOptions) {
     this.dir = path.join(opts.workspacePath ?? path.join(opts.dshHome, 'channel-qq'), 'knowledge')
@@ -73,7 +75,25 @@ export class MemoryStore {
       }
     }
     this.rebuildIndex()
+    await this.stampMtime()
     return this.byId.size
+  }
+
+  /** 记下当前文件 mtime，作为「我读到的是这一版」的凭据。 */
+  private async stampMtime(): Promise<void> {
+    try { this.loadedMtimeMs = (await fs.stat(this.file)).mtimeMs } catch { this.loadedMtimeMs = 0 }
+  }
+
+  /** 库文件被别的进程改过就重读，让外部写入（夜间蒸馏、迁移脚本）当轮可见。
+   *  只做一次 stat，几毫秒；不用 fs.watch，省得留常驻监听器。 */
+  async refreshIfChanged(): Promise<boolean> {
+    let mtime = 0
+    try { mtime = (await fs.stat(this.file)).mtimeMs } catch { return false }
+    if (mtime === 0 || mtime === this.loadedMtimeMs) return false
+    const before = this.byId.size
+    await this.load()
+    this.opts.log(`memory: 库文件已被外部更新，重载 ${before} → ${this.byId.size} 条`)
+    return true
   }
 
   private rebuildIndex(): void {
@@ -190,6 +210,7 @@ export class MemoryStore {
       }
       this.pendingAppends += records.length
     })
+    await this.stampMtime()
     if (this.pendingAppends >= COMPACT_EVERY) await this.compact()
   }
 
@@ -206,6 +227,7 @@ export class MemoryStore {
       await atomicWriteFile(this.file, body === '' ? '' : body + '\n')
       this.pendingAppends = 0
     })
+    await this.stampMtime()
     return { kept: this.byId.size }
   }
 }
