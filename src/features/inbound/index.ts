@@ -265,6 +265,8 @@ function createRuntime(deps: RuntimeDeps): ChannelRuntime {
 /** 事件分发：旁路观察先跑（同步、发射后不管），通知进裁决，消息进流水线。 */
 async function dispatch(host: SubHost, runtime: ChannelRuntime, event: OneBotEvent): Promise<void> {
   try {
+    // 安全门控在一切之前：不通过的消息不进观察者、不进组包、不进 agent。
+    if (host.get('access')?.allow(event) === false) return
     if (event.post_type === 'message' && event.message_type === 'group') {
       host.get('observers')?.observe(event)
     }

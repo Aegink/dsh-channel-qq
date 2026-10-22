@@ -55,6 +55,7 @@ import type { Interaction } from './interaction/index.js'
 import type { MetricsService } from './metrics/service.js'
 import type { HistoryService } from './history/service.js'
 import type { Reliability } from './reliability/service.js'
+import type { AccessService } from './access/service.js'
 
 /** platform 子插件提供的四件套（传输对象 + 端口 + 出站队列）。 */
 export interface PlatformParts {
@@ -143,6 +144,8 @@ export interface ServiceBag {
   history?: HistoryService
   /** 回合告知（reliability 提供；慢回合/永久失败提示）。 */
   reliability?: Reliability
+  /** 访问门控（access 提供；入站分发最前面判定）。 */
+  access?: AccessService
 }
 
 /** 根转交进来的宿主能力；这里也是 cordis `ctx` 唯一被"窄化"的地方。 */

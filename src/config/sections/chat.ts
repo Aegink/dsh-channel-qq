@@ -12,6 +12,8 @@ import { METRICS_GROUPS } from './metrics.js'
 import { HISTORY_GROUPS } from './history.js'
 import { RELIABILITY_GROUPS } from './reliability.js'
 import { DAILY_REPORT_GROUPS } from './daily-report.js'
+import { ACCESS_GROUPS } from './access.js'
+import { IMAGE_GROUPS } from './image.js'
 
 export const CHAT_GROUPS: FieldGroup[] = [
   {
@@ -74,20 +76,7 @@ export const CHAT_GROUPS: FieldGroup[] = [
       wakeIdle: b('空闲时直接唤醒', true, { help: '关掉则只在正在跑的轮次里注入，不主动打断。', hot: 'live' }),
     },
   },
-  {
-    id: 'imageRecognition',
-    label: '看图',
-    page: 'media',
-    help: '把群友发的图片下载下来附进提示词（视觉）。',
-    fields: {
-      enabled: b('启用', true, { hot: 'live' }),
-      serverOcr: b('注册图片 OCR 工具', false, {
-        hot: 'reload',
-        help: '默认关。打开后多一个 qq_read_image_text（协议端 OCR），适合截图/海报里的字。',
-      }),
-      maxPerMessage: n('每条消息最多几张', 2, { min: 0, max: 10, hot: 'live' }),
-    },
-  },
+  ...IMAGE_GROUPS,
   ...POKE_GROUPS,
   ...INTERACTION_GROUPS,
   ...FORWARD_GROUPS,
@@ -95,6 +84,7 @@ export const CHAT_GROUPS: FieldGroup[] = [
   ...HISTORY_GROUPS,
   ...RELIABILITY_GROUPS,
   ...DAILY_REPORT_GROUPS,
+  ...ACCESS_GROUPS,
   {
     id: 'stt',
     label: '语音转文字',

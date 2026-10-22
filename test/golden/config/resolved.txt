@@ -63,6 +63,13 @@
     "time": "22:30",
     "target": "primary-group"
   },
+  "access": {
+    "mode": "pairing",
+    "allowUsers": [],
+    "allowGroups": [],
+    "notifyOwner": true,
+    "replyCooldownMin": 30
+  },
   "stt": {
     "enabled": true,
     "serverFallback": false,

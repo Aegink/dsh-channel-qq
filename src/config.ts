@@ -26,15 +26,6 @@ export interface SegmentationConfig {
   removeTrailingPeriod: boolean
 }
 
-export interface ImageConfig {
-  /** Download inbound images and attach them to the model prompt (vision). */
-  enabled: boolean
-  /** Register the server-side OCR tool (`qq_read_image_text`). */
-  serverOcr: boolean
-  /** Max images attached per message (extras stay noted as [图片]). */
-  maxPerMessage: number
-}
-
 export interface GroupModelConfig {
   /** Group conversations run on this route; null = same as the default route. */
   provider: string | null
@@ -330,7 +321,7 @@ export interface QQChannelConfig extends SwitchSections {
   segmentation: SegmentationConfig
   batching: BatchingConfig
   injectMode: InjectModeConfig
-  imageRecognition: ImageConfig
+  imageRecognition: import('./config/sections/image.js').ImageConfig
   poke: import('./config/sections/poke.js').PokeConfig
   interaction: import('./config/sections/interaction.js').InteractionConfig
   forward: import('./config/sections/forward.js').ForwardConfig
@@ -338,6 +329,7 @@ export interface QQChannelConfig extends SwitchSections {
   history: import('./config/sections/history.js').HistoryConfig
   reliability: import('./config/sections/reliability.js').ReliabilityConfig
   dailyReport: import('./config/sections/daily-report.js').DailyReportConfig
+  access: import('./config/sections/access.js').AccessConfig
   stt: STTConfig
   groupModel: GroupModelConfig
   /** Additional group-level or user-level name triggers. */

@@ -65,6 +65,7 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
   ['history', section('服务端历史', 'history')],
   ['reliability', section('回合告知', 'reliability')],
   ['dailyReport', section('群日报', 'dailyReport')],
+  ['access', section('访问门控', 'access')],
   ['stt', section('语音转文字', 'stt')],
   ['groupModel', section('群聊模型', 'groupModel')],
   ['keywordTriggers', list('唤醒关键词', [], {

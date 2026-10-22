@@ -2,6 +2,9 @@
 
 ### 新增
 
+- **访问门控（默认开）**：`access.mode` = `pairing`（默认）/ `allowlist` / `open`。
+  陌生私聊与未批准的群只回「待主人批准」，不进 agent；主人后台「安全」页批准后放行，
+  管理员始终允许。修掉「任何私聊都能触发 agent」的暴露面（awesome-dsh-plugin 审核意见）
 - **交互提示（A1，默认关）**：`chat.interaction` —— 私聊回合设置「正在输入」、
   群聊给触发消息贴表情回应，回合结束撤销（私聊不支持表情回应，已在实测后限定群聊）
 - **合并转发（A3，默认关）**：`chat.forward.longReplyThreshold` —— 分段条数达到阈值

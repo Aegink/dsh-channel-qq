@@ -66,6 +66,13 @@ override = {}
   "time": "22:30",
   "target": "primary-group"
  },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
+ },
  "stt": {
   "enabled": true,
   "serverFallback": false,
@@ -637,6 +644,13 @@ override = {}
   "time": "22:30",
   "target": "primary-group"
  },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
+ },
  "stt": {
   "enabled": true,
   "serverFallback": false,
@@ -1205,6 +1219,13 @@ override = {"batching":{"windowMs":20000}}
   "enabled": false,
   "time": "22:30",
   "target": "primary-group"
+ },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
  },
  "stt": {
   "enabled": true,
@@ -1775,6 +1796,13 @@ override = {"admin":{"port":8790}}
   "time": "22:30",
   "target": "primary-group"
  },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
+ },
  "stt": {
   "enabled": true,
   "serverFallback": false,
@@ -2343,6 +2371,13 @@ override = {"imageGen":{"model":"flux"}}
   "enabled": false,
   "time": "22:30",
   "target": "primary-group"
+ },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
  },
  "stt": {
   "enabled": true,
@@ -2913,6 +2948,13 @@ override = {"tts":{"voice":"b"}}
   "time": "22:30",
   "target": "primary-group"
  },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
+ },
  "stt": {
   "enabled": true,
   "serverFallback": false,
@@ -3482,6 +3524,13 @@ override = {"flood":{"windowSec":30}}
   "time": "22:30",
   "target": "primary-group"
  },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
+ },
  "stt": {
   "enabled": true,
   "serverFallback": false,
@@ -4050,6 +4099,13 @@ override = {}
   "enabled": false,
   "time": "22:30",
   "target": "primary-group"
+ },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
  },
  "stt": {
   "enabled": true,
@@ -4627,6 +4683,13 @@ override = {"keywordTriggers":[]}
   "time": "22:30",
   "target": "primary-group"
  },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
+ },
  "stt": {
   "enabled": true,
   "serverFallback": false,
@@ -5195,6 +5258,13 @@ override = {"rss":{"pollIntervalMin":5}}
   "enabled": false,
   "time": "22:30",
   "target": "primary-group"
+ },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
  },
  "stt": {
   "enabled": true,
@@ -5772,6 +5842,13 @@ override = {"groupEnabled":false}
   "time": "22:30",
   "target": "primary-group"
  },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
+ },
  "stt": {
   "enabled": true,
   "serverFallback": false,
@@ -6340,6 +6417,13 @@ override = {}
   "enabled": false,
   "time": "22:30",
   "target": "primary-group"
+ },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
  },
  "stt": {
   "enabled": true,
@@ -6910,6 +6994,13 @@ override = {"groupEnabled":true}
   "time": "22:30",
   "target": "primary-group"
  },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
+ },
  "stt": {
   "enabled": true,
   "serverFallback": false,
@@ -7478,6 +7569,13 @@ override = {"admin":{"host":"127.0.0.1"}}
   "enabled": false,
   "time": "22:30",
   "target": "primary-group"
+ },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
  },
  "stt": {
   "enabled": true,
@@ -8048,6 +8146,13 @@ override = {}
   "time": "22:30",
   "target": "primary-group"
  },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
+ },
  "stt": {
   "enabled": true,
   "serverFallback": false,
@@ -8616,6 +8721,13 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "enabled": false,
   "time": "22:30",
   "target": "primary-group"
+ },
+ "access": {
+  "mode": "pairing",
+  "allowUsers": [],
+  "allowGroups": [],
+  "notifyOwner": true,
+  "replyCooldownMin": 30
  },
  "stt": {
   "enabled": true,
