@@ -11,7 +11,7 @@
  *     召回，等 e2 的嵌入到位再用模型补 keywords/context。
  */
 
-import { isChunkRecord, makeRecord, withHit, type MemoryKind, type MemoryRecord } from '../../core/memory/model.js'
+import { isChunkRecord, makeRecord, oneLine, withHit, type MemoryKind, type MemoryRecord } from '../../core/memory/model.js'
 import { keywordRelevance, queryTerms, rankCandidates } from '../../core/memory/score.js'
 import type { MemoryService } from '../../ports/memory.js'
 import type { MemoryStore } from './store.js'
@@ -75,7 +75,8 @@ function findDuplicate(store: MemoryStore, content: string): MemoryRecord | null
 }
 
 async function memorize(deps: MemoryServiceDeps, input: MemorizeInput): Promise<MemorizeResult> {
-  const content = input.content.trim()
+  // 与入库同一归一化口径，否则超长内容每次截断后就认不出重复。
+  const content = oneLine(input.content.trim())
   const now = deps.clock.now()
   const duplicate = findDuplicate(deps.store, content)
   if (duplicate !== null) {
@@ -112,6 +113,8 @@ async function mirrorToLegacy(deps: MemoryServiceDeps, record: MemoryRecord, sou
 }
 
 async function recall(deps: MemoryServiceDeps, input: RecallInput): Promise<RecallResult> {
+  // 先按 mtime 惰性重载，外部写入（夜间蒸馏、迁移脚本）当轮就能召回。
+  await deps.store.refreshIfChanged().catch(() => {})
   const terms = deps.store.keepKnown(queryTerms(input.query))
   const kind = input.kind === undefined ? null : asKind(input.kind)
   const candidates = deps.store.candidatesByTerms(terms)

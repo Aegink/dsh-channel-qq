@@ -55,6 +55,7 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
     hot: 'live', page: 'messages', dormant: true,
   })],
   // ── 消息与群聊行为（段） ────────────────────────────────────────────────
+  ['channelHealth', section('渠道健康告警', 'channelHealth')],
   ['segmentation', section('分段发送', 'segmentation')],
   ['batching', section('攒批', 'batching')],
   ['injectMode', section('实时注入', 'injectMode')],
@@ -107,6 +108,7 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
   ['linkResolve', section('链接卡片', 'linkResolve')],
   ['meme', section('表情包制作', 'meme')],
   ['quotes', section('群语录', 'quotes')],
+  ['chatlog', section('原话簿', 'chatlog')],
   ['tts', section('语音合成', 'tts')],
   ['reminders', section('提醒', 'reminders')],
   ['rss', section('RSS', 'rss')],
@@ -114,6 +116,7 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
   ['imageGen', section('生图', 'imageGen')],
   ['learn', section('口癖学习', 'learn')],
   ['memory', section('记忆', 'memory')],
+  ['people', section('人物档', 'people')],
   ['music', section('音乐', 'music')],
   ['skills', section('技能', 'skills')],
   ['kb', section('知识库', 'kb')],

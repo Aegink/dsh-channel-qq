@@ -34,6 +34,11 @@ NapCat 仍可作回滚方案）收发消息，
 - **交互提示（可选，默认关）**：私聊回合显示「正在输入」，群里给触发消息贴一个表情回应
 - **合并转发（可选，默认关）**：长清单/日志/总结改发一张聊天记录卡片，失败自动回退逐条
 - **指标（可选，默认关）**：回合耗时 p50/p90、token 四个桶、发送/工具失败，后台按房间与天看
+- **原话簿（可选，默认关）**：按群按日保存原始消息流水（`<工作区>/chatlog`，默认保留 14 天），
+  `qq_group_digest` 可按日期翻某群聊了什么
+- **人物档（可选，默认关）**：`qq_person_note` 手动记录「谁爱用什么说法、忌讳什么」，
+  按群分开存，与自动侧写互补
+- **渠道健康告警（可选，默认关）**：消息链路失联超过阈值私聊管理员，恢复后再报，同场故障限频
 - **访问门控（默认开）**：陌生人私聊 / 未批准的群只回一句「待主人批准」，不进 agent；
   后台「安全」页批准后才放行（也可切白名单或全放行）
 
@@ -83,6 +88,7 @@ npm run verify     # 类型 + 测试 + 分层 + 体积，全绿再继续
 | [docs/configuration.md](docs/configuration.md) | 配置三层覆盖、生效方式、环境变量 |
 | [docs/deployment.md](docs/deployment.md) | 部署、发布、回滚、故障排查 |
 | [docs/memory.md](docs/memory.md) | 记忆系统：夜间任务、embed 服务、评测与限制 |
+| [docs/memory-standalone.md](docs/memory-standalone.md) | 记忆库插件化：脱离 cordis 独立使用 |
 | [SECURITY.md](SECURITY.md) | 威胁模型与部署清单 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 门禁、硬规则、提交信息 |
 

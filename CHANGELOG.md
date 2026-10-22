@@ -2,6 +2,15 @@
 
 ### 新增
 
+- **原话簿（默认关）**：`chatlog` —— 按群按日保存原始消息流水到 `<工作区>/chatlog`，
+  `chatlog.keepDays` 默认 14 天清理；`qq_group_digest` 按日期翻群聊记录
+- **人物档（默认关）**：`people` —— `qq_person_note` 手动记「谁爱用什么说法、忌讳什么」，
+  按群分开存、与自动侧写互补
+- **渠道健康告警（默认关）**：`channelHealth` —— 消息链路失联超过阈值私聊管理员，
+  恢复后再报；探针每次真发 `get_status`，不被 WS readyState 骗
+- **记忆库独立入口**：`src/standalone-memory.ts`，脱离 cordis 直接使用记忆核心
+  （见 [docs/memory-standalone.md](docs/memory-standalone.md)）
+- **记忆卫生**：库文件被外部改写后按 mtime 惰性重载；超长内容先归一化再判重
 - **访问门控（默认开）**：`access.mode` = `pairing`（默认）/ `allowlist` / `open`。
   陌生私聊与未批准的群只回「待主人批准」，不进 agent；主人后台「安全」页批准后放行，
   管理员始终允许。修掉「任何私聊都能触发 agent」的暴露面（awesome-dsh-plugin 审核意见）

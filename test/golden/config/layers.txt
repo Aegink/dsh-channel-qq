@@ -15,6 +15,11 @@ override = {}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -122,6 +127,12 @@ override = {}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -179,6 +190,10 @@ override = {}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -593,6 +608,11 @@ override = {}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -700,6 +720,12 @@ override = {}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -757,6 +783,10 @@ override = {}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -1169,6 +1199,11 @@ override = {"batching":{"windowMs":20000}}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -1276,6 +1311,12 @@ override = {"batching":{"windowMs":20000}}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -1333,6 +1374,10 @@ override = {"batching":{"windowMs":20000}}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -1745,6 +1790,11 @@ override = {"admin":{"port":8790}}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -1852,6 +1902,12 @@ override = {"admin":{"port":8790}}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -1909,6 +1965,10 @@ override = {"admin":{"port":8790}}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -2321,6 +2381,11 @@ override = {"imageGen":{"model":"flux"}}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -2428,6 +2493,12 @@ override = {"imageGen":{"model":"flux"}}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -2485,6 +2556,10 @@ override = {"imageGen":{"model":"flux"}}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -2897,6 +2972,11 @@ override = {"tts":{"voice":"b"}}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -3004,6 +3084,12 @@ override = {"tts":{"voice":"b"}}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "b",
@@ -3061,6 +3147,10 @@ override = {"tts":{"voice":"b"}}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -3473,6 +3563,11 @@ override = {"flood":{"windowSec":30}}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -3580,6 +3675,12 @@ override = {"flood":{"windowSec":30}}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -3637,6 +3738,10 @@ override = {"flood":{"windowSec":30}}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -4049,6 +4154,11 @@ override = {}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -4163,6 +4273,12 @@ override = {}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -4220,6 +4336,10 @@ override = {}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -4632,6 +4752,11 @@ override = {"keywordTriggers":[]}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -4739,6 +4864,12 @@ override = {"keywordTriggers":[]}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -4796,6 +4927,10 @@ override = {"keywordTriggers":[]}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -5208,6 +5343,11 @@ override = {"rss":{"pollIntervalMin":5}}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -5315,6 +5455,12 @@ override = {"rss":{"pollIntervalMin":5}}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -5379,6 +5525,10 @@ override = {"rss":{"pollIntervalMin":5}}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -5791,6 +5941,11 @@ override = {"groupEnabled":false}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -5898,6 +6053,12 @@ override = {"groupEnabled":false}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -5955,6 +6116,10 @@ override = {"groupEnabled":false}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -6367,6 +6532,11 @@ override = {}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -6474,6 +6644,12 @@ override = {}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -6531,6 +6707,10 @@ override = {}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -6943,6 +7123,11 @@ override = {"groupEnabled":true}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -7050,6 +7235,12 @@ override = {"groupEnabled":true}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -7107,6 +7298,10 @@ override = {"groupEnabled":true}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -7519,6 +7714,11 @@ override = {"admin":{"host":"127.0.0.1"}}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -7626,6 +7826,12 @@ override = {"admin":{"host":"127.0.0.1"}}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -7683,6 +7889,10 @@ override = {"admin":{"host":"127.0.0.1"}}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -8095,6 +8305,11 @@ override = {}
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -8202,6 +8417,12 @@ override = {}
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -8259,6 +8480,10 @@ override = {}
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",
@@ -8671,6 +8896,11 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
  "talkValue": 0.6,
  "rateLimitMs": 300,
  "maxMessageLength": 4000,
+ "channelHealth": {
+  "enabled": false,
+  "thresholdMs": 90000,
+  "realertMs": 1800000
+ },
  "segmentation": {
   "enabled": false,
   "style": "natural",
@@ -8778,6 +9008,12 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "dir": null,
   "autoCapture": false
  },
+ "chatlog": {
+  "enabled": false,
+  "dir": null,
+  "maxChars": 800,
+  "keepDays": 14
+ },
  "tts": {
   "enabled": true,
   "voice": "zh-CN-XiaoxiaoNeural",
@@ -8835,6 +9071,10 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "vectorDim": 512,
   "vectorTimeoutMs": 800,
   "vectorWeight": 1
+ },
+ "people": {
+  "enabled": false,
+  "dir": null
  },
  "music": {
   "kugouApiBase": "http://127.0.0.1:4000",

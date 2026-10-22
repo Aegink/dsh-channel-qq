@@ -267,12 +267,14 @@ function createRuntime(deps: RuntimeDeps): ChannelRuntime {
 async function dispatch(host: SubHost, runtime: ChannelRuntime, event: OneBotEvent): Promise<void> {
   try {
     // 安全门控在一切之前：不通过的消息不进观察者、不进组包、不进 agent。
+    host.get('channelHealth')?.onInbound()
     if (host.get('access')?.allow(event) === false) return
     // 管理员私聊命令（待批访问/放行/拒绝）在模型之前处理。
     if (await maybeHandleAccessCommand(host, event)) return
     if (event.post_type === 'message' && event.message_type === 'group') {
       host.get('observers')?.observe(event)
     }
+    if (event.post_type === 'message') host.get('chatlog')?.record(event)
     if (event.post_type === 'notice') {
       await runtime.notices.handle(event)
       return

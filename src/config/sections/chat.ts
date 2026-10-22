@@ -15,6 +15,15 @@ import { DAILY_REPORT_GROUPS } from './daily-report.js'
 import { ACCESS_GROUPS } from './access.js'
 import { IMAGE_GROUPS } from './image.js'
 
+/** 渠道健康告警：消息链路失联超过阈值时私聊管理员（默认关）。 */
+export interface ChannelHealthConfig {
+  enabled: boolean
+  /** 失联多久开始告警（毫秒）。 */
+  thresholdMs: number
+  /** 同一场故障内的重复告警间隔（毫秒）。 */
+  realertMs: number
+}
+
 export const CHAT_GROUPS: FieldGroup[] = [
   {
     id: 'connection',
@@ -28,6 +37,17 @@ export const CHAT_GROUPS: FieldGroup[] = [
         ['reverse', '插件监听（reverse）'],
       ], { hot: 'reload' }),
       url: s('地址', 'ws://127.0.0.1:3001', { hot: 'reload' }),
+    },
+  },
+  {
+    id: 'channelHealth',
+    label: '渠道健康告警',
+    page: 'connection',
+    fields: {
+      // 读法：插件挂载时启动守望循环；改配置会重挂（watches channelHealth）。
+      enabled: b('启用', false, { hot: 'live', help: '默认关。打开后消息链路失联超过阈值会私聊管理员，恢复后再报，同场故障限频。' }),
+      thresholdMs: n('失联阈值（毫秒）', 90_000, { min: 10_000, max: 600_000, hot: 'live', unit: 'ms' }),
+      realertMs: n('重复告警间隔（毫秒）', 30 * 60_000, { min: 60_000, max: 3_600_000, hot: 'live', unit: 'ms' }),
     },
   },
   {

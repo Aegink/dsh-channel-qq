@@ -319,6 +319,7 @@ export interface QQChannelConfig extends SwitchSections {
   rateLimitMs: number
   maxMessageLength: number
   segmentation: SegmentationConfig
+  channelHealth: import('./config/sections/chat.js').ChannelHealthConfig
   batching: BatchingConfig
   injectMode: InjectModeConfig
   imageRecognition: import('./config/sections/image.js').ImageConfig
@@ -350,6 +351,8 @@ export interface QQChannelConfig extends SwitchSections {
   imageGen: ImageGenConfig
   learn: LearnConfig
   memory: MemoryConfig
+  people: import('./config/sections/memory.js').PeopleConfig
+  chatlog: import('./config/sections/content.js').ChatLogConfig
   music: import('./config/sections/music.js').MusicConfig
   skills: import('./config/sections/skills.js').SkillsConfig
   sessionReset: import('./config/sections/session-reset.js').SessionResetConfig

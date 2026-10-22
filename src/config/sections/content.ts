@@ -2,6 +2,17 @@
 
 import { b, json, n, s, type FieldGroup } from '../dsl.js'
 
+/** 原话簿：按群按日保留原始消息流水（默认关）。 */
+export interface ChatLogConfig {
+  enabled: boolean
+  /** Storage directory; null = <workspace>/chatlog. */
+  dir: string | null
+  /** 单条最多留多少字，超了截断并标注；0 表示不截。 */
+  maxChars: number
+  /** 保留天数；0 = 不清理。 */
+  keepDays: number
+}
+
 export const CONTENT_GROUPS: FieldGroup[] = [
   {
     id: 'quotes',
@@ -13,6 +24,21 @@ export const CONTENT_GROUPS: FieldGroup[] = [
       // （旧面板曾把这里标成"立即生效"，实际不会——这次如实标注）。
       dir: s('存储目录', null, { help: '留空 = <工作区>/quotes。改它需重启插件才换存储位置。', hot: 'restart' }),
       autoCapture: b('自动收录', false, { hot: 'live' }),
+    },
+  },
+  {
+    id: 'chatlog',
+    label: '原话簿',
+    page: 'quotes',
+    fields: {
+      // 读法：每条消息现取（live）；开启/关闭由 watches chatlog 重挂。
+      enabled: b('启用', false, {
+        hot: 'live',
+        help: '默认关。打开后群聊与私聊的文本消息会原样追加到原话簿（按群按日），并注册 qq_group_digest 工具。',
+      }),
+      dir: s('存储目录', null, { help: '留空 = <工作区>/chatlog（刻意不在 memory/ 下，避免被切进记忆库）。', hot: 'live' }),
+      maxChars: n('单条上限字数', 800, { min: 0, max: 10_000, hot: 'live', help: '超过截断并标注；0 表示不截。' }),
+      keepDays: n('保留天数', 14, { min: 0, max: 365, hot: 'live', unit: '天', help: '0 = 不清理；跨天时执行一次清理。' }),
     },
   },
   {

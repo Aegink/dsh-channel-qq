@@ -101,7 +101,7 @@ export const MAX_STRENGTH = 20
 const IMPORTANT_THRESHOLD = 8
 
 /** 把任意输入裁成一句话（去掉换行、压缩空白、截断）。 */
-function oneLine(text: string): string {
+export function oneLine(text: string): string {
   const flat = text.replace(/\s+/g, ' ').trim()
   return flat.length <= MAX_CONTENT_CHARS ? flat : `${flat.slice(0, MAX_CONTENT_CHARS - 1)}…`
 }

@@ -56,6 +56,7 @@ import type { MetricsService } from './metrics/service.js'
 import type { HistoryService } from './history/service.js'
 import type { Reliability } from './reliability/service.js'
 import type { AccessService } from './access/service.js'
+import type { ChatLogRecorder } from './chatlog/index.js'
 
 /** platform 子插件提供的四件套（传输对象 + 端口 + 出站队列）。 */
 export interface PlatformParts {
@@ -146,6 +147,10 @@ export interface ServiceBag {
   reliability?: Reliability
   /** 访问门控（access 提供；入站分发最前面判定）。 */
   access?: AccessService
+  /** 渠道健康守望（channel-health 提供；入站事件到达时记活）。 */
+  channelHealth?: { onInbound(): void }
+  /** 原话簿（chatlog 提供；入站消息原样记录）。 */
+  chatlog?: ChatLogRecorder
 }
 
 /** 根转交进来的宿主能力；这里也是 cordis `ctx` 唯一被"窄化"的地方。 */

@@ -12,6 +12,11 @@
   "talkValue": 0.6,
   "rateLimitMs": 300,
   "maxMessageLength": 4000,
+  "channelHealth": {
+    "enabled": false,
+    "thresholdMs": 90000,
+    "realertMs": 1800000
+  },
   "segmentation": {
     "enabled": false,
     "style": "natural",
@@ -119,6 +124,12 @@
     "dir": null,
     "autoCapture": false
   },
+  "chatlog": {
+    "enabled": false,
+    "dir": null,
+    "maxChars": 800,
+    "keepDays": 14
+  },
   "tts": {
     "enabled": true,
     "voice": "zh-CN-XiaoxiaoNeural",
@@ -176,6 +187,10 @@
     "vectorDim": 512,
     "vectorTimeoutMs": 800,
     "vectorWeight": 1
+  },
+  "people": {
+    "enabled": false,
+    "dir": null
   },
   "music": {
     "kugouApiBase": "http://127.0.0.1:4000",
