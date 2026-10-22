@@ -119,6 +119,11 @@
     "dir": null,
     "autoCapture": false
   },
+  "channelHealth": {
+    "enabled": false,
+    "thresholdMs": 90000,
+    "realertMs": 1800000
+  },
   "tts": {
     "enabled": true,
     "voice": "zh-CN-XiaoxiaoNeural",

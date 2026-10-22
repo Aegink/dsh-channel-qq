@@ -107,6 +107,7 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
   ['linkResolve', section('链接卡片', 'linkResolve')],
   ['meme', section('表情包制作', 'meme')],
   ['quotes', section('群语录', 'quotes')],
+  ['channelHealth', section('渠道健康告警', 'channelHealth')],
   ['tts', section('语音合成', 'tts')],
   ['reminders', section('提醒', 'reminders')],
   ['rss', section('RSS', 'rss')],

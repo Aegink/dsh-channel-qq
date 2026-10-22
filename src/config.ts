@@ -343,6 +343,7 @@ export interface QQChannelConfig extends SwitchSections {
   linkResolve: LinkResolveConfig
   meme: MemeConfig
   quotes: QuoteConfig
+  channelHealth: import('./config/sections/chat.js').ChannelHealthConfig
   tts: TtsConfig
   reminders: ReminderConfig
   rss: RssConfig

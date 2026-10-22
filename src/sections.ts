@@ -25,6 +25,7 @@ import { historyPlugin } from './features/history/index.js'
 import { reliabilityPlugin } from './features/reliability/index.js'
 import { dailyReportPlugin } from './features/daily-report/index.js'
 import { accessPlugin } from './features/access/index.js'
+import { channelHealthPlugin } from './features/channel-health/index.js'
 import { learnPlugin } from './features/learn/index.js'
 import { linksPlugin } from './features/links/index.js'
 import { memePlugin } from './features/meme/index.js'
@@ -49,6 +50,7 @@ export const SECTION_PLUGINS: readonly SubPlugin[] = [
   personaPlugin,
   observersPlugin,
   platformPlugin,
+  channelHealthPlugin,
   accessPlugin,
   interactionPlugin,
   metricsPlugin,
