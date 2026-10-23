@@ -13,6 +13,7 @@ import { el } from '../dom.js'
 import { api, errText } from '../api.js'
 import { button, emptyBox, kvList, section } from '../components/card.js'
 import { toast } from '../components/toast.js'
+import { openDialog } from '../components/dialog.js'
 
 const PROTOCOLS = [
   ['openai-completions', 'OpenAI Chat Completions'],
@@ -257,6 +258,58 @@ function modelRow(model, rerender) {
   return row
 }
 
+/** 拉取结果选择框：先告诉用户有多少个，再由用户勾选要加哪些。 */
+function pickModels(ids, have, note, onConfirm) {
+  const body = el('div', { class: 'stack' })
+  body.appendChild(el('div', { class: 'tiny mute', text: note }))
+  const controls = el('div', { class: 'rowflex' })
+  const list = el('div', {
+    class: 'stack',
+    style: 'max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px',
+  })
+  const rows = []
+  for (const id of ids) {
+    const box = el('input', { type: 'checkbox' })
+    if (have.has(id)) { box.checked = true; box.disabled = true }
+    const label = el('label', { class: 'rowflex', style: 'gap:8px;align-items:center' }, [
+      box,
+      el('span', { class: 'mono tiny', text: id }),
+      ...have.has(id) ? [el('span', { class: 'tiny mute', text: '（已添加）' })] : [],
+    ])
+    rows.push({ id, box })
+    list.appendChild(label)
+  }
+  const selectAll = button('全选', 'small ghost')
+  const clearAll = button('全不选', 'small ghost')
+  selectAll.addEventListener('click', () => { for (const row of rows) if (!row.box.disabled) row.box.checked = true; refresh() })
+  clearAll.addEventListener('click', () => { for (const row of rows) if (!row.box.disabled) row.box.checked = false; refresh() })
+  controls.append(selectAll, clearAll)
+  body.append(controls, list)
+
+  const dlg = openDialog({
+    title: `获取成功：${ids.length} 个模型`,
+    body,
+    actions: [
+      { label: '取消', run: (d) => d.close() },
+      { label: '添加选中', kind: 'primary', enabled: false, run: (d) => {
+        const chosen = rows.filter((row) => row.box.checked && !row.box.disabled).map((row) => row.id)
+        if (chosen.length > 0) onConfirm(chosen)
+        d.close()
+      } },
+    ],
+  })
+  const addBtn = dlg.buttons[1]?.btn
+  const refresh = () => {
+    const count = rows.filter((row) => row.box.checked && !row.box.disabled).length
+    if (addBtn !== undefined) {
+      addBtn.textContent = `添加选中（${count}）`
+      addBtn.disabled = count === 0
+    }
+  }
+  for (const row of rows) row.box.addEventListener('change', refresh)
+  refresh()
+}
+
 /** 模型编辑器：多行 + 目录预填 + 从网关拉取。 */
 function modelEditor() {
   const box = el('div', { class: 'stack' })
@@ -296,14 +349,17 @@ function modelEditor() {
     if (res.status !== 200) { toast(`拉取失败：${errText(res)}`, 'bad', 9000); return }
     const ids = Array.isArray(res.body?.models) ? res.body.models : []
     const have = new Set(draftModels.map((m) => m.id))
-    let added = 0
-    for (const id of ids) {
-      if (have.has(id)) continue
-      draftModels.push({ id, ...catalogMatch(id) ? { contextWindow: catalogMatch(id).context } : {} })
-      added += 1
-    }
-    rerender()
-    toast(String(res.body?.note ?? `拉到 ${ids.length} 个模型`) + `；新增 ${added} 行`, 'ok', 7000)
+    const fresh = ids.filter((id) => !have.has(id))
+    if (ids.length === 0) { toast(`${String(res.body?.note ?? '拉取成功')}，但网关没有返回模型`, 'bad', 8000); return }
+    if (fresh.length === 0) { toast(`获取成功：${ids.length} 个模型，全部都已在表单里`, 'ok', 6000); return }
+    pickModels(ids, have, String(res.body?.note ?? `获取成功：${ids.length} 个模型`), (chosen) => {
+      for (const id of chosen) {
+        const hit = catalogMatch(id)
+        draftModels.push({ id, ...hit ? { contextWindow: hit.context } : {} })
+      }
+      rerender()
+      toast(`已添加 ${chosen.length} 个模型`, 'ok', 5000)
+    })
   })
   box.append(datalist, list, el('div', { class: 'rowflex' }, [add, fillAll, pull]))
   return box

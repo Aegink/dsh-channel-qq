@@ -74,11 +74,13 @@ async function saveRoute(env: ProvidersRouteEnv, req: http.IncomingMessage, res:
   }
   const body = await env.readBody(req)
   const ip = env.clientIp(req)
+  const models = modelsOf(body.models)
   const input = {
     name: String(body.name ?? ''),
     baseURL: String(body.baseURL ?? ''),
     model: String(body.model ?? ''),
     vision: body.vision === true,
+    ...(models === undefined ? {} : { models }),
     ...body.displayName === undefined ? {} : { displayName: String(body.displayName) },
     ...body.api === undefined ? {} : { api: String(body.api) },
     ...body.apiKey === undefined ? {} : { apiKey: String(body.apiKey) },
@@ -129,6 +131,28 @@ async function discoverRoute(env: ProvidersRouteEnv, req: http.IncomingMessage, 
     await env.audit(ip, 'POST', '/api/providers/discover', 'providers.discover', `拉取 ${name} 失败：${messageOf(error)}`, 'error')
     env.json(res, 400, { error: messageOf(error) })
   }
+}
+
+/** 表单里的模型数组：逐项校验，坏项丢弃（不因为一行没填好整次保存失败）。 */
+function modelsOf(raw: unknown): Array<{ id: string; name?: string; contextWindow?: number; maxTokens?: number; vision?: boolean }> | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const out: Array<{ id: string; name?: string; contextWindow?: number; maxTokens?: number; vision?: boolean }> = []
+  for (const item of raw) {
+    if (item === null || typeof item !== 'object' || Array.isArray(item)) continue
+    const record = item as Record<string, unknown>
+    const id = String(record.id ?? '').trim()
+    if (id === '') continue
+    out.push({
+      id,
+      ...(typeof record.name === 'string' && record.name !== '' ? { name: record.name } : {}),
+      ...(typeof record.contextWindow === 'number' && Number.isInteger(record.contextWindow) && record.contextWindow > 0
+        ? { contextWindow: record.contextWindow } : {}),
+      ...(typeof record.maxTokens === 'number' && Number.isInteger(record.maxTokens) && record.maxTokens > 0
+        ? { maxTokens: record.maxTokens } : {}),
+      ...(record.vision === true ? { vision: true } : {}),
+    })
+  }
+  return out.length === 0 ? undefined : out
 }
 
 /** 供应商路由：`/api/providers` 前缀下的一切。命中返回 true。 */

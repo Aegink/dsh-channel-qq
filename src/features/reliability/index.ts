@@ -14,6 +14,7 @@ export const reliabilityPlugin: SubPlugin = {
       config: () => host.config.reliability,
       persona: () => host.get('persona')?.pack ?? null,
       log: host.log,
+      now: () => Date.now(),
     })
     host.provide('reliability', reliability)
     return () => reliability.dispose()
