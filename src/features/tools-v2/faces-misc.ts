@@ -14,7 +14,7 @@ export const MEMORY_FACE: Face = {
     { action: 'retrieve', legacy: 'retrieve_knowledge', required: ['query'] },
     { action: 'extract', legacy: 'extract_knowledge', required: ['source', 'text'] },
     // 深召回：原文块（600 字）+ 出处，一次 5–8 条。不进自动注入预算，由 agent 主动调。
-    { action: 'search', legacy: 'qq_memory_search', required: ['query'], optional: ['limit'] },
+    { action: 'search', legacy: 'qq_memory_search', required: ['query'], optional: ['limit', 'asOf'] },
   ],
 }
 

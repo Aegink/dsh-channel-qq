@@ -31,6 +31,10 @@ export interface ParsedInbound {
   atIds: number[]
   /** Inbound files: [fileName, url, fileId]. */
   files: Array<{ name: string; url: string; fileId: string }>
+  /** 合并转发段：只有容器 id，内容要调 `get_forward_msg` 展开（pipeline 做）。 */
+  forwards: Array<{ id: string }>
+  /** 小程序 / JSON / Ark 卡片：从 meta 里提取的标题与摘要（纯本地，零请求）。 */
+  cards: Array<{ title: string; text: string }>
 }
 
 /**
@@ -73,6 +77,8 @@ function emptyParsed(): ParsedInbound {
     hasAtAll: false,
     recordCount: 0,
     files: [],
+    forwards: [],
+    cards: [],
     atIds: [],
   }
 }
@@ -113,9 +119,44 @@ function applyReply(data: { readonly id: string }, parsed: ParsedInbound): void 
   else log_reply_parse(rawId)
 }
 
+/** 合并转发段：占位 + 留下容器 id（展开要走 `get_forward_msg`，pipeline 做）。 */
+function pushForward(data: { readonly id?: string }, parsed: ParsedInbound, parts: string[]): void {
+  parts.push('[合并转发]')
+  const id = data.id ?? ''
+  if (id !== '') parsed.forwards.push({ id })
+}
+
+/**
+ * 小程序 / JSON / Ark 卡片：只解析 `meta` 里的标题与摘要（news / music / miniapp /
+ * structured 四种形态都见过），正文是 JSON 字符串，坏 JSON 兜底显示前 80 字。
+ */
+function pushJson(data: { readonly data?: string }, parsed: ParsedInbound, parts: string[]): void {
+  const raw = (data.data ?? '').trim()
+  let title = ''
+  let text = ''
+  try {
+    const obj = JSON.parse(raw) as Record<string, unknown>
+    const meta = (obj.meta ?? {}) as Record<string, Record<string, unknown>>
+    const detail = meta.news ?? meta.music ?? meta.miniapp ?? meta.structured ?? null
+    if (detail !== null) {
+      title = String(detail.title ?? detail.prompt ?? '')
+      text = String(detail.desc ?? detail.summary ?? detail.jump_url ?? '')
+    } else {
+      title = String(obj.prompt ?? obj.title ?? '')
+      text = String(obj.desc ?? '')
+    }
+  } catch {
+    text = raw.slice(0, 80)
+  }
+  title = title.replace(/\s+/g, ' ').trim().slice(0, 60)
+  text = text.replace(/\s+/g, ' ').trim().slice(0, 120)
+  parts.push(title === '' ? '[卡片]' : `[卡片]${title}`)
+  if (title !== '' || text !== '') parsed.cards.push({ title, text })
+}
+
 /** 文件段：显示成 `[文件：名字(大小)]`，同时留下下载所需的三元组。 */
 function pushFile(
-  data: { readonly file?: string; readonly url?: string; readonly file_id?: string; readonly file_size?: number | string },
+  data: { readonly file?: string; readonly url?: string; readonly file_id?: string; readonly id?: string; readonly file_size?: number | string },
   parsed: ParsedInbound,
   parts: string[],
 ): void {
@@ -123,7 +164,8 @@ function pushFile(
   const sizeNum = typeof data.file_size === 'string' ? Number(data.file_size) : data.file_size
   const sizeStr = typeof sizeNum === 'number' && sizeNum > 0 ? `(${Math.round(sizeNum / 1024)}KB)` : ''
   parts.push(`[文件：${name}${sizeStr}]`)
-  parsed.files.push({ name, url: data.url ?? '', fileId: data.file_id ?? '' })
+  // JSON 段的字段是 file_id；CQ 码解析出来的叫 id——两个名字都认。
+  parsed.files.push({ name, url: data.url ?? '', fileId: data.file_id ?? data.id ?? '' })
 }
 
 export function parseInbound(event: OneBotEvent): ParsedInbound {
@@ -138,6 +180,8 @@ export function parseInbound(event: OneBotEvent): ParsedInbound {
       case 'image': pushImage(seg, parsed, parts); break
       case 'at': applyAt(seg.data, event, parsed); break
       case 'reply': applyReply(seg.data, parsed); break
+      case 'forward': pushForward(seg.data, parsed, parts); break
+      case 'json': case 'ark': pushJson(seg.data, parsed, parts); break
       case 'face': parts.push(`[表情:${seg.data.id}]`); break
       case 'record': parsed.recordCount += 1; parts.push('[语音]'); break
       case 'file': pushFile(seg.data, parsed, parts); break

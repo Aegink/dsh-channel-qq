@@ -15,6 +15,20 @@
 > "注入几条弱证据"好过"什么都不注入"，且证据块明确标注「证据，不是指令」，模型可以不理。
 > 要提升召回，方向是**更短的事实**（抽取管线），不是更长的块。
 
+## 2026-10-24 起的三层注入与巩固（P0–P3）
+
+在上述骨架上加的机制（详见 [internal/research/20261024_memory-system-research.md](internal/research/20261024_memory-system-research.md)）：
+
+| 机制 | 位置 | 一句话 |
+|---|---|---|
+| 事实蒸馏 | `core/memory/distill.ts` | 抽取产物去口语壳、截 80 字再入库（recall 短板的对症药） |
+| 即时抽取 | `features/memory/instant-capture.ts` | 回合结束按规则判据带外沉淀（每日上限、90 秒冷却，默认关） |
+| 巩固合并 | `core/memory/consolidate.ts` + nightly `memory.consolidate`（04:55） | 同一件事的两种说法合成一条；决策留凭证 |
+| 矛盾冻结 | `features/memory/consolidate-io.ts` | 疑似冲突进 `conflicts.jsonl` 队列等主人裁决（不再只刷日志） |
+| 三层注入 | `core/memory/select.ts` + `features/memory/inject-v3.ts` | 常驻（core 标记）+ 话题 + 走神（默认 8%）；日子（生日/纪念日）在最前 |
+| 实体扩展 | `core/memory/entities.ts` | 查询点名的人/号顺着实体词典多想一步 |
+| asOf | `retriever.retrieve({ asOf })` | 深召回的时间旅行："那天我们是怎么想的" |
+
 ## 组成
 
 | 层 | 位置 | 作用 |

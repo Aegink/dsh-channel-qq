@@ -29,7 +29,7 @@
 import type { OneBotClient } from '../../onebot.js'
 import type {
   ActionAck, EssenceEntry, FileEntry, FileUrl, FetchedMessage, ForwardNode, FriendInfo,
-  GroupInfo, GroupMemberInfo, ImageFile, LoginInfo, QQApi, RecordFile, SendResult,
+  ForwardMsgBody, GroupHonorInfo, GroupInfo, GroupMemberInfo, ImageFile, LoginInfo, QQApi, RecordFile, SendResult, StrangerInfo,
 } from '../../ports/platform.js'
 
 // 类型从端口转发出来，调用方既可以 import 端口，也可以继续从这里拿。
@@ -46,7 +46,12 @@ type Call = <T>(action: string, params?: Record<string, unknown>, timeoutMs?: nu
 type MessageSlice = Pick<
   QQApi,
   | 'sendGroupMessage' | 'sendPrivateMessage' | 'sendTo' | 'getMessage' | 'deleteMessage'
-  | 'getImage' | 'getRecord' | 'getFile' | 'sendLike' | 'getStatus'
+  | 'getImage' | 'getRecord' | 'getFile' | 'getForwardMsg' | 'getStrangerInfo'
+  | 'setOnlineStatus' | 'setDiyOnlineStatus' | 'setGroupReaction'
+  | 'fetchCustomFace' | 'sendCustomFace'
+  | 'getGroupHonorInfo' | 'getGroupAtAllRemain'
+  | 'setFriendAddRequest' | 'setGroupAddRequest' | 'getUnidirectionalFriendList'
+  | 'checkUrlSafely' | 'sendLike' | 'getStatus'
 >
 
 type GroupSlice = Pick<
@@ -89,6 +94,37 @@ function messageActions(call: Call): MessageSlice {
       30_000,
     ),
     getFile: (fileId) => call<RecordFile>('get_file', { file_id: fileId }, 20_000),
+    // ── 合并转发 / 社交 / 人格化 / 群运营 / 安检（2026-10-25 能力审计后接入）──
+    getForwardMsg: (forwardId) => call<ForwardMsgBody>('get_forward_msg', { message_id: forwardId }, 15_000),
+    getStrangerInfo: (userId) => call<StrangerInfo>('get_stranger_info', { user_id: userId }, 10_000),
+    setOnlineStatus: (status) => call<ActionAck>('set_online_status', { status }),
+    setDiyOnlineStatus: (faceId, content) => call<ActionAck>('set_diy_online_status', { face_id: faceId, content }),
+    setGroupReaction: (groupId, messageId, emojiId, remove) => call<ActionAck>(
+      'set_group_reaction',
+      { group_id: groupId, message_id: messageId, emoji_id: emojiId, ...(remove === undefined ? {} : { set: !remove }) },
+    ),
+    fetchCustomFace: (count) => call<{ faces?: Array<{ emoji_id?: string; emoji_name?: string; url?: string }> }>(
+      'fetch_custom_face', ...(count === undefined ? [{}] : [{ count }]),
+    ),
+    sendCustomFace: (fileId, isGroup, target) => call<ActionAck>(isGroup
+      ? 'send_custom_face'
+      : 'send_custom_face', isGroup ? { group_id: target, file: fileId } : { user_id: target, file: fileId }),
+    getGroupHonorInfo: (groupId, type) => call<GroupHonorInfo>(
+      'get_group_honor_info', { group_id: groupId, ...(type === undefined ? {} : { type }) },
+    ),
+    getGroupAtAllRemain: (groupId) => call<{ can_at_all?: boolean; remain_at_all_count_for_group?: number; remain_at_all_count_for_uin?: number }>(
+      'get_group_at_all_remain', { group_id: groupId },
+    ),
+    setFriendAddRequest: (flag, approve, remark) => call<ActionAck>(
+      'set_friend_add_request', { flag, approve, ...(remark === undefined ? {} : { remark }) },
+    ),
+    setGroupAddRequest: (flag, approve, reason) => call<ActionAck>(
+      'set_group_add_request', { flag, approve, ...(reason === undefined ? {} : { reason }) },
+    ),
+    getUnidirectionalFriendList: () => call<{ list?: Array<{ user_id?: number; nickname?: string; source?: string }> }>(
+      'get_unidirectional_friend_list', {},
+    ),
+    checkUrlSafely: (url) => call<{ level?: number | string; message?: string }>('check_url_safely', { url }),
     // 不钳制上限：clamp 到 10 是 tools.ts 的业务规则，门面只做转发。
     sendLike: (userId, times) => call<ActionAck>('send_like', { user_id: userId, times: times ?? 1 }),
     // 健康探针专用：短超时——探针本身就是"现在还能不能通"，卡 30 秒没有意义。

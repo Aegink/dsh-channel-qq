@@ -22,6 +22,8 @@
  */
 
 import { withHit, type MemoryStatus, type MemorySource } from '../../core/memory/model.js'
+import { distillFact } from '../../core/memory/distill.js'
+import { applyMerge, mergeNote, planMerges } from '../../core/memory/consolidate.js'
 import {
   archiveNote, buildLinks, findConflicts, pickForDigest, renderDigest, splitForArchive,
   DIGEST_MAX_BYTES,
@@ -33,6 +35,7 @@ import { registerJob, type JobContext, type JobHandler, type JobOutcome } from '
 import { rebuildMemoryVectors } from './rebuild.js'
 import { chunksOfDay } from './session-split.js'
 import { indexWorkspaceChunks } from './chunks.js'
+import { appendConsolidationLog, freezeConflicts } from './consolidate-io.js'
 import type { MemoryStore } from './store.js'
 import {
   appendArchive, findNearDuplicate, readDiary, toNewRecord, writeDigestFile,
@@ -92,9 +95,10 @@ export function registerNightlyJobs(deps: NightlyDeps): () => void {
     registerJob('memory.chunks', withStore(indexChunks)),
     registerJob('memory.diary-extract', withStore(diaryExtract)),
     registerJob('memory.session-split', withStore(sessionSplit)),
+    registerJob('memory.consolidate', withStore(consolidate)),
     registerJob('memory.reflect', withStore(reflect)),
     registerJob('memory.links', withStore((d, s) => links(d, s))),
-    registerJob('memory.contradictions', withStore((d, s) => contradictions(d, s))),
+    registerJob('memory.contradictions', withStore(contradictions)),
     registerJob('memory.forget', withStore(forget)),
     registerJob('memory.digest', withStore(digest)),
     registerJob('memory.reindex', withStore((d, s) => reindex(d, s))),
@@ -115,16 +119,18 @@ async function ingest(
   let hit = 0
   const fresh: ExtractedItem[] = []
   for (const item of items) {
-    const content = item.content.trim()
-    if (content === '') continue
+    // P0 的写入侧蒸馏：抽出来的先去壳成 ≤80 字短事实，再谈去重。
+    // 去重判据跑在**蒸馏后**的内容上，"同一段话的两种啰嗦说法"才能认出彼此。
+    const content = distillFact(item.content)
+    if (content.length < 4) continue
     const duplicate = findNearDuplicate(store, content)
     if (duplicate !== null) {
       await store.put(withHit(duplicate, now))
       hit += 1
       continue
     }
-    await store.remember(toNewRecord(item, source, opts), now, deps.random)
-    fresh.push(item)
+    await store.remember(toNewRecord({ ...item, content }, source, opts), now, deps.random)
+    fresh.push({ ...item, content })
     added += 1
   }
   await mirrorToLegacy(deps, fresh, source)
@@ -184,6 +190,28 @@ async function sessionSplit(deps: NightlyDeps, store: MemoryStore, ctx: JobConte
   return { note: `会话分解 ${day}：${blocks} 块 → 新增 ${added}，命中已有 ${hit}` }
 }
 
+/**
+ * 04:55 巩固：合并"同一件事的两种说法"、冻结疑似冲突（P1）。
+ *
+ * 顺序在 session-split（04:40）之后、reflect（05:10）之前：白天和昨天刚进来的
+ * 记录先合并一遍，反思看到的就不是满库重复。合并是**可逆的**（drop 走 supersede，
+ * 历史可回查），所以自动执行；冲突只冻结不处置（等主人拍板）。
+ */
+async function consolidate(deps: NightlyDeps, store: MemoryStore, ctx: JobContext): Promise<JobOutcome> {
+  const now = ctx.now.getTime()
+  const plans = planMerges(store.all())
+  let merged = 0
+  for (const plan of plans) {
+    await store.put(...applyMerge(plan, now))
+    await appendConsolidationLog(store.dir, { at: now, action: 'merge', note: mergeNote(plan) }, deps.log)
+    merged += 1
+    if (merged >= 40) break // 一晚最多合 40 对：宁渐进，不一夜大改
+  }
+  const frozen = await freezeConflicts(store.dir, findConflicts(store.all()).slice(0, 20), now)
+  if (merged === 0 && frozen === 0) return { note: '巩固：没有需要合并或冻结的' }
+  return { note: `巩固：合并 ${merged} 对，新冻结 ${frozen} 对疑似冲突（等主人裁决）` }
+}
+
 /** 05:10 反思：近 7 天的高重要性记录 → 归纳成候选（等人审核，不直接生效）。 */
 async function reflect(deps: NightlyDeps, store: MemoryStore, ctx: JobContext): Promise<JobOutcome> {
   if (!deps.extractorReady()) return { skipped: 'no-extractor' }
@@ -206,11 +234,14 @@ async function links(deps: NightlyDeps, store: MemoryStore): Promise<JobOutcome>
   return { note: `链接：${changed.length} 条记录挂上了新邻居（keywords/context 的回写要模型，本轮跳过）` }
 }
 
-/** 05:50 矛盾扫描：检出疑似冲突对；够不到模型裁决就按 §4.2 规则 3 两条并存。 */
-async function contradictions(deps: NightlyDeps, store: MemoryStore): Promise<JobOutcome> {
+/** 05:50 矛盾扫描：检出疑似冲突对 → 冻结进队列（P1 前只报日志，两条并存）。 */
+async function contradictions(deps: NightlyDeps, store: MemoryStore, ctx: JobContext): Promise<JobOutcome> {
   const pairs = findConflicts(store.all())
   if (pairs.length === 0) return { note: '矛盾扫描：没有疑似冲突' }
-  return { note: `矛盾扫描：检出 ${pairs.length} 对疑似冲突——两条并存，等主人在后台裁定` }
+  const frozen = await freezeConflicts(store.dir, pairs.slice(0, 50), ctx.now.getTime())
+  return frozen > 0
+    ? { note: `矛盾扫描：检出 ${pairs.length} 对，新冻结 ${frozen} 对（队列里等主人裁定）` }
+    : { note: `矛盾扫描：${pairs.length} 对疑似冲突都已在队列里` }
 }
 
 /** 06:05 遗忘与归档：R < 0.05 且没被钉住的记录转 archived，正文进归档文件。 */

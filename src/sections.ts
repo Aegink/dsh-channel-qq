@@ -28,6 +28,8 @@ import { accessPlugin } from './features/access/index.js'
 import { channelHealthPlugin } from './features/channel-health/index.js'
 import { peoplePlugin } from './features/people/index.js'
 import { chatlogPlugin } from './features/chatlog/index.js'
+import { socialPlugin } from './features/social/index.js'
+import { capabilitiesPlugin } from './features/capabilities/index.js'
 import { learnPlugin } from './features/learn/index.js'
 import { linksPlugin } from './features/links/index.js'
 import { memePlugin } from './features/meme/index.js'
@@ -66,6 +68,8 @@ export const SECTION_PLUGINS: readonly SubPlugin[] = [
   affectionPlugin,
   qqToolsPlugin,
   peoplePlugin,
+  socialPlugin,
+  capabilitiesPlugin,
   chatlogPlugin,
   linksPlugin,
   memePlugin,

@@ -42,6 +42,7 @@ export const FIELD = {
   keyword: { type: 'string', description: '歌名或歌手' },
   key: { type: 'string', description: '扫码登录轮询时传 start 返回的 key' },
   limit: { type: 'number', description: '返回条数' },
+  asOf: { type: 'string', description: '时间旅行（可选）：只要某天（YYYY-MM-DD）之前已知道的记忆' },
   senderId: { type: 'number', description: '按发送者QQ号过滤' },
   sinceDate: { type: 'string', description: '起始日期 YYYY-MM-DD（含）' },
   untilDate: { type: 'string', description: '结束日期 YYYY-MM-DD（含）' },

@@ -15,20 +15,22 @@
  *     "命中词数"排序，不是按插入顺序。
  *
  * e2 的向量（09 §5.2）分两条路径，**边界必须清晰**：
- *   - 向量关着（默认）、查询嵌不动、或服务不可用时 → `keywordCandidates`：
- *     e1 的关键词路径，逐字节保留（这是"打开向量之前行为不变"的锚点）；
- *   - 向量可用时 → `hybridCandidates`：关键词与向量**各取 top-50 合并去重**，
- *     相关性 = 余弦（缺向量退回关键词重叠度），链接邻居只在相关性 > 0.35 时展开。
+ *   - 向量关着/查询嵌不动/服务不可用 → `keywordCandidates`（e1 锚点，逐字节保留）；
+ *   - 向量可用 → `hybridCandidates`：两路各取 top-50 合并，邻居只在相关性 > 0.35 时展开。
  */
 
 import type { MemoryRecord } from '../../core/memory/model.js'
 import { isRetrievable, withHit } from '../../core/memory/model.js'
 import {
-  DEFAULT_WEIGHTS, LINK_MIN_RELEVANCE, TIME_WEIGHTS, blendedRelevance, cosineSimilarity,
+  DEFAULT_WEIGHTS, LINK_MIN_RELEVANCE, MAX_INJECT_CHARS, TIME_WEIGHTS, blendedRelevance, cosineSimilarity,
   keywordRelevance, queryTerms, rankCandidates, type Candidate,
 } from '../../core/memory/score.js'
 import { buildQuery, boostRelevance, narrowestRange, type MemoryQuery } from '../../core/memory/query.js'
-import { evidenceLine, renderEvidence, selectForInjection } from '../../core/memory/select.js'
+import {
+  evidenceLine, pickPinned, pickWander, renderConstantBlock, renderEvidence, renderWanderBlock,
+  selectForInjection,
+} from '../../core/memory/select.js'
+import { expandEntities } from './entity-expand.js'
 import type { MemoryStore } from './store.js'
 import type { VectorRecall } from './vector-store.js'
 
@@ -71,6 +73,19 @@ export interface RetrieveOptions {
    * 不该参与判断"检索能不能找到依据"。
    */
   readonly weights?: { readonly relevance: number; readonly importance: number; readonly recency: number }
+  /**
+   * asOf 时间旅行（P2）：问"那个时点我们知道什么"。过滤改用该时点
+   * （validFrom/validTo 与 recordedAt 都按它判），排序仍用真实现在。
+   * 深召回工具的日期参数走这里；自动注入永远不用。
+   */
+  readonly asOf?: number
+  /**
+   * 走神骰子（P2 第三层）：`roll ∈ [0,1) < 8%` 时带一条"很久没想起"的深记忆回来。
+   * 不传 = 不掷骰子（评测与深召回都关着走神，只有自动注入传）。
+   */
+  readonly roll?: number
+  /** 关掉常驻层（评测用；自动注入默认开）。 */
+  readonly noPinned?: boolean
 }
 
 export interface Retrieved {
@@ -109,15 +124,36 @@ export class MemoryRetriever {
       ...(opts.aliases === undefined ? {} : { aliases: opts.aliases }),
       ...(opts.masterId === undefined ? {} : { masterId: opts.masterId }),
     })
+    const lineOpts = {
+      renderTime: this.deps.renderTime,
+      ...(this.deps.labelOfSubject === undefined ? {} : { labelOfSubject: this.deps.labelOfSubject }),
+    }
+    // ── 常驻层 + 走神层（第一/三层）：与话题无关，预算先占（见 outerBlocks）。 ──
+    const { pinned, wander, pinnedBlock, wanderBlock, budget } = this.outerBlocks(opts, lineOpts)
+
     // 空文本不劳烦 embed 服务——也避免把"没得查"当成一次失败去触发冷却。
     const vectors = this.deps.vectors
     const queryVec = vectors === undefined || opts.text.trim() === ''
       ? null
       : await vectors.embedQuery(opts.text)
+    // asOf：过滤用那个时点，排序仍用真实现在（"当时知道什么"不影响"现在多重要"）。
+    const filterNow = opts.asOf ?? opts.now
     const candidates = queryVec !== null && vectors !== undefined
-      ? this.hybridCandidates(query, queryVec, opts.now, opts.room, opts.roomOnly === true, opts.accept)
-      : this.keywordCandidates(query, opts.now, opts.room, opts.roomOnly === true, opts.accept)
-    if (candidates.length === 0) return { query, picked: [], evidence: '' }
+      ? this.hybridCandidates(query, queryVec, filterNow, opts.room, opts.roomOnly === true, opts.accept)
+      : this.keywordCandidates(query, filterNow, opts.room, opts.roomOnly === true, opts.accept)
+    // 实体扩展（P2 第二路的补充）：查询里点名的"人/事"顺着实体词典多想一步。
+    // 实体扩展与主路径同守一套区间/房间/accept：时间词（"前天"）表达的查询意图
+    // 对扩展进来的候选同样生效，否则"上个月的部署"会被实体"部署"拉回来。
+    const range = narrowestRange(query)
+    const admit = (r: MemoryRecord) => this.admits(r, filterNow, opts.room, opts.roomOnly === true, range, opts.accept)
+    expandEntities(candidates, { store: this.deps.store, admit }, query.text)
+
+    if (candidates.length === 0) {
+      if (pinnedBlock === '' && wanderBlock === '') return { query, picked: [], evidence: '' }
+      const evidence = [pinnedBlock, wanderBlock].filter((part) => part !== '').join('\n\n')
+      await this.account([...pinned, ...(wander === null ? [] : [wander])], opts.now)
+      return { query, picked: [...pinned, ...(wander === null ? [] : [wander])], evidence }
+    }
 
     const weighted: Candidate[] = candidates.map((c) => ({
       record: c.record,
@@ -126,20 +162,18 @@ export class MemoryRetriever {
     const weights = opts.weights ?? (query.preferRecent ? TIME_WEIGHTS : DEFAULT_WEIGHTS)
     const ranked = rankCandidates(weighted, opts.now, weights)
     // 预算与渲染同源：按真正要渲染的那一行算长度（前缀也计入）。
-    const lineOpts = {
-      renderTime: this.deps.renderTime,
-      ...(this.deps.labelOfSubject === undefined ? {} : { labelOfSubject: this.deps.labelOfSubject }),
-    }
     const picked = selectForInjection(ranked, {
-      ...(opts.budget ?? {}),
+      ...budget,
       lineOf: (record, index) => evidenceLine(record, index, lineOpts),
     })
-    if (picked.length === 0) return { query, picked: [], evidence: '' }
 
-    const evidence = renderEvidence(picked, lineOpts)
-    await this.account(picked.map((c) => c.record), opts.now)
-    return { query, picked: picked.map((c) => c.record), evidence }
+    const evidence = [pinnedBlock, renderEvidence(picked, lineOpts), wanderBlock]
+      .filter((part) => part !== '').join('\n\n')
+    const touched = [...picked.map((c) => c.record), ...pinned, ...(wander === null ? [] : [wander])]
+    if (touched.length > 0) await this.account(touched, opts.now)
+    return { query, picked: touched, evidence }
   }
+
 
   /**
    * e1 的关键词候选（**默认路径**：向量关着、查询嵌不动、或服务不可用时都走这里）。
@@ -307,6 +341,31 @@ export class MemoryRetriever {
         const own = this.hybridRelevance(terms, neighbour, queryVec, weight)
         if (own > LINK_MIN_RELEVANCE) scored.set(linkId, own)
       }
+    }
+  }
+
+  /**
+   * 话题检索之外的两个"场外"块：常驻（第一层）与走神（第三层）。
+   * 它们不参与相似度竞争，但渲染行先从注入预算里扣——600 字是硬上限。
+   */
+  private outerBlocks(
+    opts: RetrieveOptions,
+    lineOpts: { renderTime: (at: number) => string; labelOfSubject?: (record: MemoryRecord) => string },
+  ): { pinned: MemoryRecord[]; wander: MemoryRecord | null; pinnedBlock: string; wanderBlock: string; budget: NonNullable<RetrieveOptions['budget']> } {
+    const pinned = opts.noPinned === true ? [] : pickPinned(this.deps.store.all())
+    const pinnedBlock = renderConstantBlock(pinned, lineOpts)
+    const wander = opts.roll === undefined ? null : pickWander(this.deps.store.all(), opts.now, opts.roll)
+    const wanderBlock = wander === null ? '' : renderWanderBlock(wander, lineOpts)
+    const reserved = (pinnedBlock === '' ? 0 : pinnedBlock.length + 2) + (wanderBlock === '' ? 0 : wanderBlock.length + 2)
+    return {
+      pinned,
+      wander,
+      pinnedBlock,
+      wanderBlock,
+      budget: {
+        ...(opts.budget ?? {}),
+        maxChars: Math.max(150, (opts.budget?.maxChars ?? MAX_INJECT_CHARS) - reserved),
+      },
     }
   }
 

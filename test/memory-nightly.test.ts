@@ -271,7 +271,7 @@ test('链接 job：把邻居挂上并写库', async () => {
   } finally { h.cleanup() }
 })
 
-test('矛盾扫描 job：检出但不改数据（两条并存，等主人裁定）', async () => {
+test('矛盾扫描 job：检出 → 冻结进队列，但不改记录本身（P1）', async () => {
   const h = await harness()
   try {
     const store = h.store()!
@@ -279,8 +279,14 @@ test('矛盾扫描 job：检出但不改数据（两条并存，等主人裁定�
     await store.remember({ kind: 'preference', subject: { type: 'user', id: 7 }, content: '学弟不吃香菜，点外卖要备注', source: { kind: 'chat' } }, NOW - DAY, () => 0.6)
     const before = store.all().map((r) => r.status)
     const outcome = await resolveJob('memory.contradictions')!(ctxOf(h.dir, h.dir))
-    assert.match(String(outcome?.note), /疑似冲突/)
+    assert.match(String(outcome?.note), /新冻结 1 对/)
     assert.deepEqual(store.all().map((r) => r.status), before, '扫描不改任何记录')
+    // 冻结队列：一对挂进 knowledge/conflicts.jsonl，重复扫不重复记。
+    const { readOpenConflicts } = await import('../src/features/memory/consolidate-io.js')
+    const kdir = path.join(h.dir, 'knowledge')
+    assert.equal((await readOpenConflicts(kdir)).length, 1)
+    await resolveJob('memory.contradictions')!(ctxOf(h.dir, h.dir))
+    assert.equal((await readOpenConflicts(kdir)).length, 1, '同一对不重复入队')
   } finally { h.cleanup() }
 })
 

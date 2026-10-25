@@ -1189,6 +1189,10 @@
       "limit": {
         "type": "number",
         "description": "返回条数（默认 8，最多 8）"
+      },
+      "asOf": {
+        "type": "string",
+        "description": "可选，时间旅行：只要某天（YYYY-MM-DD）之前已知道的记忆，如\"上周二我们怎么想的\""
       }
     },
     "required": [

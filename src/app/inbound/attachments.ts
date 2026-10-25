@@ -120,8 +120,13 @@ export async function attachImages(deps: AttachmentDeps, urls: readonly string[]
   return refs
 }
 
+/** 文件下载的房间上下文：群文件要 group_id 才能换下载 URL。 */
+export interface FileRoomContext {
+  readonly groupId?: number
+}
+
 /**
- * 把私聊里带的文件收进工作区收件箱，返回落盘路径。
+ * 把消息里带的文件收进工作区收件箱，返回落盘路径（群聊与私聊都走这里）。
  *
  * 每个文件单独 try：一个坏链接不该让另外两个也收不到。
  */
@@ -129,12 +134,13 @@ export async function receiveFiles(
   deps: AttachmentDeps,
   parsed: ParsedInbound,
   nowMs: number,
+  ctx: FileRoomContext = {},
 ): Promise<string[]> {
   if (parsed.files.length === 0) return []
   const saved: string[] = []
   for (const file of parsed.files.slice(0, MAX_FILES_PER_MESSAGE)) {
     try {
-      const bytes = await downloadFileBytes(deps, file)
+      const bytes = await downloadFileBytes(deps, file, ctx)
       if (bytes === null) throw new Error('no downloadable url')
       const target = await deps.blobs.writeInbox({ name: file.name, bytes, nowMs })
       saved.push(target)
@@ -146,10 +152,18 @@ export async function receiveFiles(
   return saved
 }
 
-/** 一个入站文件的字节：先按消息里的地址，再让 NapCat 解析。 */
+/**
+ * 一个入站文件的字节。解析顺序：
+ *   1. 消息段里的地址（别人给的，过闸门）；
+ *   2. 群文件 → `get_group_file_url`、私聊 → `get_private_file_url`（SnowLuma
+ *      新版语义：`get_file` 只认图片/语音缓存，文件 id 它解析不了——2026-10-24
+ *      起 10 次"no downloadable url"全是这个原因）；
+ *   3. 最后兜底 `get_file`（兼容还认文件 id 的旧实现）。
+ */
 async function downloadFileBytes(
   deps: AttachmentDeps,
   file: { readonly url: string; readonly fileId: string },
+  ctx: FileRoomContext = {},
 ): Promise<Buffer | null> {
   if (file.url !== '') {
     // 消息段里的地址 = 别人给的地址，必须过闸门。
@@ -157,6 +171,14 @@ async function downloadFileBytes(
     if (res !== null && res.ok) return Buffer.from(res.bytes)
   }
   if (file.fileId === '') return null
+  // 专用 URL 接口（主路径）：失败就落到 get_file 兜底，不让一个坏接口把文件弄丢。
+  const via = ctx.groupId === undefined
+    ? await deps.api.getPrivateFileUrl(file.fileId).catch(() => null)
+    : await deps.api.getGroupFileUrl(ctx.groupId, file.fileId).catch(() => null)
+  if (typeof via?.url === 'string' && via.url !== '') {
+    const res = await deps.http.request(via.url, { limit: MAX_INBOUND_FILE_BYTES }).catch(() => null)
+    if (res !== null && res.ok) return Buffer.from(res.bytes)
+  }
   try {
     const data = await deps.api.getFile(file.fileId)
     if (typeof data?.file === 'string' && !data.file.startsWith('http')) {

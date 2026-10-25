@@ -6,6 +6,7 @@
 
 import { SESSION_PREFIX, splitRoom } from '../../core/room.js'
 import { roomKeyOf, textSentBy, type SendSignatureGuard } from '../../core/guards/output-signatures.js'
+import { UrlSafetyGuard } from '../../core/guards/url-safety.js'
 import { decideToolCall, policyEnabled, type ToolCallFacts } from '../../app/policy/tool-policy.js'
 import { tierDenyFor } from '../tools-v2/index.js'
 import type { Trust } from '../../core/trust.js'
@@ -49,6 +50,8 @@ export interface ToolGateDeps {
   readonly guardText: (reasonKey: string) => string
   readonly workspacePath: () => string | null
   readonly sendGuard: SendSignatureGuard | null
+  /** 出站 URL 安检（渐进式缓存）；没装就是 undefined。 */
+  readonly urlGuard?: UrlSafetyGuard
   /** 两套规则的开关（P6d）：档位只看 toolsOn、签名与放行表只看 policyOn；缺省 = 旧行为（policyOn=true、toolsOn=false）。 */
   readonly switches?: {
     readonly policyOn?: () => boolean
@@ -97,21 +100,37 @@ export function createToolGateHooks(deps: ToolGateDeps): ToolGateHooks {
       if (deps.switches?.policyOn?.() === false) return { kind: 'pass' }
       const blocked = checkSendSignature(deps, call, facts)
       if (blocked !== null) return { kind: 'deny', reason: blocked }
+      const urlBlocked = checkUrlSafety(deps, call, facts)
+      if (urlBlocked !== null) return { kind: 'deny', reason: urlBlocked }
       const verdict = decideToolCall(facts)
       if (verdict.kind === 'allow') return { kind: 'pass' }
       deps.log(`policy: denied ${call.name} (trust=${facts.trust}) reason=${verdict.reasonKey}`)
       return { kind: 'deny', reason: deps.guardText(verdict.reasonKey) }
     },
     record(call, ok) {
-      if (!ok || deps.sendGuard === null) return
+      if (!ok) return
       if (deps.switches?.policyOn?.() === false) return
       const facts = factsOf(call)
       if (!facts.isQqSession) return
       const text = textSentBy(call.name, facts.args)
       if (text === null) return
-      deps.sendGuard.record(roomKeyOf(facts.args) ?? fallbackRoom(call), text)
+      if (deps.sendGuard !== null) deps.sendGuard.record(roomKeyOf(facts.args) ?? fallbackRoom(call), text)
+      // 发送成功后预热 URL 安检缓存：同一链接下次经过闸门就有判定。
+      if (deps.urlGuard !== undefined) void deps.urlGuard.warm(text, Date.now())
     },
   }
+}
+
+/** 出站 URL 安检（D）：缓存里判定危险的链接直接拦（渐进式，见 core/guards/url-safety）。 */
+function checkUrlSafety(deps: ToolGateDeps, call: ToolGateCall, facts: ToolCallFacts): string | null {
+  const guard = deps.urlGuard
+  if (guard === undefined || !facts.isQqSession) return null
+  const text = textSentBy(call.name, facts.args)
+  if (text === null) return null
+  const bad = guard.cachedBlock(text, Date.now())
+  if (bad === null) return null
+  deps.log(`policy: url-safety blocked ${call.name} (${bad})`)
+  return deps.guardText('出站安检：这条内容里的链接被 QQ 判定为危险，先别发。')
 }
 
 function checkSendSignature(deps: ToolGateDeps, call: ToolGateCall, facts: ToolCallFacts): string | null {

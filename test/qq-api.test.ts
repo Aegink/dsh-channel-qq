@@ -238,9 +238,13 @@ const ALL_METHODS = [
   'getGroupMsgHistory', 'getFriendMsgHistory', 'getVoiceText', 'ocrImage',
   'sendPrivateMessage', 'sendTo', 'setEssence', 'setGroupAdmin', 'setGroupBan', 'setGroupCard',
   'setGroupKick', 'setGroupWholeBan', 'uploadGroupFile', 'uploadPrivateFile',
+  // 2026-10-25 能力审计接入：合并转发展开、社交、人格化、群运营、URL 安检。
+  'getForwardMsg', 'getStrangerInfo', 'setOnlineStatus', 'setDiyOnlineStatus', 'setGroupReaction',
+  'fetchCustomFace', 'sendCustomFace', 'getGroupHonorInfo', 'getGroupAtAllRemain',
+  'setFriendAddRequest', 'setGroupAddRequest', 'getUnidirectionalFriendList', 'checkUrlSafely',
 ].sort()
 
-test('门面就是这张表：44 个动作 / 45 个方法，多一个少一个都失败', async () => {
+test('门面就是这张表：57 个动作 / 58 个方法，多一个少一个都失败', async () => {
   const { api } = recorder()
   // 这一条防的是"加了方法但没在这组用例里钉住 wire 形状"——
   // 上一组用例按动作逐个断言参数，方法名在这条里对齐。

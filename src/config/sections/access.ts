@@ -21,6 +21,12 @@ export interface AccessConfig {
   replyCooldownMin: number
   /** 未批准的群里也回一句「待主人批准」（默认关；群里回这句话很容易刷屏）。 */
   replyPendingInGroups: boolean
+  /**
+   * 好友申请/群邀请事件（2026-10-25 接入，默认关）。打开后 request 事件进来
+   * 就存 flag 并私聊通知主人（带陌生人资料），批准走私聊指令「同意好友 <QQ>」
+   * ——不经模型（与 approval 同一条纪律）。
+   */
+  friendRequests: boolean
 }
 
 export const ACCESS_GROUPS: FieldGroup[] = [
@@ -30,6 +36,11 @@ export const ACCESS_GROUPS: FieldGroup[] = [
     page: 'security',
     help: '决定谁能触发 agent。默认 pairing：陌生人先申请，主人批准后放行。',
     fields: {
+      friendRequests: b('处理好友申请与群邀请', false, {
+        hot: 'live',
+        help: '打开后好友申请/群邀请会存凭据并私聊通知主人（附陌生人资料）；'
+          + '批准走管理员私聊指令「同意好友 <QQ>」，不经模型。关着时事件直接丢弃（旧行为）。',
+      }),
       mode: e('模式', 'pairing', [
         ['pairing', '配对审批（推荐）'],
         ['allowlist', '仅白名单'],

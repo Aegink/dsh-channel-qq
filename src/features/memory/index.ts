@@ -30,6 +30,7 @@ import { MemoryStore } from './store.js'
 import { importLegacyEntries } from './import-legacy.js'
 import { buildProfile, renderProfile } from '../../core/memory/profile.js'
 import { createMemoryService } from './service.js'
+import { wireInjectionV3 } from './inject-v3.js'
 import { VEC_MANIFEST_NAME } from './vector-store.js'
 import { setupVectors } from './vectors-setup.js'
 import { promises as fs } from 'node:fs'
@@ -41,6 +42,8 @@ export const memoryPlugin: SubPlugin = {
   // 这些点一变就重挂本插件：记忆系统的开关、注入预算、向量参数都是"改了要立刻生效"的。
   watches: [
     'memory.v2', 'memory.threshold', 'memory.maxRecords', 'memory.maxChars',
+    'memory.profiles', 'memory.pinnedEnabled', 'memory.wanderPercent', 'memory.occasionsEnabled',
+    'memory.captureEnabled', 'memory.captureDailyCap',
     'memory.vectorEnabled', 'memory.vectorUrl', 'memory.vectorDim', 'memory.vectorTimeoutMs', 'memory.vectorWeight',
     'memory.extractorUrl', 'memory.extractorModel', 'memory.extractorApiKey',
   ],
@@ -91,7 +94,7 @@ export const memoryPlugin: SubPlugin = {
     })
 
     if (host.config.memory.v2) {
-      await attachMemoryV2(host, store, nightlyState)
+      await attachMemoryV2(host, store, nightlyState, nightlyRoute)
     }
 
     registerPendingResource(host, nightlyState)
@@ -139,6 +142,7 @@ async function attachMemoryV2(
   host: SubHost,
   legacy: KnowledgeStore,
   nightly: { store: MemoryStore | null; embed: EmbedPort | null },
+  nightlyRoute: ReturnType<typeof resolveExtractorRoute>,
 ): Promise<void> {
   const { memory } = host.config
   const store = new MemoryStore({ workspacePath: host.config.workspacePath, dshHome: host.dshHome, log: host.log })
@@ -166,26 +170,24 @@ async function attachMemoryV2(
 
   host.provide('memory', service)
   const profileFor = createProfileResolver(host, store)
-  host.provide('memoryEvidence', async (input) => {
-    const got = await retriever.retrieve({
-      text: input.text,
-      room: input.room,
-      now: Date.now(),
-      budget: {
-        threshold: memory.threshold,
-        maxRecords: memory.maxRecords,
-        maxChars: memory.maxChars,
-      },
-      // 原文块只留给深召回：600 字预算装一块就满了。
-      accept: (record: MemoryRecord) => !isChunkRecord(record),
-    })
-    const profile = input.speakerId === undefined
-      ? ''
-      : profileFor(input.speakerId, input.speakerName ?? '')
-    if (profile === '') return got.evidence
-    return got.evidence === '' ? profile : `${profile}
-${got.evidence}`
+  // 三层注入（P2/P3）：常驻 + 话题 + 走神，前置今天的日子；顺带造好即时抽取器。
+  const { evidence, capture } = wireInjectionV3({
+    host,
+    store,
+    retriever,
+    affectionScore: () => {
+      const affection = host.get('affection') as { read(): { score: number } } | undefined
+      return affection === undefined ? null : affection.read().score
+    },
+    extract: nightlyRoute === null || host.config.memory.captureEnabled !== true
+      ? undefined
+      : async (source, text) => await extractFromText(nightlyRoute, source, text, host.log),
+    profileFor: (id, name) => profileFor(id, name),
+    clock,
+    random: Math.random,
   })
+  host.provide('memoryEvidence', evidence)
+  host.provide('memoryCapture', capture)
   provideMemorySearch(host, retriever, renderTime)
 }
 
@@ -194,12 +196,15 @@ ${got.evidence}`
  * 与自动注入的区别就在预算：这里 6000 字、同主题不限；注入仍然是 600 字/8 条短事实。
  */
 function provideMemorySearch(host: SubHost, retriever: MemoryRetriever, renderTime: (at: number) => string): void {
-  host.provide('memorySearch', async (query: string, limit?: number) => {
+  host.provide('memorySearch', async (query: string, limit?: number, asOf?: string) => {
     const k = Math.max(3, Math.min(8, Math.trunc(limit ?? 8) || 8))
+    // asOf 时间旅行（P2）："那天我们是怎么想的"——解析失败就当没问。
+    const asOfMs = asOf === undefined || asOf.trim() === '' ? undefined : Date.parse(asOf.trim())
     const got = await retriever.retrieve({
       text: query,
       room: null, // 深召回跨房间：群记忆与私聊记忆都要能翻到
       now: Date.now(),
+      ...(asOfMs === undefined || Number.isNaN(asOfMs) ? {} : { asOf: asOfMs }),
       budget: { threshold: 0.2, maxRecords: k, maxChars: 6000, maxPerTopic: k },
       weights: { relevance: 1, importance: 0.3, recency: 0.2 },
     })

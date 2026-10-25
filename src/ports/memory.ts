@@ -92,4 +92,4 @@ export interface MemorySearchHit {
  * 与 `MemoryService.recall` 的区别：recall 是"短事实、进注入预算"，深召回是
  * **agent 主动搜**、愿意多花上下文换命中率（实测块检索 recall 明显高于句子）。
  */
-export type MemorySearch = (query: string, limit?: number) => Promise<readonly MemorySearchHit[]>
+export type MemorySearch = (query: string, limit?: number, asOf?: string) => Promise<readonly MemorySearchHit[]>

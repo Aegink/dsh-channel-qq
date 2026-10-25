@@ -104,7 +104,7 @@ function rankArtifact(name: string): number | null {
  * see its module comment for the measured numbers.
  *
  * @param cwd - the agent workspace the session ran in (`undefined` → `_no-cwd`).
- * @param sessionId - the session id, e.g. `qq-group-1084963697`.
+ * @param sessionId - the session id, e.g. `qq-group-1000000008`.
  * @returns the decoded JSONL text, or null when no readable log exists.
  */
 export async function readSessionLog(cwd: string | undefined, sessionId: string): Promise<string | null> {

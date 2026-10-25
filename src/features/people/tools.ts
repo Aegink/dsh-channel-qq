@@ -47,7 +47,8 @@ function personNote(config: QQChannelConfig, log: (line: string) => void): ToolS
       target: { type: 'number', description: '对方的 QQ 号（get 与 set 必填）' },
       nick: { type: 'string', description: '昵称或群名片，set 时一并更新' },
       note: { type: 'string', description: '一句话，具体些：爱用反问、忌讳被叫全名' },
-      room: { type: 'string', description: '哪间房的档案，如 group-1000000004 / dm-2524902283；不填按当前窗口' },
+      moment: { type: 'string', description: '可选：产生这条印象的具体瞬间（当场那句话/那件事），写上才像日记不像档案' },
+      room: { type: 'string', description: '哪间房的档案，如 group-1000000004 / dm-1000000007；不填按当前窗口' },
     }, ['action']),
     run: async (args, ctx) => {
       const action = String(args.action)
@@ -71,7 +72,8 @@ function personNote(config: QQChannelConfig, log: (line: string) => void): ToolS
       const note = String(args.note ?? '').trim()
       if (note === '') return { ok: false, error: 'note 不能空' }
       const nick = String(args.nick ?? '').trim()
-      const written = await appendPersonNote(dir, target, nick, note, today(), scoped)
+      const moment = args.moment === undefined ? undefined : String(args.moment)
+      const written = await appendPersonNote(dir, target, nick, note, today(), scoped, moment)
       if (written) log(`person note: ${target} +1`)
       return { ok: true, written, qq: target, day: today() }
     },

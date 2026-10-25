@@ -20,7 +20,10 @@
 
 import type { OneBotEvent } from '../../types.js'
 import { parseInbound, type ParsedInbound } from '../../core/message/parse.js'
+
 import { renderMessageLine } from '../../core/message/render.js'
+import { expandForwards } from './forward-expand.js'
+import { transcribeVoiceOf } from './transcribe.js'
 import { decideFlush, isBatchFull, queueChars, type FlushDecision } from '../../core/batching.js'
 import { plannerAllows } from './planner-gate.js'
 import { isCalled, reactionHintOf } from '../../core/trigger.js'
@@ -28,7 +31,7 @@ import { resolveRoomPolicy } from '../../core/room-policy.js'
 import { roomOf } from '../../core/room.js'
 import type { AgentGateway } from '../../ports/agent-gateway.js'
 import type { BlobStore } from '../../ports/blob-store.js'
-import type { ChatPlatform } from '../../ports/platform.js'
+import type { ChatPlatform, QQApi } from '../../ports/platform.js'
 import type { HttpClient } from '../../ports/http.js'
 import type { Clock, Random } from '../../ports/clock.js'
 import type { GatewayHealth } from '../conversation/gateway-health.js'
@@ -64,6 +67,7 @@ export interface PipelineConfig {
 /** 一包的素材（步骤 3 的产物）。 */
 interface Materials {
   readonly voiceText: string | null
+  readonly forwardText: string | null
   readonly receivedFiles: string[]
   readonly quoted: string | null
   readonly imageRefs: unknown[]
@@ -99,6 +103,8 @@ export interface PipelineDeps {
    * 返回 null 表示不是命令，照常交给 agent。
    */
   readonly adminCommand?: (text: string, userId: number) => Promise<string | null>
+  /** 社交指令（同意好友/邀请、好友请求列表）：先于 agent、不经模型；没装就是 undefined。 */
+  readonly socialCommand?: (text: string, userId: number) => Promise<boolean>
 }
 
 export class InboundPipeline {
@@ -110,17 +116,8 @@ export class InboundPipeline {
   }
 
   /** STT 一条语音消息；失败只记日志，从不致命。 */
-  private async transcribeVoice(event: OneBotEvent, parsed: ParsedInbound): Promise<string | null> {
-    if (parsed.recordCount === 0 || typeof event.message_id !== 'number') return null
-    try {
-      const text = await this.deps.transcribe(event.message_id)
-      if (text === null) return null
-      this.deps.log(`voice ${event.message_id} transcribed: ${text.slice(0, 60)}`)
-      return text
-    } catch (error) {
-      this.deps.log(`voice ${event.message_id} STT failed: ${error instanceof Error ? error.message : String(error)}`)
-      return null
-    }
+  private transcribeVoice(event: OneBotEvent, parsed: ParsedInbound): Promise<string | null> {
+    return transcribeVoiceOf(this.deps.transcribe, this.deps.log, event, parsed)
   }
 
   /** 步骤 1：这条事件该不该进流水线（群聊按"这个群自己的开关"判）。 */
@@ -140,15 +137,16 @@ export class InboundPipeline {
       config: () => this.deps.config(),
       log: this.deps.log,
     }
-    // 语音条 → 文字，好让模型听见说了什么。
     const voiceText = await this.transcribeVoice(event, parsed)
+    const forwardText = await expandForwards(() => this.deps.platform().api, parsed, this.deps.log)
     // 私聊里的文件落进工作区收件箱，交给 agent 处理。
-    const receivedFiles = await receiveFiles(attachments, parsed, this.deps.clock.now())
+    const receivedFiles = await receiveFiles(attachments, parsed, this.deps.clock.now(), { groupId: event.group_id })
     // 灵活引用上下文 + 视觉附件，两条路都要用。
     const quoted = await fetchQuoted(attachments, event, parsed)
     const imageRefs = await attachImages(attachments, parsed.imageUrls)
-    return { voiceText, receivedFiles, quoted, imageRefs }
+    return { voiceText, forwardText, receivedFiles, quoted, imageRefs }
   }
+
 
   /**
    * 步骤 4：渲染一行入站行。
@@ -183,6 +181,10 @@ export class InboundPipeline {
     const key = roomOf(event)
     if (key === null) return
     const parsed = parseInbound(event)
+    // 社交指令（好友申请/群邀请审批）：同样私聊专属、不经模型。
+    if (event.message_type === 'private' && this.deps.socialCommand !== undefined) {
+      if (await this.deps.socialCommand(parsed.plainText, event.user_id ?? 0)) return
+    }
     // 管理员本地命令：私聊、先于 agent、不经模型。命中就回一条、不进队列。
     if (event.message_type === 'private' && this.deps.adminCommand !== undefined) {
       const reply = await this.deps.adminCommand(parsed.plainText, event.user_id ?? 0)

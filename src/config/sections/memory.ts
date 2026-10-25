@@ -49,6 +49,15 @@ export interface MemoryExtractorConfig {
   extractorApiKey: string
 }
 
+/** 三层注入与即时抽取（P0/P2/P3，调研 20261024 §6）的配置本体。字段说明在 FieldGroup 里。 */
+export interface MemoryInjectV3Config {
+  pinnedEnabled: boolean
+  wanderPercent: number
+  occasionsEnabled: boolean
+  captureEnabled: boolean
+  captureDailyCap: number
+}
+
 /** 人物档：按房间记录认人线索（手动笔记，默认关）。 */
 export interface PeopleConfig {
   enabled: boolean
@@ -69,6 +78,27 @@ export const MEMORY_GROUPS: FieldGroup[] = [
       threshold: n('检索分数阈值', 0.35, { min: 0, max: 1, step: 0.05, hot: 'live' }),
       maxRecords: n('每回合最多注入几条', 8, { min: 1, max: 20, hot: 'live' }),
       maxChars: n('每回合最多注入多少字', 600, { min: 100, max: 2000, hot: 'live' }),
+      // ── 三层注入（P2，调研 20261024 §6-P2）──────────────────────────────
+      // 常驻层准入极严（core 标记 + importance≥8 + confidence≥0.8），无标记记录
+      // 的库开着也是零输出，所以默认开；走神 8% 才带一条深记忆回来。
+      pinnedEnabled: b('启用常驻记忆层', true, {
+        hot: 'live',
+        help: '「一直记得的事」：带 core 标记且高重要高置信的记录每回合都在场（最多 2 条，占注入预算）。',
+      }),
+      wanderPercent: n('走神概率 %', 8, {
+        min: 0, max: 50, step: 1, hot: 'live',
+        help: '每回合按此概率从「被记得够深 + 七天没想起」的记忆里随机带一条回来（0 = 关）。feiyu 的洞察：偶尔"突然想起来"才像真人。',
+      }),
+      occasionsEnabled: b('注入今天的日子', true, {
+        hot: 'live',
+        help: '生日/纪念日（tags 含 birthday / anniversary 的记录）到期时在证据前加一行提示。',
+      }),
+      // ── 即时抽取（P0，feiyu 式 turn-end 沉淀）────────────────────────────
+      captureEnabled: b('启用回合结束即时抽取', false, {
+        hot: 'live',
+        help: '回合结束时按规则判据（被纠正/要求记住/自述/情绪上头）走带外抽取沉淀短事实。默认关：抽取要调模型，想清楚再开。',
+      }),
+      captureDailyCap: n('即时抽取每日上限', 12, { min: 1, max: 60, hot: 'live' }),
       profiles: b('注入当前发言人侧写', false, {
         hot: 'live',
         help: '默认关。打开后每回合在证据前加一段「关于这个人」的 3–5 行侧写（5 分钟缓存）。',

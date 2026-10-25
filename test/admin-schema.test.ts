@@ -143,9 +143,11 @@ test('SCHEMA 由段拼装：sectionIds 与 groups 一致', () => {
 test('记忆段（P6e）：字段落在 memory 页；v2 四项 live、向量与抽取器 reload', () => {
   const refs = fieldRefs().filter((ref) => ref.path.startsWith('memory.'))
   assert.deepEqual(refs.map((ref) => ref.path).sort(), [
-    'memory.extractorApiKey', 'memory.extractorModel', 'memory.extractorUrl',
-    'memory.maxChars', 'memory.maxRecords', 'memory.profiles', 'memory.threshold', 'memory.v2',
-    'memory.vectorDim', 'memory.vectorEnabled', 'memory.vectorTimeoutMs', 'memory.vectorUrl', 'memory.vectorWeight',
+    'memory.captureDailyCap', 'memory.captureEnabled', 'memory.extractorApiKey', 'memory.extractorModel',
+    'memory.extractorUrl', 'memory.maxChars', 'memory.maxRecords', 'memory.occasionsEnabled',
+    'memory.pinnedEnabled', 'memory.profiles', 'memory.threshold', 'memory.v2', 'memory.vectorDim',
+    'memory.vectorEnabled', 'memory.vectorTimeoutMs', 'memory.vectorUrl', 'memory.vectorWeight',
+    'memory.wanderPercent',
   ])
   for (const ref of refs) assert.equal(ref.page, 'memory', `${ref.path} 必须落在记忆页`)
   for (const path of ['memory.maxChars', 'memory.maxRecords', 'memory.threshold', 'memory.v2']) {

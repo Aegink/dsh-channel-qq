@@ -108,6 +108,27 @@ export class AccessService {
     return event.sender?.card ?? event.sender?.nickname ?? ''
   }
 
+  /**
+   * 陌生人资料一行（A4）：昵称/性别/等级/长签名——好友申请事件与陌生私聊配对
+   * 通知都用它。查不到就空串（与 groupName 的兜底同款纪律）。
+   */
+  private async strangerLine(id: number): Promise<string> {
+    const api = this.deps.api()
+    if (api === null) return ''
+    try {
+      const info = await api.getStrangerInfo(id)
+      const bits: string[] = []
+      if (typeof info?.nickname === 'string' && info.nickname !== '') bits.push(info.nickname)
+      if (typeof info?.sex === 'string' && info.sex !== '') bits.push(info.sex)
+      const level = info?.qq_level ?? info?.level
+      if (typeof level === 'number' && level > 0) bits.push(`Lv.${level}`)
+      if (typeof info?.long_nick === 'string' && info.long_nick.trim() !== '') bits.push(`签名：${info.long_nick.trim().slice(0, 40)}`)
+      return bits.join('，')
+    } catch {
+      return ''
+    }
+  }
+
   /** 群名：首次请求时查一次，查不到就用「群 <号>」。 */
   private async groupName(id: number): Promise<string> {
     const api = this.deps.api()
@@ -127,7 +148,11 @@ export class AccessService {
     const cooldown = Math.max(1, this.deps.config().replyCooldownMin) * 60_000
     const existing = this.deps.store.pending().find((item) => item.kind === kind && item.id === id)
     const shouldReply = existing === undefined || now - existing.lastNoticeAt >= cooldown
-    const display = existing === undefined && kind === 'group' ? await this.groupName(id) : name
+    const display = existing === undefined && kind === 'group'
+      ? await this.groupName(id)
+      : kind === 'user' && existing === undefined && name === ''
+        ? await this.strangerLine(id)
+        : name
     const { isNew } = await this.deps.store.request(kind, id, display, now)
     if (isNew) this.deps.log(`access: pending ${kind} ${id}${display === '' ? '' : ` (${display})`}`)
     // 私聊：首次 + 冷却后的提醒；群：默认完全不回，打开开关也只回一次。

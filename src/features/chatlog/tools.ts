@@ -21,7 +21,7 @@ function groupDigest(config: QQChannelConfig): ToolSpec {
     name: 'qq_group_digest',
     description: '群动态摘要：读各群原话簿（实时落盘的纯消息流水），按群返回指定日期的发言。问「哪个群发生了什么/某群今天聊了什么/所有群都在聊什么」时用这个，跨群汇总一次拿全。',
     parameters: params({
-      room: { type: 'string', description: '哪间房，如 group-1003560209；不填=全部群' },
+      room: { type: 'string', description: '哪间房，如 group-1000000006；不填=全部群' },
       day: { type: 'string', description: '哪天 YYYY-MM-DD；不填=今天' },
       limit: { type: 'number', description: '每群最多取多少条（默认 15，上限 30）' },
     }),

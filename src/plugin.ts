@@ -27,6 +27,8 @@ import { readRuntimeFacts } from './adapters/dsh-host/runtime-info.js'
 import { guardTemplateKey, policyEnabled } from './app/policy/tool-policy.js'
 import { toolsV2Enabled } from './features/tools-v2/index.js'
 import { SendSignatureGuard } from './core/guards/output-signatures.js'
+import { UrlSafetyGuard } from './core/guards/url-safety.js'
+import { platformApiRef } from './features/platform/index.js'
 import { turnTrust } from './core/trust.js'
 import { loadSignatureBundle } from './features/inbound/index.js'
 import { createToolGateHooks, ToolGateController } from './features/qq-tools/register.js'
@@ -130,6 +132,14 @@ export class ChannelQQ extends Service {
           guardText: (reasonKey) => this.guardText(reasonKey),
           workspacePath: () => this.config.workspacePath,
           sendGuard: bundle === null ? null : new SendSignatureGuard(bundle.output),
+          // 出站 URL 安检：checker 走协议端的 check_url_safely（协议端没连上时查不到，留空缓存）。
+          urlGuard: new UrlSafetyGuard(async (url) => {
+            try {
+              return await platformApiRef.api?.checkUrlSafely(url) ?? null
+            } catch {
+              return null
+            }
+          }),
           switches: {
             policyOn: () => policyEnabled(this.config),
             toolsOn: () => toolsV2Enabled(this.config),

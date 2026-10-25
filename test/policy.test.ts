@@ -40,7 +40,7 @@ const { resolveConfig } = await import('../src/config.js')
 
 const GROUP = 1000000003
 const MASTER = 1000000002
-const OTHER = 1086437543
+const OTHER = 1000000009
 const WS = '/path/to/workspace'
 
 // ── 信任分级与账本 ──────────────────────────────────────────────────────────

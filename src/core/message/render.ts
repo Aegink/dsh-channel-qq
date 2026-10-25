@@ -26,6 +26,8 @@ export interface RenderInput {
   readonly quoted: string | null
   /** 语音条转写出来的文字；没转写则 null。 */
   readonly voiceText?: string | null
+  /** 合并转发展开后的内容行（pipeline 调 `get_forward_msg` 拿的）；没有则 null。 */
+  readonly forwardText?: string | null
   /** 已存进工作区 inbox 的文件路径。 */
   readonly receivedFiles?: readonly string[]
   /** 被叫到时查询到的语气提示；没被叫到或没命中则 null。 */
@@ -46,7 +48,8 @@ export function renderMessageLine(input: RenderInput): string | null {
   const content = parsed.plainText !== ''
     ? parsed.plainText
     : (parsed.imageUrls.length > 0 ? '[图片]' : null)
-  if (content === null && parsed.imageSummaries.length === 0) return null
+  // 纯合并转发（无文字无图但有展开内容）也是"有得说"的消息。
+  if (content === null && parsed.imageSummaries.length === 0 && (input.forwardText ?? '') === '') return null
   const time = new Date((event.time || Math.floor(input.nowMs / 1000)) * 1000)
   const hhmm = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`
   const msgId = typeof event.message_id === 'number' ? ` #${event.message_id}` : ''
@@ -60,6 +63,7 @@ export function renderMessageLine(input: RenderInput): string | null {
     parts.push(`[@了 ${names}${parsed.isAtBot ? '（含咱）' : '（不是咱）'}]`)
   }
   if (input.voiceText !== undefined && input.voiceText !== null) parts.push(`[语音条说：${input.voiceText}]`)
+  if (input.forwardText !== undefined && input.forwardText !== null) parts.push(`[合并转发的内容：${input.forwardText}]`)
   for (const file of input.receivedFiles ?? []) parts.push(`[文件已收到，存放在：${file}]`)
   // A caption-less image already shows as `[图片]` in the body; an image *with*
   // a caption and no vision summary would otherwise leave the model unaware

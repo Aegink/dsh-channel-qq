@@ -69,6 +69,7 @@
     "target": "primary-group"
   },
   "access": {
+    "friendRequests": false,
     "mode": "pairing",
     "groupPolicy": "pairing",
     "allowUsers": [],
@@ -180,6 +181,11 @@
     "threshold": 0.35,
     "maxRecords": 8,
     "maxChars": 600,
+    "pinnedEnabled": true,
+    "wanderPercent": 8,
+    "occasionsEnabled": true,
+    "captureEnabled": false,
+    "captureDailyCap": 12,
     "profiles": false,
     "extractorUrl": "",
     "extractorModel": "",
@@ -454,6 +460,23 @@
           "materials": [],
           "requires": [],
           "job": "memory.session-split",
+          "script": null
+        },
+        {
+          "id": "memory.consolidate",
+          "enabled": true,
+          "kind": "job",
+          "trigger": {
+            "type": "window",
+            "from": "04:55",
+            "to": "05:34"
+          },
+          "quietHours": [],
+          "target": null,
+          "template": null,
+          "materials": [],
+          "requires": [],
+          "job": "memory.consolidate",
           "script": null
         },
         {

@@ -20,9 +20,15 @@ export interface KnowledgeEntry {
   hits: number
 }
 
+// P0（调研 20261024 §6）："一句话事实"是召回的地基——存进去的是日记原文句子，
+// recall@8 只有 0.14；改成"主语+谓语+要点的短句"后，600 字注入预算才装得下证据。
+// 入库后还有一道 distillFact 兜底（去口语壳、截 80 字），但模型直接产出短句省得多改一刀。
 const EXTRACT_SYSTEM = `你是知识提取器。从聊天/日记片段中提取值得长期记住的知识条目，JSON 数组输出，每条：
 {"type":"skill|fact|preference|event|person","content":"一句话知识","tags":["标签"],"source":"来源简述"}
-只提取有长期价值的：技能、事实、偏好、重要事件、人物关系。日常寒暄不要。只输出 JSON。`
+content 的硬要求：一句话事实，主语+谓语+要点，≤60 字，不带语气词和口语壳（"我觉得/好像/其实"都去掉）。
+好例："学弟不吃香菜，点菜要备注"；坏例："我觉得学弟好像说他不吃那个香菜的样子"。
+只提取有长期价值的：技能、事实、偏好、重要事件、人物关系；同一件事只留一条最完整的。
+日常寒暄不要。只输出 JSON。`
 
 export class KnowledgeStore {
   readonly file: string

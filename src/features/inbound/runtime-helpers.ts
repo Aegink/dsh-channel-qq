@@ -6,6 +6,7 @@
 import { transcribeVoiceMessage } from '../../adapters/providers/stt.js'
 import type { QQChannelConfig } from '../../config.js'
 import type { TurnHooks } from '../../ports/turn-hooks.js'
+import { parseInbound } from '../../core/message/parse.js'
 import type { PlatformParts, SubHost } from '../plugin-kit.js'
 
 /** 语音转写：适配器返回 `[text] | null`，这里只取第一条（失败 = null）。 */
@@ -39,16 +40,30 @@ export async function transcribeOne(
 
 /** 回合钩子：惰性取 interaction / metrics（它们可能比 inbound 晚挂载）。 */
 export function turnHooksOf(host: SubHost): TurnHooks {
+  /** 即时抽取（P0）：begin 记本回合消息、end 带外沉淀；memory 插件没挂时是 undefined。 */
+  const capture = () => host.get('memoryCapture') as
+    | { begin(room: string, turn: { text: string; speakerId?: number; speakerName?: string }): void; end(room: string): void }
+    | undefined
   return {
     begin: (room, event) => {
       host.get('interaction')?.begin(room, event)
       host.get('metrics')?.begin(room)
       host.get('reliability')?.begin(room)
+      const c = capture()
+      if (c !== undefined) {
+        const parsed = parseInbound(event)
+        c.begin(room, {
+          text: parsed.text,
+          speakerId: event.user_id,
+          speakerName: event.sender?.card ?? event.sender?.nickname,
+        })
+      }
     },
     end: (room) => {
       host.get('interaction')?.end(room)
       host.get('metrics')?.end(room)
       host.get('reliability')?.end(room)
+      capture()?.end(room)
     },
     // 出错先撤提示；指标只标记失败（样本在 end 落），可靠性按 retry/permanent 分流。
     error: (room, kind) => {

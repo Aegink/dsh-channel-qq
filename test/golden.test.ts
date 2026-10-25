@@ -55,7 +55,7 @@ const EVENT_TIME = Math.floor(Date.parse('2026-10-16T14:31:00+08:00') / 1000)
 const SELF = 1000000001
 const GROUP = 1000000003
 const MASTER = 1000000002
-const OTHER = 1086437543
+const OTHER = 1000000009
 
 /** 在冻结时钟下跑一段逻辑。 */
 async function frozen<T>(fn: () => Promise<T> | T): Promise<T> {

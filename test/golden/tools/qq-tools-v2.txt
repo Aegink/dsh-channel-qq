@@ -802,6 +802,10 @@
       "text": {
         "type": "string",
         "description": "消息/回复正文"
+      },
+      "asOf": {
+        "type": "string",
+        "description": "时间旅行（可选）：只要某天（YYYY-MM-DD）之前已知道的记忆"
       }
     },
     "required": [

@@ -113,7 +113,7 @@ test('P5.1：requires 未满足的段挂不上（inject 的等价断言）；卸
 test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 applyEffects）', () => {
   assert.deepEqual(SECTION_PLUGINS.map((p) => p.name), [
     'persona', 'observers', 'platform', 'channel-health', 'access', 'interaction', 'metrics', 'history', 'reliability', 'daily-report', 'inbound', 'session-reset', 'stickers', 'memory', 'affection',
-    'qq-tools', 'people', 'chatlog', 'links', 'meme', 'voice', 'quotes', 'reminders', 'rss', 'imagegen',
+    'qq-tools', 'people', 'social', 'capabilities', 'chatlog', 'links', 'meme', 'voice', 'quotes', 'reminders', 'rss', 'imagegen',
     'flood', 'learn', 'music', 'skills', 'kb', 'proactive', 'admin',
   ])
   const watched = SECTION_PLUGINS
@@ -133,6 +133,8 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
     ['stickers', ['emoji.dir', 'emoji.registeredDir']],
     ['memory', [
       'memory.v2', 'memory.threshold', 'memory.maxRecords', 'memory.maxChars',
+      'memory.profiles', 'memory.pinnedEnabled', 'memory.wanderPercent', 'memory.occasionsEnabled',
+      'memory.captureEnabled', 'memory.captureDailyCap',
       'memory.vectorEnabled', 'memory.vectorUrl', 'memory.vectorDim', 'memory.vectorTimeoutMs', 'memory.vectorWeight',
       'memory.extractorUrl', 'memory.extractorModel', 'memory.extractorApiKey',
     ]],

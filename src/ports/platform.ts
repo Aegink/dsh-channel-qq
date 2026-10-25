@@ -113,6 +113,37 @@ export interface RecordFile {
   url?: string
 }
 
+/** 合并转发展开后的一条。 */
+export interface ForwardMsgItem {
+  readonly content?: unknown
+  readonly sender?: { readonly user_id?: number; readonly nickname?: string; readonly card?: string }
+  readonly time?: number
+}
+
+export interface ForwardMsgBody {
+  readonly messages?: readonly ForwardMsgItem[]
+}
+
+export interface StrangerInfo {
+  readonly user_id?: number
+  readonly nickname?: string
+  readonly sex?: string
+  readonly age?: number
+  readonly long_nick?: string
+  readonly qq_level?: number
+  readonly level?: number
+}
+
+export interface GroupHonorInfo {
+  readonly group_id?: number
+  readonly current_talkative?: { readonly user_id?: number; readonly nickname?: string; readonly avatar?: string; readonly day_count?: number } | null
+  readonly talkative_list?: readonly { readonly user_id?: number; readonly nickname?: string; readonly day_count?: number }[]
+  readonly performer_list?: readonly { readonly user_id?: number; readonly nickname?: string }[]
+  readonly legend_list?: readonly { readonly user_id?: number; readonly nickname?: string }[]
+  readonly strong_newbie_list?: readonly { readonly user_id?: number; readonly nickname?: string }[]
+  readonly emotion_list?: readonly { readonly user_id?: number; readonly nickname?: string }[]
+}
+
 export interface ImageFile {
   file?: string
   url?: string
@@ -145,6 +176,28 @@ export interface QQApi {
   getRecord(messageId: number, outFormat?: string): Promise<RecordFile>
   /** 取任意文件（`file_id` 来自消息段）。 */
   getFile(fileId: string): Promise<RecordFile>
+  /** 展开合并转发（消息段的 `forward` 只给容器 id）。 */
+  getForwardMsg(forwardId: string): Promise<ForwardMsgBody>
+  /** 陌生人资料（昵称/性别/等级/长签名）——门控通知与关系记忆用。 */
+  getStrangerInfo(userId: number): Promise<StrangerInfo>
+  /** 在线状态：标准档（1 在线 2 离开 …，协议端语义）与自定义文案。 */
+  setOnlineStatus(status: number): Promise<ActionAck>
+  setDiyOnlineStatus(faceId: number, content: string): Promise<ActionAck>
+  /** 对群消息贴/撤一个表情回应。 */
+  setGroupReaction(groupId: number, messageId: number, emojiId: string, remove?: boolean): Promise<ActionAck>
+  /** 自定义表情：列表与发送（SnowLuma 无"上传自定义表情"接口）。 */
+  fetchCustomFace(count?: number): Promise<{ faces?: Array<{ emoji_id?: string; emoji_name?: string; url?: string }> }>
+  sendCustomFace(fileId: string, isGroup: boolean, target: number): Promise<ActionAck>
+  /** 群荣誉（龙王/群聊之火/活跃新秀…）与 @ 全体剩余额度。 */
+  getGroupHonorInfo(groupId: number, type?: string): Promise<GroupHonorInfo>
+  getGroupAtAllRemain(groupId: number): Promise<{ can_at_all?: boolean; remain_at_all_count_for_group?: number; remain_at_all_count_for_uin?: number }>
+  /** 好友请求 / 群邀请的批准与拒绝（`flag` 来自 request 事件）。 */
+  setFriendAddRequest(flag: string, approve: boolean, remark?: string): Promise<ActionAck>
+  setGroupAddRequest(flag: string, approve: boolean, reason?: string): Promise<ActionAck>
+  /** 单向好友（对方列表里没有我）。 */
+  getUnidirectionalFriendList(): Promise<{ list?: Array<{ user_id?: number; nickname?: string; source?: string }> }>
+  /** URL 安全检查（出站链接安检）。 */
+  checkUrlSafely(url: string): Promise<{ level?: number | string; message?: string }>
   /** 给某人点赞。 */
   sendLike(userId: number, times?: number): Promise<ActionAck>
   /**

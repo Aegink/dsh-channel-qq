@@ -229,7 +229,7 @@ dsh 默认只监听 loopback `127.0.0.1:3080`。远程访问三种方式：
 | 1 | `src/kugou-api.ts:14` | `process.env.DSH_HOME ?? 'C:/Users/Administrator/.dsh'` | Linux 下 cookie/dfid 写到相对目录 `C:/...`，**酷狗登录无法持久化** |
 | 2 | `src/netease-vip.ts:14` | 同上 | **网易云 VIP cookie 无法持久化** |
 | 3 | `src/tools.ts:658` | `process.env.DSH_HOME ?? 'C:\\Users\\Administrator\\.dsh'` | 同上（`qq_list_emojis` 等） |
-| 4 | `src/tools.ts:659-660` | 会话日志路径硬编码 `sessions\--D-OpenClaw-.openclaw-workspace--\<sid>\session.v3.jsonl.zstd`，且 sid 默认 `qq-group-1084963697` | **`qq_search_history` 在任何新部署上必然失败**；应改为从 dsh 会话存储 API 取，或至少按 workspace 名动态拼 |
+| 4 | `src/tools.ts:659-660` | 会话日志路径硬编码 `sessions\--D-OpenClaw-.openclaw-workspace--\<sid>\session.v3.jsonl.zstd`，且 sid 默认 `qq-group-1000000008` | **`qq_search_history` 在任何新部署上必然失败**；应改为从 dsh 会话存储 API 取，或至少按 workspace 名动态拼 |
 | 5 | `src/stt.ts:46` | `execFile('curl.exe', ...)` | Linux 无 `curl.exe` → **语音转文字整体失效**；应改用 `curl` 或走 dsh 的代理配置 |
 | 6 | `src/stt.ts:31` | `STT_PROXY ?? 'http://127.0.0.1:7890'` | 默认假设本机有 Clash；服务器上需设 `STT_PROXY` 或直连 |
 | 7 | `src/scheduler.ts:204` | 天气固定 `wttr.in/Lianjiang,Guangdong` | 换地点/服务器时早报天气不对，应做成配置项 |
@@ -940,7 +940,7 @@ PASS  A) 裸路径被拒（复现你报的 bug）  识别URL失败, uri= /srv/ds
 PASS  B) file:// 形式也被拒（以前用的形式） ENOENT ... open 'file:///srv/dsh/...'
 PASS  C) napcatFileArg 产出 base64      19409 字符 -> 14549 字节，逐字节一致
 PASS  D) 文档真的送达                   file_id: d2bcad65f95b09df4de35ea1c783c368_...
-PASS  E) 图片段也能送达                 message_id: 512963827
+PASS  E) 图片段也能送达                 message_id: 1000000010
 6 passed, 0 failed
 ```
 

@@ -66,3 +66,6 @@ eval/memory/.cache/
 # 运维排查时临时导出的截图 / 二维码（不要进仓库）
 .tmp-*
 .qq-login-qr.png
+
+# 一次性调研工作区（克隆的参照仓库与中间产物，不入库）
+scratch/

@@ -9,6 +9,9 @@ export type OneBotMessageSegment =
   | { type: 'record'; data: { file: string } }
   | { type: 'file'; data: { file: string; name?: string; url?: string; file_id?: string; file_size?: number | string } }
   | { type: 'video'; data: { file: string } }
+  | { type: 'forward'; data: { id: string } }
+  | { type: 'json'; data: { data: string } }
+  | { type: 'ark'; data: { data: string } }
   | { type: 'tts'; data: { text: string } }
   // `music` 一直在发（`qq_send_music`），但类型联合里漏了它：以前走的是
   // `call(action, Record<string, unknown>)`，编译器看不见，漏了也不会报。
@@ -52,6 +55,14 @@ export interface OneBotEvent {
   card_old?: string
   /** notify/honor: 荣誉类型 e.g. talkative / performer / emotion. */
   honor_type?: string
+  /** request 事件（好友申请 / 群邀请）。 */
+  request_type?: 'friend' | 'group'
+  /** 原样回传给 set_*_add_request 的凭据（request 事件）。 */
+  flag?: string
+  /** request 事件的验证消息。 */
+  comment?: string
+  /** request/group 邀请里的群名。 */
+  group_name?: string
   /** group_recall: id of the withdrawn message. */
   message_seq?: number
 }

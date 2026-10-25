@@ -115,6 +115,13 @@ export interface ServiceBag {
   knowledge?: KnowledgeParts
   /** 记忆证据块（P6e；记忆子插件提供。入站组包"想起点什么"走它）。 */
   memoryEvidence?: MemoryEvidence
+  /** P0 即时抽取的回合钩子（begin 带本回合消息，end 触发带外沉淀）。 */
+  memoryCapture?: { begin(room: string, turn: { text: string; speakerId?: number; speakerName?: string }): void; end(room: string): void }
+  /** 社交面：request 事件处理（好友申请/群邀请）+ 管理员私聊指令。 */
+  social?: {
+    handleRequest(event: unknown): Promise<void>
+    commandHandler(text: string, userId: number): Promise<boolean>
+  }
   /** 记忆服务（P6e）：工具面的主动召回与写入走它。 */
   memory?: MemoryService
   /** 深召回（原文块）：agent 主动搜索用，不进自动注入。 */

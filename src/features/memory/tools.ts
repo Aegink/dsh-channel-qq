@@ -186,12 +186,14 @@ function qqMemorySearch(deps: QQToolDeps): ToolSpec {
       properties: {
         query: { type: 'string', description: '自然语言查询' },
         limit: { type: 'number', description: '返回条数（默认 8，最多 8）' },
+        asOf: { type: 'string', description: '可选，时间旅行：只要某天（YYYY-MM-DD）之前已知道的记忆，如"上周二我们怎么想的"' },
       },
       required: ['query'],
     },
     run: async (args) => {
       if (search === undefined) return { note: '深召回未启用（需要 memory.v2 与块索引）' }
-      const hits = await search(String(args.query ?? ''), Number(args.limit ?? 8))
+      const asOfRaw = args.asOf === undefined ? undefined : String(args.asOf)
+      const hits = await search(String(args.query ?? ''), Number(args.limit ?? 8), asOfRaw)
       return { count: hits.length, results: hits.map((h) => ({ content: h.content, source: h.source, date: h.date, chunk: h.chunk })) }
     },
   }

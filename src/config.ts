@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import * as path from 'node:path'
-import type { MemoryExtractorConfig, MemoryVectorConfig } from './config/sections/memory.js'
+import type { MemoryExtractorConfig, MemoryInjectV3Config, MemoryVectorConfig } from './config/sections/memory.js'
 import type { SwitchSections } from './config/sections/switches.js'
 /** Channel configuration. One row, one account. Values live in the profile's user patch layer. */
 export interface ConnectionConfig {
@@ -255,7 +255,7 @@ export interface LearnConfig {
 }
 
 /** 新记忆系统（P6e）：结构化记忆的检索、注入预算与向量检索参数（向量五项见 MemoryVectorConfig，字段说明在其本体处）。 */
-export interface MemoryConfig extends MemoryVectorConfig, MemoryExtractorConfig {
+export interface MemoryConfig extends MemoryVectorConfig, MemoryExtractorConfig, MemoryInjectV3Config {
   /** 关着时走旧的关键词知识库（entries.json）；打开后每回合注入结构化记忆证据。 */
   v2: boolean
   /** 检索分数阈值：低于它的证据不进注入包。 */

@@ -72,6 +72,7 @@ override = {}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -183,6 +184,11 @@ override = {}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -457,6 +463,23 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -667,6 +690,7 @@ override = {}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -778,6 +802,11 @@ override = {}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -1052,6 +1081,23 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -1260,6 +1306,7 @@ override = {"batching":{"windowMs":20000}}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -1371,6 +1418,11 @@ override = {"batching":{"windowMs":20000}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -1645,6 +1697,23 @@ override = {"batching":{"windowMs":20000}}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -1853,6 +1922,7 @@ override = {"admin":{"port":8790}}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -1964,6 +2034,11 @@ override = {"admin":{"port":8790}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -2238,6 +2313,23 @@ override = {"admin":{"port":8790}}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -2446,6 +2538,7 @@ override = {"imageGen":{"model":"flux"}}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -2557,6 +2650,11 @@ override = {"imageGen":{"model":"flux"}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -2831,6 +2929,23 @@ override = {"imageGen":{"model":"flux"}}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -3039,6 +3154,7 @@ override = {"tts":{"voice":"b"}}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -3150,6 +3266,11 @@ override = {"tts":{"voice":"b"}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -3424,6 +3545,23 @@ override = {"tts":{"voice":"b"}}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -3632,6 +3770,7 @@ override = {"flood":{"windowSec":30}}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -3743,6 +3882,11 @@ override = {"flood":{"windowSec":30}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -4017,6 +4161,23 @@ override = {"flood":{"windowSec":30}}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -4225,6 +4386,7 @@ override = {}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -4343,6 +4505,11 @@ override = {}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -4617,6 +4784,23 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -4825,6 +5009,7 @@ override = {"keywordTriggers":[]}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -4936,6 +5121,11 @@ override = {"keywordTriggers":[]}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -5210,6 +5400,23 @@ override = {"keywordTriggers":[]}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -5418,6 +5625,7 @@ override = {"rss":{"pollIntervalMin":5}}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -5536,6 +5744,11 @@ override = {"rss":{"pollIntervalMin":5}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -5810,6 +6023,23 @@ override = {"rss":{"pollIntervalMin":5}}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -6018,6 +6248,7 @@ override = {"groupEnabled":false}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -6129,6 +6360,11 @@ override = {"groupEnabled":false}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -6403,6 +6639,23 @@ override = {"groupEnabled":false}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -6611,6 +6864,7 @@ override = {}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -6722,6 +6976,11 @@ override = {}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -6996,6 +7255,23 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -7204,6 +7480,7 @@ override = {"groupEnabled":true}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -7315,6 +7592,11 @@ override = {"groupEnabled":true}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -7589,6 +7871,23 @@ override = {"groupEnabled":true}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -7797,6 +8096,7 @@ override = {"admin":{"host":"127.0.0.1"}}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -7908,6 +8208,11 @@ override = {"admin":{"host":"127.0.0.1"}}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -8182,6 +8487,23 @@ override = {"admin":{"host":"127.0.0.1"}}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -8390,6 +8712,7 @@ override = {}
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -8501,6 +8824,11 @@ override = {}
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -8775,6 +9103,23 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {
@@ -8983,6 +9328,7 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "target": "primary-group"
  },
  "access": {
+  "friendRequests": false,
   "mode": "pairing",
   "groupPolicy": "pairing",
   "allowUsers": [],
@@ -9094,6 +9440,11 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "threshold": 0.35,
   "maxRecords": 8,
   "maxChars": 600,
+  "pinnedEnabled": true,
+  "wanderPercent": 8,
+  "occasionsEnabled": true,
+  "captureEnabled": false,
+  "captureDailyCap": 12,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -9368,6 +9719,23 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
      "materials": [],
      "requires": [],
      "job": "memory.session-split",
+     "script": null
+    },
+    {
+     "id": "memory.consolidate",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:55",
+      "to": "05:34"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.consolidate",
      "script": null
     },
     {

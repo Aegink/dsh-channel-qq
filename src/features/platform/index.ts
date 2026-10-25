@@ -15,6 +15,9 @@ import { createHealthProbe } from './probe.js'
 import { systemClock } from '../../ports/clock.js'
 import type { SubPlugin } from '../plugin-kit.js'
 
+/** 模块级最新 platform.api 引用（platform 装配时更新；未连接时 null）。 */
+export const platformApiRef: { api: import('../../ports/platform.js').QQApi | null } = { api: null }
+
 export const platformPlugin: SubPlugin = {
   name: 'platform',
   watches: ['connection', 'accessToken'],
@@ -30,6 +33,9 @@ export const platformPlugin: SubPlugin = {
     client.on('connect', () => {
       host.log('QQ link ready')
     })
+    // 模块级最新 api 引用（重连时更新）：给不经过子插件装配的组件用
+    // （如 plugin.ts 的出站 URL 安检 checker）。
+    platformApiRef.api = platform.api
     host.provide('platform', { client, platform, api: platform.api, out })
     // 发送侧探针：复用同一个 api 与连接状态，不产生任何消息。
     host.provide('health', createHealthProbe({

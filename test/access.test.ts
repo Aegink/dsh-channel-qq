@@ -41,6 +41,7 @@ function harness(mode: 'pairing' | 'allowlist' | 'open' = 'pairing', overrides: 
     notifyOwner: true,
     replyCooldownMin: 30,
     replyPendingInGroups: false,
+      friendRequests: false,
     ...overrides,
   }
   const root = {

@@ -196,6 +196,27 @@ export function isPinned(record: MemoryRecord): boolean {
 }
 
 /**
+ * "常驻层"准入判据（P2 三层注入的第一层，调研 §3 Marquez807 的教训）。
+ *
+ * Marquez807/dsh-experience-memory 的实测：常驻层准入极严（只有自己声明了
+ * "任何场合都要守"的规矩）才能 6/6 命中，宽松准入的对照组 0/18。所以这里的
+ * 判据是三条**同时**成立：
+ *   - 显式标记 `core`（写入侧/审核页点名，不是打分猜的）；
+ *   - importance ≥ 8（重要到值得每回合都在场）；
+ *   - confidence ≥ 0.8（被验证过若干次，或主人手工确认过）。
+ * 外加 affection 联动的特例（P3）：高好感用户的重要偏好也算——那是她真的在乎的人。
+ * 数量上限由调用方控制（默认 2 条），判据本身只管"配不配"。
+ */
+export function isCoreRecord(record: MemoryRecord, opts: { minImportance?: number; minConfidence?: number } = {}): boolean {
+  if (record.status !== 'active') return false
+  if (isChunkRecord(record)) return false
+  const minImportance = opts.minImportance ?? 8
+  const minConfidence = opts.minConfidence ?? 0.8
+  if (record.tags.includes('core')) return record.importance >= minImportance && record.confidence >= minConfidence
+  return false
+}
+
+/**
  * 遗忘曲线：`R = e^(−t/S)`，t 是"距上次召回的天数"。
  *
  * `S` 取 `strength`：被召回一次 +1，所以常用的记忆衰减得慢。importance 高的
@@ -213,13 +234,21 @@ export function shouldArchive(record: MemoryRecord, now: number): boolean {
   return retention(record, now) < 0.05
 }
 
-/** 召回一次：hits+1、lastHitAt=now、strength+1（上限 MAX_STRENGTH）。 */
+/** 召回一次：hits+1、lastHitAt=now、strength+1（上限 MAX_STRENGTH）、置信 +GAIN。
+ *
+ * 置信增益（P1"命中强化"）：engram 的做法是命中 +0.05——一条记忆被反复验证，
+ * 就该越来越可信；上限 1，来自 member 回合的低置信写入（≤0.5）要被验证若干次
+ * 才能爬回 1，而不是永远低人一等。
+ */
+export const HIT_CONFIDENCE_GAIN = 0.05
+
 export function withHit(record: MemoryRecord, now: number): MemoryRecord {
   return {
     ...record,
     hits: record.hits + 1,
     lastHitAt: now,
     strength: Math.min(MAX_STRENGTH, record.strength + 1),
+    confidence: Math.min(1, record.confidence + HIT_CONFIDENCE_GAIN),
   }
 }
 

@@ -335,12 +335,14 @@ const HEARTBEAT_EVENT: BookEvent = {
   script: { argv: ['node', 'scripts/heartbeat.mjs'], timeoutSec: 60 },
 }
 
-/** 夜间巩固的八条 job 事件（时间表来自 09 §6.2；`job` 名在 `features/memory/nightly.ts` 注册）。 */
+/** 夜间巩固的十条 job 事件（时间表来自 09 §6.2 + P1 巩固；`job` 名在 `features/memory/nightly.ts` 注册）。 */
 const NIGHTLY_EVENTS: readonly BookEvent[] = [
   // 先建块索引：后面的抽取/反思都从"原文块"里找依据。
   ['memory.chunks', '03:50'],
   ['memory.diary-extract', '04:20'],
   ['memory.session-split', '04:40'],
+  // P1 巩固在会话分解之后、反思之前：先合并重复，反思看到的就不是满库重复。
+  ['memory.consolidate', '04:55'],
   ['memory.reflect', '05:10'],
   ['memory.links', '05:30'],
   ['memory.contradictions', '05:50'],

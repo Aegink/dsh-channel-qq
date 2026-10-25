@@ -2,6 +2,38 @@
 
 ### 新增
 
+- **SnowLuma 能力面接入（审计 20261025_snowluma-capability-audit.md 落地）**：
+  - **合并转发/卡片看得见了**：`forward` 段经 `get_forward_msg` 展开成文本注入
+    （每容器 ≤20 条），`json`/`ark` 卡片提取标题摘要；纯转发消息不再整条丢失
+  - **好友申请/群邀请收得到了**（`access.friendRequests`，默认关，**线上已开**）：
+    request 事件存凭据 + 陌生人资料（昵称/等级/签名）私聊通知主人；
+    批准走管理员私聊指令「同意好友 <QQ>」，不经模型
+  - **新工具 7 个**：`qq_set_status`（在线状态，标准档+自定义文案）、`qq_react`
+    （群消息表情回应）、`qq_custom_face`（自定义表情列表/发送——stolen 表情
+    可直接发）、`qq_group_pulse`（群荣誉+@全体剩余）、`qq_check_url`（链接安检）、
+    `qq_friend_requests`、`qq_unidirectional_friends`（单向好友检测）
+  - **出站 URL 安检**：工具闸门挂 `check_url_safely` 渐进式缓存（发送后预热、
+    危险链接第二次起拦截；同步钩子拿不到网络结果的局限写在代码注释里）
+  - **文件下载修复**：群/私文件改走 `get_group_file_url`/`get_private_file_url`
+    （SnowLuma 新版 `get_file` 只认图片/语音缓存，此前 10 次下载全挂）
+
+- **记忆系统 P0–P3 升级（调研 20261024_memory-system-research.md 落地）**：
+  - **P0 写入侧事实抽取**：抽取 prompt 改为"一句话事实"（≤60 字、去口语壳）；
+    夜间抽取产物入库前经 `distillFact` 蒸馏（≤80 字）；新增**回合结束即时抽取**
+    （默认关，`memory.captureEnabled`）：规则判据（被纠正/要求记住/自述/情绪上头）
+    触发带外沉淀，每日上限 `memory.captureDailyCap`（默认 12）、单房间 90 秒冷却
+  - **P1 巩固闭环**：新夜间 job `memory.consolidate`（04:55）——同一件事的两种说法
+    自动合并（重叠 ≥ 0.75，supersede 可回查）；命中强化（召回一次 confidence +0.05）；
+    矛盾对**冻结进队列**（`knowledge/conflicts.jsonl`）等主人裁决；全部决策留凭证
+    （`knowledge/consolidation-log.jsonl`，append-only）
+  - **P2 三层注入**：常驻层（`core` 标记 + importance≥8 + confidence≥0.8 才进，
+    最多 2 条）+ 话题触发层（原管线）+ 走神层（`memory.wanderPercent` 默认 8%，
+    从"被记得够深 + 七天没想起"里随机带一条回来）；实体词典一跳扩展；
+    `qq_memory_search` 新增 `asOf` 时间旅行参数
+  - **P3 陪伴维度**：`qq_person_note` 支持记录印象的**具体瞬间**（`moment`）；
+    生日/纪念日（tags 含 `birthday`/`anniversary`）到期自动注入提示
+    （`memory.occasionsEnabled`）；高好感（affection ≥ 80）用户的重要偏好
+    可进常驻层
 - **原话簿（默认关）**：`chatlog` —— 按群按日保存原始消息流水到 `<工作区>/chatlog`，
   `chatlog.keepDays` 默认 14 天清理；`qq_group_digest` 按日期翻群聊记录
 - **人物档（默认关）**：`people` —— `qq_person_note` 手动记「谁爱用什么说法、忌讳什么」，

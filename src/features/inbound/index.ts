@@ -279,6 +279,11 @@ async function dispatch(host: SubHost, runtime: ChannelRuntime, event: OneBotEve
       await runtime.notices.handle(event)
       return
     }
+    // request 类事件（好友申请/群邀请）：access.friendRequests 打开时处理，否则丢弃（旧行为）。
+    if (event.post_type === 'request') {
+      await host.get('social')?.handleRequest(event)
+      return
+    }
     if (event.post_type !== 'message') return
     await runtime.pipeline.handle(event)
   } catch (error) {
