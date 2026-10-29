@@ -38,6 +38,7 @@ import type { EmojiStore } from '../emoji.js'
 import type { SentLog, SentLogHub } from '../sent-log.js'
 import type { KnowledgeStore } from '../knowledge.js'
 import type { AffectionStore } from '../affection.js'
+import type { EmotionStore } from './emotion/engine.js'
 import type { QuoteStore } from './quotes/store.js'
 import type { ReminderStore } from './reminders/store.js'
 import type { LearnStore } from './learn/store.js'
@@ -133,6 +134,8 @@ export interface ServiceBag {
   /** 技能草稿（记忆候选晋升 → 技能待审区）。 */
   skillDrafts?: SkillDrafts
   affection?: AffectionStore
+  /** 情绪面（emotion 提供）：这一刻的心情与能量，组包与主动行为各自取用。 */
+  emotion?: EmotionStore
   quotes?: QuoteStore
   reminders?: ReminderStore
   learn?: LearnStore

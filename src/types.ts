@@ -7,7 +7,7 @@ export type OneBotMessageSegment =
   | { type: 'reply'; data: { id: string } }
   | { type: 'face'; data: { id: number } }
   | { type: 'record'; data: { file: string } }
-  | { type: 'file'; data: { file: string; name?: string; url?: string; file_id?: string; file_size?: number | string } }
+  | { type: 'file'; data: { file: string; name?: string; url?: string; file_id?: string; file_size?: number | string; busid?: number | string } }
   | { type: 'video'; data: { file: string } }
   | { type: 'forward'; data: { id: string } }
   | { type: 'json'; data: { data: string } }

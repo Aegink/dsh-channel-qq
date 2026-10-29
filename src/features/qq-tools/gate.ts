@@ -5,8 +5,9 @@
  */
 
 import { SESSION_PREFIX, splitRoom } from '../../core/room.js'
-import { roomKeyOf, textSentBy, type SendSignatureGuard } from '../../core/guards/output-signatures.js'
+import { OUTPUT_SIGNATURE_REASONS, roomKeyOf, textSentBy, type SendSignatureGuard } from '../../core/guards/output-signatures.js'
 import { UrlSafetyGuard } from '../../core/guards/url-safety.js'
+import { SEND_LOOP_STRIKES, clearSendLoop, noteBlockedSend } from '../../core/guards/send-loop.js'
 import { decideToolCall, policyEnabled, type ToolCallFacts } from '../../app/policy/tool-policy.js'
 import { tierDenyFor } from '../tools-v2/index.js'
 import type { Trust } from '../../core/trust.js'
@@ -115,6 +116,7 @@ export function createToolGateHooks(deps: ToolGateDeps): ToolGateHooks {
       const text = textSentBy(call.name, facts.args)
       if (text === null) return
       if (deps.sendGuard !== null) deps.sendGuard.record(roomKeyOf(facts.args) ?? fallbackRoom(call), text)
+      clearSendLoop(call.agentId ?? '')
       // 发送成功后预热 URL 安检缓存：同一链接下次经过闸门就有判定。
       if (deps.urlGuard !== undefined) void deps.urlGuard.warm(text, Date.now())
     },
@@ -140,8 +142,19 @@ function checkSendSignature(deps: ToolGateDeps, call: ToolGateCall, facts: ToolC
   const room = roomKeyOf(facts.args) ?? fallbackRoom(call)
   const hit = deps.sendGuard.check(room, text)
   if (hit === null) return null
-  deps.log(`policy: output signature blocked ${call.name} in ${room} (${hit})`)
-  return deps.guardText(hit)
+  const repeated = hit === OUTPUT_SIGNATURE_REASONS.repeatOpening
+  const detail = repeated ? deps.sendGuard.noteBlocked(room, text) : null
+  const strikes = repeated ? noteBlockedSend(call.agentId ?? '') : 0
+  deps.log(`policy: output signature blocked ${call.name} in ${room} (${hit}`
+    + `${detail === null ? '' : `，第 ${detail.count} 次，开头「${detail.opening}」`})`)
+  const base = deps.guardText(hit)
+  if (detail === null) return base
+  // 文案里不给"撞的是哪一句"，模型就会一直重试同一条（2026-10-29：一小时 474 次）。
+  // 到阈值还要明说"别再调发送工具"，配合 `send-loop` 的硬停收尾。
+  const tail = strikes >= SEND_LOOP_STRIKES
+    ? `这一轮已经被拦 ${strikes} 次，到此为止——不要再调用任何发送工具，直接结束这一轮。`
+    : '别再重试同一条：要么换个开头发一次，要么这一轮就不说了。'
+  return `${base}\n撞车的是「${detail.opening}」这个开头（这一轮第 ${detail.count} 次）。${tail}`
 }
 
 function fallbackRoom(call: ToolGateCall): string {

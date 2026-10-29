@@ -16,6 +16,7 @@
 
 import { adminPlugin } from './features/admin/index.js'
 import { affectionPlugin } from './features/affection/index.js'
+import { emotionPlugin } from './features/emotion/index.js'
 import { floodPlugin } from './features/flood/index.js'
 import { imagegenPlugin } from './features/imagegen/index.js'
 import { inboundPlugin } from './features/inbound/index.js'
@@ -66,6 +67,9 @@ export const SECTION_PLUGINS: readonly SubPlugin[] = [
   stickersPlugin,
   memoryPlugin,
   affectionPlugin,
+  // 情绪与能量：紧跟好感度之后（两本账挨着读）。它不注册工具、也不被别的插件
+  // 依赖，所以这个位置只影响 start 顺序——而它没有 start 钩子。
+  emotionPlugin,
   qqToolsPlugin,
   peoplePlugin,
   socialPlugin,

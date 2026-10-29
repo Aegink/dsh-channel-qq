@@ -6,7 +6,7 @@
 # 也可以不用文件，直接设环境变量（脚本里环境变量优先，文件只补未设置的项）。
 
 # ── SSH（deploy/ssh-run.mjs 与 deploy/http-push-fast.mjs 都要）──────────────
-# 注意端口不是 22。
+# 端口按你的实际配置填。
 DSH_SSH_HOST=YOUR_HOST
 DSH_SSH_PORT=22
 DSH_SSH_USER=root

@@ -54,6 +54,8 @@ export const FIELD = {
   reason: { type: 'string', description: '原因一句话' },
   stage: { type: 'string', description: '目标阶段名（必须是阶梯里的名字）' },
   event: { type: 'string', description: '触发晋升的特殊事件描述（原文+时间）' },
+  mood: { type: 'string', enum: ['开心', '得意', '委屈', '生气', '平静', '兴奋', '害羞'], description: '此刻的心情基调' },
+  energy: { type: 'number', description: '能量增减（-30~30）；不填算 0' },
   speaker: { type: 'string', description: '说话人昵称' },
   speakerId: { type: 'number', description: '说话人QQ号' },
   tags: { type: 'array', items: { type: 'string' }, description: '标签数组，便于以后检索' },

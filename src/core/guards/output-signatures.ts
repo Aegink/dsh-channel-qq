@@ -40,16 +40,36 @@ interface RoomOpening {
   run: number
 }
 
+/** 一次拦截的细节：撞的是哪个开头、这一轮第几次。 */
+export interface BlockDetail {
+  readonly opening: string
+  readonly count: number
+}
+
+/** 落盘用的最小状态（只有"最近一次开头 + 连发数"，不含任何正文）。 */
+export interface GuardSnapshot {
+  readonly rooms: ReadonlyArray<{ readonly room: string; readonly open: string | null; readonly run: number }>
+}
+
 /**
- * 每房间"最近一次发送的开头串 + 连发计数"。
+ * 每房间"最近一次发送的开头串 + 连发计数"，外加"同一开头被拦了几次"。
  *
- * 有界（默认最久未用的 200 个房间被淘汰）：这份状态是会话连续性的近似，丢一个
- * 房间只让复读检测从新开始，不影响任何其它行为，所以不需要落盘、不需要时钟。
+ * 房间表有界（默认最久未用的 200 个被淘汰）：这份状态是会话连续性的近似，丢一个
+ * 房间只让复读检测从新开始，不影响任何其它行为。**不落盘也能跑**；落盘是为了
+ * 会话换血/进程重启之后不把同一条再发一遍（2026-10-29 实测：换血后 08:10 又发了
+ * 一条与 06:00 一模一样的"早安"）。
  */
 export class SendSignatureGuard {
   private readonly rooms = new Map<string, RoomOpening>()
+  /** 每个房间"同一开头被拦了几次"；真的发出去一条就清。 */
+  private readonly blocks = new Map<string, { open: string; count: number }>()
 
-  constructor(private readonly rules: OutputSignatureRules, private readonly maxRooms = 200) {}
+  constructor(
+    private readonly rules: OutputSignatureRules,
+    private readonly maxRooms = 200,
+    /** 状态变化时回调（用于落盘）。这里**不做 IO**，R8：判据是纯函数。 */
+    private readonly onChange?: () => void,
+  ) {}
 
   /**
    * 这次要发的文本该不该拦？命中返回 reason key，否则 null。
@@ -73,6 +93,30 @@ export class SendSignatureGuard {
     return null
   }
 
+  /**
+   * 记一次拦截，返回"撞车的开头 + 这一轮第几次"。
+   *
+   * 为什么要计数：原来的文案只说"换个说法再发"，模型看不见自己刚发过什么，
+   * 于是又生成同一句——2026-10-29 实测一小时被拦 474 次，**每次都是一整步
+   * 模型调用**。把开头和次数告诉它，重试才有可改的锚点。
+   */
+  noteBlocked(room: string, text: string): BlockDetail {
+    const normalized = normalizeForSend(text)
+    const opening = openingKeyOf(normalized, this.rules.repeatOpening.minChars) ?? normalized.slice(0, 12)
+    const prev = this.blocks.get(room)
+    const next = prev !== undefined && prev.open === opening
+      ? { open: opening, count: prev.count + 1 }
+      : { open: opening, count: 1 }
+    this.blocks.set(room, next)
+    this.onChange?.()
+    return { opening: next.open, count: next.count }
+  }
+
+  /** 这一轮同一开头连续被拦了几次（没有记录时为 0）。 */
+  blockedRun(room: string): number {
+    return this.blocks.get(room)?.count ?? 0
+  }
+
   /** 记一条**真的发出去**的消息（失败的、被拦下的都不进账本）。 */
   record(room: string, text: string): void {
     const open = openingKeyOf(text, this.rules.repeatOpening.minChars)
@@ -88,6 +132,43 @@ export class SendSignatureGuard {
       if (oldest === undefined) break
       this.rooms.delete(oldest)
     }
+    // 真的发出去了：这一轮的"被拦次数"清零。
+    this.blocks.delete(room)
+    this.onChange?.()
+  }
+
+  /** 落盘快照：只留房间 → 开头串与连发数（不含正文）。 */
+  snapshot(): GuardSnapshot {
+    return {
+      rooms: [...this.rooms].map(([room, state]) => ({ room, open: state.open, run: state.run })),
+    }
+  }
+
+  /**
+   * 回灌快照。坏数据一律忽略（返回恢复的条数）：这份状态丢了只会让复读检测
+   * 从新开始，不该因为它读不起来就把插件拖挂。
+   */
+  restore(snapshot: unknown): number {
+    const rooms = (snapshot as GuardSnapshot | null)?.rooms
+    if (!Array.isArray(rooms)) return 0
+    let restored = 0
+    for (const item of rooms) {
+      if (item === null || typeof item !== 'object') continue
+      const room = (item as { room?: unknown }).room
+      const open = (item as { open?: unknown }).open
+      const run = (item as { run?: unknown }).run
+      if (typeof room !== 'string' || room === '') continue
+      if (open !== null && typeof open !== 'string') continue
+      if (typeof run !== 'number' || !Number.isFinite(run) || run < 0) continue
+      this.rooms.set(room, { open, run })
+      restored += 1
+    }
+    while (this.rooms.size > this.maxRooms) {
+      const oldest = this.rooms.keys().next().value
+      if (oldest === undefined) break
+      this.rooms.delete(oldest)
+    }
+    return restored
   }
 }
 

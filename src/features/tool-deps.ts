@@ -25,6 +25,21 @@ export interface AffectionPort {
   writeCustomHtml(html: string): Promise<void>
 }
 
+/**
+ * 情绪：`EmotionStore` 里工具真正用到的那一个方法。
+ *
+ * `mood` 收 `string` 而不是心情联合类型：工具参数是外部输入，运行时校验在
+ * 实现里做（`engine.ts` 的 `isMood`），这里收窄只会逼调用方写一次转型。
+ */
+export interface EmotionPort {
+  book(mood: string, energyDelta: number, reason: string): Promise<{
+    ok: boolean
+    note: string
+    mood: string
+    energy: number
+  }>
+}
+
 /** 工具注册用到的全部依赖。 */
 export interface QQToolDeps {
   readonly api: QQApi
@@ -33,6 +48,8 @@ export interface QQToolDeps {
   readonly log: (line: string) => void
   readonly library: EmojiLibrary | undefined
   readonly affection: AffectionPort | undefined
+  /** 情绪与能量：`EmotionStore` 里工具真正用到的那一个方法（没装时为 undefined）。 */
+  readonly emotion: EmotionPort | undefined
   readonly sentLog: SentLog | undefined
   /** 按房间取 sent-log（写侧按房间记账；缺省时退回 `sentLog` 那一份）。 */
   readonly sentLogHub?: SentLogHub | undefined

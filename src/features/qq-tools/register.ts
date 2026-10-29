@@ -50,6 +50,7 @@ import { approvalEnabled } from '../approval/store.js'
 import { selfHarmHint, selfHarmReason } from '../../core/approval/self-harm.js'
 import { visionTools } from '../vision/tools.js'
 import type { HistoryService } from '../history/service.js'
+import { emotionTools } from '../emotion/tools.js'
 
 export type { QQToolDeps, AffectionPort } from '../tool-deps.js'
 
@@ -65,6 +66,7 @@ export interface RegisterToolsArgs {
   readonly log: (line: string) => void
   readonly library?: EmojiLibrary
   readonly affection?: QQToolDeps['affection']
+  readonly emotion?: QQToolDeps['emotion']
   readonly sentLog?: SentLog
   readonly sentLogHub?: SentLogHub
   readonly knowledge?: KnowledgeStore
@@ -115,6 +117,7 @@ function toolDeps(args: RegisterToolsArgs): QQToolDeps {
     log,
     library: args.library,
     affection: args.affection,
+    emotion: args.emotion,
     sentLog: args.sentLog,
     sentLogHub: args.sentLogHub,
     knowledge: args.knowledge,
@@ -144,6 +147,7 @@ const REGISTRATION_ORDER: readonly string[] = [
   'qq_set_affection',
   'qq_set_stage',
   'qq_write_dashboard',
+  'qq_set_emotion',
   'retrieve_knowledge',
   'extract_knowledge',
   'qq_send_poke',
@@ -211,6 +215,7 @@ function allSpecs(deps: QQToolDeps): ToolSpec[] {
     ...musicTools(deps),
     ...memoryTools(deps),
     ...affectionTools(deps),
+    ...emotionTools(deps),
     // B5：默认不注册（关着时工具面与旧版逐字节一致）。
     ...(deps.config.imageRecognition.serverOcr ? visionTools(deps) : []),
   ]
@@ -243,8 +248,9 @@ export function registerQQTools(
   memorySearch?: MemorySearch,
   sentLogHub?: SentLogHub,
   history?: HistoryService,
+  emotion?: QQToolDeps['emotion'],
 ): () => void {
-  const deps = toolDeps({ ctx, config, api, out, log, library, affection, sentLog, sentLogHub, knowledge, extract, memory, memorySearch, history })
+  const deps = toolDeps({ ctx, config, api, out, log, library, affection, emotion, sentLog, sentLogHub, knowledge, extract, memory, memorySearch, history })
   const specs = allSpecs(deps)
   // tools.v2 打开时换面：旧 spec 全被收编、只上宿主 17 个合并工具。
   if (toolsV2Enabled(config)) return registerMergedSurface({ ctx, specs, log })

@@ -48,4 +48,22 @@ export const AFFECTION_FACE: Face = {
   ],
 }
 
-export const MISC_FACES: readonly Face[] = [MEMORY_FACE, LEARN_FACE, FLOOD_FACE, AFFECTION_FACE]
+
+/**
+ * 情绪：与好感度分开的一张脸。
+ *
+ * 为什么不做成 `qq_affection` 的一个动作：那是两本账（关系 vs 当下），合在一张
+ * 脸的描述里，模型很容易在「被凶了一句」时顺手把关系也改了——而这正是分开记
+ * 想避免的事。一次只给一个动作也够：她只需要声明，不需要查（提示行每包都在）。
+ */
+export const EMOTION_FACE: Face = {
+  name: 'qq_emotion',
+  description: '此刻的心情：一句话让情绪变了味就记一笔（set，心情 + 能量增减 + 一句话理由）。'
+    + '它记的是「现在什么状态」（会自己回落、影响语气与要不要主动开口）；「关系走到哪一步」是 qq_affection 的事，两本账分开记，别混。'
+    + '被扎到、被夸到、被逗笑、聊到累都该记；日常寒暄不用记。',
+  branches: [
+    { action: 'set', legacy: 'qq_set_emotion', required: ['mood', 'reason'], optional: ['energy'] },
+  ],
+}
+
+export const MISC_FACES: readonly Face[] = [MEMORY_FACE, LEARN_FACE, FLOOD_FACE, AFFECTION_FACE, EMOTION_FACE]

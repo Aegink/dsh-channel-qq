@@ -916,3 +916,43 @@
     ]
   }
 }
+{
+  "name": "qq_emotion",
+  "description": "此刻的心情：一句话让情绪变了味就记一笔（set，心情 + 能量增减 + 一句话理由）。它记的是「现在什么状态」（会自己回落、影响语气与要不要主动开口）；「关系走到哪一步」是 qq_affection 的事，两本账分开记，别混。被扎到、被夸到、被逗笑、聊到累都该记；日常寒暄不用记。\n动作（方括号是平台，括号里是必填字段）：set（mood、reason）",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": [
+          "set"
+        ],
+        "description": "要做的动作：set"
+      },
+      "mood": {
+        "type": "string",
+        "description": "此刻的心情基调",
+        "enum": [
+          "开心",
+          "得意",
+          "委屈",
+          "生气",
+          "平静",
+          "兴奋",
+          "害羞"
+        ]
+      },
+      "reason": {
+        "type": "string",
+        "description": "原因一句话"
+      },
+      "energy": {
+        "type": "number",
+        "description": "能量增减（-30~30）；不填算 0"
+      }
+    },
+    "required": [
+      "action"
+    ]
+  }
+}

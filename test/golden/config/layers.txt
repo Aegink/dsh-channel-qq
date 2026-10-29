@@ -611,7 +611,12 @@ override = {}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 01-黄金用例（主群 + 学弟 + 关视觉）
@@ -1229,7 +1234,12 @@ override = {}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 02-后台只改一个字段
@@ -1845,7 +1855,12 @@ override = {"batching":{"windowMs":20000}}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 03-后台只改一个字段（另一段）
@@ -2461,7 +2476,12 @@ override = {"admin":{"port":8790}}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 04-imageGen 只给 model
@@ -3077,7 +3097,12 @@ override = {"imageGen":{"model":"flux"}}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 05-两层同时给同一段，override 获胜
@@ -3693,7 +3718,12 @@ override = {"tts":{"voice":"b"}}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 06-override 只给一半，另一半来自 patch
@@ -4309,7 +4339,12 @@ override = {"flood":{"windowSec":30}}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 07-数组整体替换
@@ -4932,7 +4967,12 @@ override = {}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 08-空数组覆盖默认
@@ -5548,7 +5588,12 @@ override = {"keywordTriggers":[]}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 09-rss feeds 两层
@@ -6171,7 +6216,12 @@ override = {"rss":{"pollIntervalMin":5}}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 10-groupEnabled 三元：override 优先
@@ -6787,7 +6837,12 @@ override = {"groupEnabled":false}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 11-groupEnabled 只有 patch
@@ -7403,7 +7458,12 @@ override = {}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 12-groupEnabled override 显式为 true
@@ -8019,7 +8079,12 @@ override = {"groupEnabled":true}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 13-admin.host 只改一处
@@ -8635,7 +8700,12 @@ override = {"admin":{"host":"127.0.0.1"}}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 14-空对象的两层
@@ -9251,7 +9321,12 @@ override = {}
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }
 
 ════ 15-线上真实那份 admin-config.json
@@ -9867,5 +9942,10 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
    ]
   }
  },
- "debug": false
+ "debug": false,
+ "emotion": {
+  "enabled": true,
+  "decayPerHour": 6,
+  "lowEnergy": 30
+ }
 }

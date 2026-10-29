@@ -60,6 +60,9 @@ function buildScheduler(host: SubHost, inbound: InboundParts, composer: PromptCo
   return new Scheduler(inbound.turns, composer, host.config, host.log, {
     workspace: host.config.workspacePath ?? undefined,
     onExtract: extractVia(host),
+    // 能量闸门（P7.1）：累到阈值以下就不主动开口。取值函数：emotion 子插件在
+    // 本插件之后挂载（装载表见 src/sections.ts）。
+    energy: () => host.get('emotion')?.energy(),
   })
 }
 
@@ -75,6 +78,7 @@ function buildExecutor(host: SubHost, inbound: InboundParts, composer: PromptCom
     log: host.log,
     dshHome: host.dshHome,
     clock: systemClock,
+    energy: () => host.get('emotion')?.energy(),
   })
   const unregister = registerJob('knowledge.extract', knowledgeExtractJob({
     workspace: () => host.config.workspacePath,

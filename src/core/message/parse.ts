@@ -30,7 +30,8 @@ export interface ParsedInbound {
   /** QQ ids @-ed in the message (excluding the bot and @全体). */
   atIds: number[]
   /** Inbound files: [fileName, url, fileId]. */
-  files: Array<{ name: string; url: string; fileId: string }>
+  /** 入站文件：名字、下载地址、文件 id，以及群文件管理器要的 busid（可能没有）。 */
+  files: Array<{ name: string; url: string; fileId: string; busid?: number }>
   /** 合并转发段：只有容器 id，内容要调 `get_forward_msg` 展开（pipeline 做）。 */
   forwards: Array<{ id: string }>
   /** 小程序 / JSON / Ark 卡片：从 meta 里提取的标题与摘要（纯本地，零请求）。 */
@@ -156,7 +157,7 @@ function pushJson(data: { readonly data?: string }, parsed: ParsedInbound, parts
 
 /** 文件段：显示成 `[文件：名字(大小)]`，同时留下下载所需的三元组。 */
 function pushFile(
-  data: { readonly file?: string; readonly url?: string; readonly file_id?: string; readonly id?: string; readonly file_size?: number | string },
+  data: { readonly file?: string; readonly url?: string; readonly file_id?: string; readonly id?: string; readonly file_size?: number | string; readonly busid?: number | string },
   parsed: ParsedInbound,
   parts: string[],
 ): void {
@@ -165,7 +166,13 @@ function pushFile(
   const sizeStr = typeof sizeNum === 'number' && sizeNum > 0 ? `(${Math.round(sizeNum / 1024)}KB)` : ''
   parts.push(`[文件：${name}${sizeStr}]`)
   // JSON 段的字段是 file_id；CQ 码解析出来的叫 id——两个名字都认。
-  parsed.files.push({ name, url: data.url ?? '', fileId: data.file_id ?? data.id ?? '' })
+  const busid = typeof data.busid === 'string' ? Number(data.busid) : data.busid
+  parsed.files.push({
+    name,
+    url: data.url ?? '',
+    fileId: data.file_id ?? data.id ?? '',
+    ...(typeof busid === 'number' && Number.isSafeInteger(busid) ? { busid } : {}),
+  })
 }
 
 export function parseInbound(event: OneBotEvent): ParsedInbound {

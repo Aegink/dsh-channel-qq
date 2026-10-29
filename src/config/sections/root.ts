@@ -131,4 +131,7 @@ export const ROOT_ENTRIES: ReadonlyArray<readonly [string, FieldSpec | SectionFi
   ['tools', section('工具面', 'tools')],
   ['proactive', section('主动行为（事件书）', 'proactive')],
   ['debug', b('调试日志', false, { hot: 'live', page: 'logs' })],
+  // 情绪与能量（P7.1）：**追加在末尾**——顶层键序即线上配置文件的键序，往中间插
+  // 会让 `test/golden/config/resolved.txt` 整份位移（改动就只是多这一段）。
+  ['emotion', section('情绪与能量', 'emotion')],
 ]

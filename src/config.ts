@@ -325,6 +325,7 @@ export interface QQChannelConfig extends SwitchSections {
   imageRecognition: import('./config/sections/image.js').ImageConfig
   poke: import('./config/sections/poke.js').PokeConfig
   interaction: import('./config/sections/interaction.js').InteractionConfig
+  emotion: import('./config/sections/emotion.js').EmotionConfig
   forward: import('./config/sections/forward.js').ForwardConfig
   metrics: import('./config/sections/metrics.js').MetricsConfig
   history: import('./config/sections/history.js').HistoryConfig

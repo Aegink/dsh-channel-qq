@@ -28,6 +28,8 @@ import { guardTemplateKey, policyEnabled } from './app/policy/tool-policy.js'
 import { toolsV2Enabled } from './features/tools-v2/index.js'
 import { SendSignatureGuard } from './core/guards/output-signatures.js'
 import { UrlSafetyGuard } from './core/guards/url-safety.js'
+import type { OutputSignatureRules } from './core/injection/signatures.js'
+import { createSendGuardSaver, restoreSendGuard, sendGuardFile } from './features/qq-tools/send-guard-store.js'
 import { platformApiRef } from './features/platform/index.js'
 import { turnTrust } from './core/trust.js'
 import { loadSignatureBundle } from './features/inbound/index.js'
@@ -131,7 +133,7 @@ export class ChannelQQ extends Service {
           trustOf: (sessionId) => turnTrust.get(sessionId),
           guardText: (reasonKey) => this.guardText(reasonKey),
           workspacePath: () => this.config.workspacePath,
-          sendGuard: bundle === null ? null : new SendSignatureGuard(bundle.output),
+          sendGuard: bundle === null ? null : this.createSendGuard(bundle.output),
           // 出站 URL 安检：checker 走协议端的 check_url_safely（协议端没连上时查不到，留空缓存）。
           urlGuard: new UrlSafetyGuard(async (url) => {
             try {
@@ -166,6 +168,23 @@ export class ChannelQQ extends Service {
       }
     }
     return `【策略】这个动作在当前回合被拦下了（${reasonKey}）。换个合规的做法，或先把情况告诉学弟。`
+  }
+
+  /**
+   * 复读守卫：状态落盘到 `<dshHome>/channel-qq/send-guard.json`。
+   *
+   * 不落盘的话，会话换血或进程重启会让"最近发过什么"清零——2026-10-29 实测：
+   * 08:10 看门狗换血之后，又把 06:00 那条"早安"原样发了一遍。读盘是异步的，
+   * 读不到就按空状态跑（第一次启动本来就没有这个文件）。
+   */
+  private createSendGuard(rules: OutputSignatureRules): SendSignatureGuard {
+    const file = sendGuardFile(resolveDshHome())
+    const holder: { guard: SendSignatureGuard | null } = { guard: null }
+    const save = createSendGuardSaver(() => holder.guard?.snapshot() ?? { rooms: [] }, file, this.log)
+    const guard = new SendSignatureGuard(rules, 200, save)
+    holder.guard = guard
+    void restoreSendGuard(guard, file, this.log)
+    return guard
   }
 
   /** 子插件能看到的全部世界（契约见 `features/plugin-kit.ts`）。 */

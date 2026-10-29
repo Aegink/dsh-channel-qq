@@ -31,6 +31,7 @@ import {
 import {
   agentStatusOf, buildUserMessage, errorChain, injectAgent, onAgentEvent, steerAgent,
 } from './agent.js'
+import { installSendLoopGuard } from './send-loop.js'
 
 /** 恢复一个"已存在"的会话时，最多试几次、每次等多久。 */
 const RESUME_ATTEMPTS = 3
@@ -308,6 +309,7 @@ function wrap(raw: RawHandle, id: string): AgentSession {
 /** 把一个会话的回合事件接到监听器上。 */
 function watchTurns(agentCtx: Context, spec: SessionSpec): void {
   installStepBudget(agentCtx, spec)
+  installSendLoopGuard(agentCtx, spec)
   // Emit-mode 事件只递一个 payload，监听器的返回值被忽略。
   onAgentEvent(agentCtx, 'agent/status', (payload) => {
     if (payload?.status === 'idle') spec.listener.onIdle()

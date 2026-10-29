@@ -52,6 +52,8 @@ export interface GroupPacketV2Input {
   /** 信封的 room 属性（`group:1000000003`）。 */
   readonly roomKey: string
   readonly period: string
+  /** 情绪提示（可能为空串；排在时段之后，与 v1 的 `groupPacket` 同序）。 */
+  readonly emotionHint: string
   readonly knowledgeHint: string
   readonly sentBlock: string
   /** 注入特征信号（P6c 的扫描器填；空数组 = 不渲染提示行）。 */
@@ -63,6 +65,8 @@ export interface DmPacketV2Input {
   readonly line: string | null
   readonly knowledgeHint: string
   readonly room: string
+  /** 情绪提示（可能为空串；关着或没装情绪子插件时恒空，产物与从前逐字节一致）。 */
+  readonly emotionHint: string
   readonly roomKey: string
   readonly signals: readonly InjectionSignal[]
 }
@@ -182,6 +186,7 @@ export class PromptComposer {
       input.room,
       this.timeNote(input.period),
     ]
+    if (input.emotionHint !== '') out.push(input.emotionHint)
     if (input.pending !== '') {
       out.push(PENDING_TITLE, untrustedEnvelope(input.roomKey, input.pending))
       for (const signal of routed.pending) out.push(injectionWarningLine(signal.name))
@@ -198,6 +203,7 @@ export class PromptComposer {
   /** 私聊一包（v2）：抬头 + 房间行 + 当前块 + 知识召回。 */
   dmPacketV2(input: DmPacketV2Input): string {
     const out = [this.r('packet/dm-v2'), input.room]
+    if (input.emotionHint !== '') out.push(input.emotionHint)
     if (input.line !== null) {
       out.push(CURRENT_TITLE, untrustedEnvelope(input.roomKey, input.line))
       const routed = routeSignals(input.signals, input.line, '')

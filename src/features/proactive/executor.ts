@@ -47,6 +47,8 @@ export interface ExecutorDeps {
   readonly log: (line: string) => void
   readonly dshHome: string
   readonly clock: Clock
+  /** 此刻的能量（emotion 子插件提供；没装时 undefined = 永不跳过）。 */
+  readonly energy?: () => number | undefined
 }
 
 function describeError(error: unknown): string {
@@ -129,6 +131,12 @@ export class ProactiveExecutor {
   private gateReason(event: BookEvent, now: Date): string | null {
     if (inQuietHours(event.quietHours, now)) return 'quiet-hours'
     if (event.kind !== 'prompt') return null
+    // 累了就不主动找人（P7.1）：只拦「她主动开口」的两条，做梦与自省照旧——
+    // 那两件不打扰人，也不该因为今天话多就被跳过。
+    if (event.id === 'patrol' || event.id === 'dm-visit') {
+      const energy = this.deps.energy?.()
+      if (energy !== undefined && energy < this.deps.config().emotion.lowEnergy) return 'tired'
+    }
     const resolved = resolveTarget(event.target ?? '', this.directory())
     if (!resolved.ok) return `target:${resolved.reason}`
     const record = this.deps.registry.get(resolved.room)

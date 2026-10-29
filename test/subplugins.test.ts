@@ -112,7 +112,7 @@ test('P5.1：requires 未满足的段挂不上（inject 的等价断言）；卸
 
 test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 applyEffects）', () => {
   assert.deepEqual(SECTION_PLUGINS.map((p) => p.name), [
-    'persona', 'observers', 'platform', 'channel-health', 'access', 'interaction', 'metrics', 'history', 'reliability', 'daily-report', 'inbound', 'session-reset', 'stickers', 'memory', 'affection',
+    'persona', 'observers', 'platform', 'channel-health', 'access', 'interaction', 'metrics', 'history', 'reliability', 'daily-report', 'inbound', 'session-reset', 'stickers', 'memory', 'affection', 'emotion',
     'qq-tools', 'people', 'social', 'capabilities', 'chatlog', 'links', 'meme', 'voice', 'quotes', 'reminders', 'rss', 'imagegen',
     'flood', 'learn', 'music', 'skills', 'kb', 'proactive', 'admin',
   ])
@@ -139,6 +139,7 @@ test('P5.1/P5.2：装载表顺序与热重载声明被锁住（行为对齐旧 a
       'memory.extractorUrl', 'memory.extractorModel', 'memory.extractorApiKey',
     ]],
     ['affection', ['affectionPort']],
+    ['emotion', ['emotion']],
     ['qq-tools', ['tools.v2', 'memory.v2', 'imageRecognition.serverOcr']],
     ['people', ['people']],
     ['chatlog', ['chatlog']],

@@ -608,5 +608,10 @@
       ]
     }
   },
-  "debug": false
+  "debug": false,
+  "emotion": {
+    "enabled": true,
+    "decayPerHour": 6,
+    "lowEnergy": 30
+  }
 }

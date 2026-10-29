@@ -19,6 +19,7 @@ import { timeContext } from '../../core/schedule/stamp.js'
 import { envelopeKey } from '../../core/instruction/envelope.js'
 import type { Clock } from '../../ports/clock.js'
 import type { InjectionSignal } from '../../ports/injection.js'
+import type { EmotionSource } from '../../ports/emotion.js'
 import type { ConversationRecord } from '../conversation/registry.js'
 import type { MemoryEvidence } from '../../ports/memory.js'
 import type { PromptComposer } from '../conversation/prompt-composer.js'
@@ -81,6 +82,11 @@ export interface PacketComposerDeps {
     readonly text: string
     readonly room: string | null
   }) => Promise<string>
+  /**
+   * 情绪面（P7.1）。**没装就是「没有这一行」**——组包产物与从前逐字节一致
+   * （golden 盯着这一点）。取值函数而不是实例：emotion 子插件晚于 inbound 挂载。
+   */
+  readonly emotion?: EmotionSource
   /** 这个房间"她最近说过什么"。 */
   readonly sentBlockFor: (room: string) => Promise<string>
 }
@@ -117,6 +123,7 @@ export class PacketComposer {
     const room = this.deps.prompts.roomDirective(conversation.isGroup, conversation.chatId)
     // 召回用**当前消息**：私聊没有待回块，这一条就是全部。
     const knowledgeHint = await this.recallHint(input.line ?? '', conversation)
+    const emotionHint = this.emotionHintFor(input.line ?? '')
     if (!this.v2()) {
       return this.deps.prompts.dmPacket({ line: input.line, knowledgeHint, room })
     }
@@ -125,6 +132,7 @@ export class PacketComposer {
       knowledgeHint,
       room,
       roomKey: this.envelopeOf(conversation),
+      emotionHint,
       signals: input.signals ?? [],
     })
   }
@@ -204,6 +212,27 @@ export class PacketComposer {
   }
 
   /**
+   * 这一包的情绪提示：先记账（只在这包**真的要交给模型**时发生），再取一行提示。
+   *
+   * 记账放在这里而不是入站分发处，是有意的：群里大多数话跟她无关，只有真的要
+   * 回话的那一包才值得改变心情。没装情绪子插件时返回空串——组包产物与从前
+   * **逐字节一致**（golden 盯着这一点）。情绪是锦上添花：它坏掉只记一行日志，
+   * 不让这一回合组不出包。
+   */
+  private emotionHintFor(text: string): string {
+    const emotion = this.deps.emotion?.() ?? null
+    if (emotion === null) return ''
+    try {
+      emotion.observe(text)
+      emotion.spend()
+      return emotion.hint()
+    } catch (error) {
+      this.deps.log(`emotion hint failed: ${error instanceof Error ? error.message : String(error)}`)
+      return ''
+    }
+  }
+
+  /**
    * 取这一包的上下文快照。
    *
    * 消息边界在队列的**条目**上，不在换行上——一条消息的正文可以含换行（`plainText`
@@ -250,6 +279,7 @@ export class PacketComposer {
     const knowledgeHint = await this.recallHint(rawContext, conversation)
     const sentBlock = await this.deps.sentBlockFor(conversation.key)
     const room = this.deps.prompts.roomDirective(conversation.isGroup, conversation.chatId)
+    const emotionHint = this.emotionHintFor(rawContext)
     const text = v2
       ? this.deps.prompts.groupPacketV2({
           called,
@@ -258,6 +288,7 @@ export class PacketComposer {
           room,
           roomKey: this.envelopeOf(conversation),
           period: ctx.period,
+          emotionHint,
           knowledgeHint,
           sentBlock,
           signals: input.signals ?? [],
@@ -267,7 +298,7 @@ export class PacketComposer {
           context: compacted.text,
           room,
           period: ctx.period,
-          emotionHint: '',
+          emotionHint,
           knowledgeHint,
           sentBlock,
         })

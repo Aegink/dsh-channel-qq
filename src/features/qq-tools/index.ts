@@ -31,6 +31,9 @@ export const qqToolsPlugin: SubPlugin = {
     return registerQQTools(
       host.bridge.toolHost(), config, api, out, host.log, library, affection, sentLog, knowledge, extract,
       host.get('memory'), host.get('memorySearch'), sentLogHub, host.get('history'),
+      // 情绪：emotion 子插件在装载表里紧跟 affection（见 src/sections.ts），
+      // 用 get 而不是 need——它缺席时 `qq_set_emotion` 自己给出可读的拒绝理由。
+      host.get('emotion'),
     )
   },
 }

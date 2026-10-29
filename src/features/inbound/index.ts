@@ -43,6 +43,7 @@ import type { QQChannelConfig } from '../../config.js'
 import type { ChatPlatform } from '../../ports/platform.js'
 import type { MemoryEvidence } from '../../ports/memory.js'
 import type { KbEvidence } from '../../ports/kb.js'
+import type { EmotionSource } from '../../ports/emotion.js'
 import type { GatewayErrorBus, PlatformParts, SubHost, SubPlugin } from '../plugin-kit.js'
 import type { TurnHooks } from '../../ports/turn-hooks.js'
 import { createAdminCommand, startReceiptPoller } from '../approval/index.js'
@@ -72,6 +73,8 @@ interface RuntimeDeps {
   readonly memoryEvidence?: MemoryEvidence
   /** 知识库证据（kb 子插件提供；装载顺序在 inbound 之后，用惰性取值）。 */
   readonly kbEvidence?: KbEvidence
+  /** 情绪面（emotion 子插件提供；装载顺序在 inbound 之后，用惰性取值）。 */
+  readonly emotion?: EmotionSource
   /** 语音转写（provider 的事，装配时从 stt 适配器接过来）。 */
   readonly transcribe: (messageId: number) => Promise<string | null>
   /** 注入特征扫描器（P6c；表坏掉时为 null = 不打标、不拦截）。 */
@@ -234,6 +237,7 @@ function createRuntime(deps: RuntimeDeps): ChannelRuntime {
     knowledge: deps.knowledge,
     ...(deps.memoryEvidence === undefined ? {} : { memoryEvidence: deps.memoryEvidence }),
     ...(deps.kbEvidence === undefined ? {} : { kbEvidence: deps.kbEvidence }),
+    ...(deps.emotion === undefined ? {} : { emotion: deps.emotion }),
     sentBlockFor: (room: string) => turns.sentBlockFor(room),
   }, createPolicyScreening({
     enabled: () => policyEnabled(deps.config),
@@ -338,6 +342,8 @@ export const inboundPlugin: SubPlugin = {
       log: host.log,
       knowledge: () => host.get('knowledge')?.store ?? null,
       ...lazyEvidence(host),
+      // 情绪面：emotion 子插件晚于本插件挂载，所以传取值函数（见 RuntimeDeps.emotion）。
+      emotion: () => host.get('emotion') ?? null,
       screen: { scanner: bundle === null ? null : bundle.scanner },
       transcribe: (messageId: number) => transcribeOne(parts.api, config.stt, messageId, host.log),
       openSentLog: (room: string) => sentLogHub.for(room),

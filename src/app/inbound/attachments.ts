@@ -20,9 +20,20 @@ import type { BlobStore } from '../../ports/blob-store.js'
  * 从消息里存下来的单个文件上限。
  *
  * 原来**没有上限**：一个大文件就能把内存吃掉（整份字节都在 Buffer 里）。
- * 30MB 是"够用且炸不掉进程"的折中，超了就当没收到。
+ * 30MB → 100MB（2026-10-29）：原来的 30MB 把 38MB 的技能包挡在外面，而日志里
+ * 只显示 "no downloadable url"，看不出是体积问题。100MB 是"够收常见安装包与
+ * 技能包、又不至于被一个文件拖垮进程"的折中。
  */
-export const MAX_INBOUND_FILE_BYTES = 30 * 1024 * 1024
+export const MAX_INBOUND_FILE_BYTES = 100 * 1024 * 1024
+
+/**
+ * 文件下载的超时（API 调用仍是 `HttpClient` 默认的 15s）。
+ *
+ * 2026-10-29 抓包实测：同一个私聊里 554KB 的文件秒下成功，而 23MB 的群文件
+ * 在同一条链路上失败——几十 MB 走 QQ 的下载链很容易超过 15s，超时又被当成
+ * "没有下载地址"，所以给文件单独放宽。
+ */
+const FILE_DOWNLOAD_TIMEOUT_MS = 120_000
 
 /** 一条消息最多收几个文件（多的当没看见，免得一个人刷十几个文件把回合塞满）。 */
 const MAX_FILES_PER_MESSAGE = 3
@@ -140,11 +151,11 @@ export async function receiveFiles(
   const saved: string[] = []
   for (const file of parsed.files.slice(0, MAX_FILES_PER_MESSAGE)) {
     try {
-      const bytes = await downloadFileBytes(deps, file, ctx)
-      if (bytes === null) throw new Error('no downloadable url')
-      const target = await deps.blobs.writeInbox({ name: file.name, bytes, nowMs })
+      const got = await downloadFileBytes(deps, file, ctx)
+      if ('error' in got) throw new Error(got.error)
+      const target = await deps.blobs.writeInbox({ name: file.name, bytes: got.bytes, nowMs })
       saved.push(target)
-      deps.log(`file received: ${file.name} (${Math.round(bytes.length / 1024)}KB) → inbox`)
+      deps.log(`file received: ${file.name} (${Math.round(got.bytes.length / 1024)}KB) → inbox`)
     } catch (error) {
       deps.log(`file ${file.name} download failed: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -152,49 +163,139 @@ export async function receiveFiles(
   return saved
 }
 
+/** 下载结果的两种结局：拿到字节，或者**一条能读懂的原因**。 */
+type FileBytes = { readonly bytes: Buffer } | { readonly error: string }
+
+function reasonOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+/** 消息里的文件引用：地址、文件 id、群文件 busid（可能没有）。 */
+type FileRef = { readonly url: string; readonly fileId: string; readonly busid?: number }
+
 /**
- * 一个入站文件的字节。解析顺序：
- *   1. 消息段里的地址（别人给的，过闸门）；
- *   2. 群文件 → `get_group_file_url`、私聊 → `get_private_file_url`（SnowLuma
- *      新版语义：`get_file` 只认图片/语音缓存，文件 id 它解析不了——2026-10-24
- *      起 10 次"no downloadable url"全是这个原因）；
- *   3. 最后兜底 `get_file`（兼容还认文件 id 的旧实现）。
+ * 抓一个下载地址，带文件专用的体积上限与超时。
+ *
+ * 失败一律记进 `why` 并返回 null（由调用方决定要不要继续试下一条路）。
+ * 体积超限、超时、非 2xx、SSRF 拦截都在这里分流——**以前它们全被压成
+ * 一句 "no downloadable url"**，那是 2026-10-29 那次排查最大的障碍。
  */
-async function downloadFileBytes(
+async function fetchCapped(
   deps: AttachmentDeps,
-  file: { readonly url: string; readonly fileId: string },
-  ctx: FileRoomContext = {},
+  url: string,
+  why: string[],
+  allowPrivateHosts = false,
 ): Promise<Buffer | null> {
-  if (file.url !== '') {
-    // 消息段里的地址 = 别人给的地址，必须过闸门。
-    const res = await deps.http.request(file.url, { limit: MAX_INBOUND_FILE_BYTES }).catch(() => null)
-    if (res !== null && res.ok) return Buffer.from(res.bytes)
+  try {
+    const res = await deps.http.request(url, {
+      limit: MAX_INBOUND_FILE_BYTES,
+      timeoutMs: FILE_DOWNLOAD_TIMEOUT_MS,
+      ...(allowPrivateHosts ? { allowPrivateHosts: true } : {}),
+    })
+    if (!res.ok) {
+      why.push(`下载地址返回 HTTP ${res.status}`)
+      return null
+    }
+    // 宁可报错，也不要把残缺文件当成功存下来。
+    if (res.truncated === true) {
+      why.push(`响应被截断：超过 ${MAX_INBOUND_FILE_BYTES} 字节上限`)
+      return null
+    }
+    return Buffer.from(res.bytes)
+  } catch (error) {
+    why.push(`下载失败：${reasonOf(error)}`)
+    return null
   }
-  if (file.fileId === '') return null
-  // 专用 URL 接口（主路径）：失败就落到 get_file 兜底，不让一个坏接口把文件弄丢。
-  const via = ctx.groupId === undefined
-    ? await deps.api.getPrivateFileUrl(file.fileId).catch(() => null)
-    : await deps.api.getGroupFileUrl(ctx.groupId, file.fileId).catch(() => null)
-  if (typeof via?.url === 'string' && via.url !== '') {
-    const res = await deps.http.request(via.url, { limit: MAX_INBOUND_FILE_BYTES }).catch(() => null)
-    if (res !== null && res.ok) return Buffer.from(res.bytes)
+}
+
+/**
+ * 专用 URL 接口（主路径）：群文件 `getGroupFileUrl`、私聊 `getPrivateFileUrl`。
+ *
+ * 日志里写的是**端口方法名**而不是 OneBot 动作名——R5 要求动作名只出现在
+ * adapters/onebot 里，而排查时要看的正是"哪一步没给地址"。
+ */
+async function requestFileUrl(
+  deps: AttachmentDeps,
+  file: FileRef,
+  ctx: FileRoomContext,
+  why: string[],
+): Promise<string | null> {
+  const isGroup = ctx.groupId !== undefined
+  const label = isGroup ? 'getGroupFileUrl' : 'getPrivateFileUrl'
+  let via: { url?: string } | null = null
+  try {
+    via = isGroup
+      ? await deps.api.getGroupFileUrl(ctx.groupId as number, file.fileId, file.busid)
+      : await deps.api.getPrivateFileUrl(file.fileId)
+  } catch (error) {
+    why.push(`${label} 失败：${reasonOf(error)}`)
+    return null
   }
+  if (typeof via?.url === 'string' && via.url !== '') return via.url
+  why.push(`${label} 没返回 url`)
+  return null
+}
+
+/**
+ * 最后兜底 `getFile`：本机缓存路径，或它自己给的 URL。
+ *
+ * 这一跳放行私网——NapCat/SnowLuma 的文件服务就可能跑在 127.0.0.1 上。
+ */
+async function readViaGetFile(
+  deps: AttachmentDeps,
+  file: FileRef,
+  why: string[],
+): Promise<Buffer | null> {
   try {
     const data = await deps.api.getFile(file.fileId)
     if (typeof data?.file === 'string' && !data.file.startsWith('http')) {
       const local = await deps.blobs.readLocal(data.file)
-      return local === null ? null : Buffer.from(local)
+      if (local !== null) return Buffer.from(local)
+      why.push('get_file 给的本机路径读不到')
+      return null
     }
-    if (typeof data?.file === 'string') {
-      // NapCat 自己的文件服务就可能跑在 127.0.0.1 上，所以这一跳放行私网。
-      const res = await deps.http.request(data.file, { limit: MAX_INBOUND_FILE_BYTES, allowPrivateHosts: true })
-      if (res.ok) return Buffer.from(res.bytes)
-    } else if (typeof data?.url === 'string' && data.url !== '') {
-      const res = await deps.http.request(data.url, { limit: MAX_INBOUND_FILE_BYTES, allowPrivateHosts: true })
-      if (res.ok) return Buffer.from(res.bytes)
-    }
-  } catch {
-    // 兜底失败：交给调用方记一条"下载失败"。
+    if (typeof data?.file === 'string') return await fetchCapped(deps, data.file, why, true)
+    if (typeof data?.url === 'string' && data.url !== '') return await fetchCapped(deps, data.url, why, true)
+    why.push('get_file 没返回可下载内容')
+    return null
+  } catch (error) {
+    why.push(`get_file 失败：${reasonOf(error)}`)
+    return null
   }
-  return null
+}
+
+/**
+ * 一个入站文件的字节。解析顺序：
+ *   1. 消息段里的地址（别人给的，过闸门）——**SnowLuma 实测这个分支能直接下**；
+ *   2. 群文件 → `getGroupFileUrl`（带 busid）、私聊 → `getPrivateFileUrl`
+ *      （新版语义：`getFile` 只认图片/语音缓存，文件 id 它解析不了）；
+ *   3. 最后兜底 `getFile`（兼容还认文件 id 的旧实现）。
+ *
+ * 失败时返回**一条能读懂的原因**；以前返回 null，调用方统一报 "no downloadable
+ * url"，看不出到底是哪一种（见 docs/deployment.md §14）。
+ */
+async function downloadFileBytes(
+  deps: AttachmentDeps,
+  file: FileRef,
+  ctx: FileRoomContext = {},
+): Promise<FileBytes> {
+  const why: string[] = []
+  if (file.url !== '') {
+    const bytes = await fetchCapped(deps, file.url, why)
+    if (bytes !== null) return { bytes }
+  } else {
+    why.push('消息段没有 url')
+  }
+  if (file.fileId === '') {
+    why.push('消息段没有 file_id')
+    return { error: why.join('；') }
+  }
+  const viaUrl = await requestFileUrl(deps, file, ctx, why)
+  if (viaUrl !== null) {
+    const bytes = await fetchCapped(deps, viaUrl, why)
+    if (bytes !== null) return { bytes }
+  }
+  const viaGetFile = await readViaGetFile(deps, file, why)
+  if (viaGetFile !== null) return { bytes: viaGetFile }
+  return { error: why.join('；') }
 }

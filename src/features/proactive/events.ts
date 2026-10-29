@@ -49,7 +49,12 @@ export class Scheduler {
     private readonly prompts: PromptComposer,
     private readonly config: QQChannelConfig,
     private readonly log: (line: string) => void,
-    private readonly opts: { workspace?: string; onExtract?: (source: string, text: string) => Promise<number> } = {},
+    private readonly opts: {
+      workspace?: string
+      onExtract?: (source: string, text: string) => Promise<number>
+      /** 此刻的能量（emotion 子插件提供；没装时 undefined = 永不跳过）。 */
+      energy?: () => number | undefined
+    } = {},
   ) {
     this.groupConversationKey = this.config.primaryGroup !== null ? `group-${this.config.primaryGroup}` : null
     if (opts.workspace) this.configWorkspace = opts.workspace
@@ -141,6 +146,7 @@ export class Scheduler {
     const h = now.getHours()
     // Night quiet: 01:00-08:00 she lets 学弟 sleep (dreams at 4am are exempt).
     if (h >= 1 && h < 8) return
+    if (this.tooTired('dm-proactive')) return
     this.dmCounter += 1
     // Every variant carries the persona's hard rules inline: single line ≤15 chars,
     // no full stop, never restate the other person's words, and no 撒娇/撩 framing
@@ -161,6 +167,22 @@ export class Scheduler {
     this.timers = []
   }
 
+  /**
+   * 能量闸门：累到阈值以下就不主动开口。
+   *
+   * 提示词那边只说「建议短句、别主动找话」，模型可以不听；这里是硬的——主动
+   * 开口要耗她自己没有的力气，跳过比硬撑着演一句更像人。
+   * 没装情绪子插件（或它关着）时永远不跳过。
+   */
+  private tooTired(what: string): boolean {
+    const energy = this.opts.energy?.()
+    if (energy === undefined) return false
+    const floor = this.config.emotion.lowEnergy
+    if (energy >= floor) return false
+    this.log(`${what} skipped: energy ${Math.round(energy)} < ${floor}（累了，不主动）`)
+    return true
+  }
+
   private async patrol(): Promise<void> {
     if (this.groupConversationKey === null) return
     const now = new Date()
@@ -168,6 +190,8 @@ export class Scheduler {
     // Night silence: no patrols 01:00-07:30.
     const h = now.getHours()
     if (h >= 1 && h < 7.5) return
+    // 累了就不巡逻（P7.1）：能量是硬闸门，提示词里那句「别主动找话」只是软建议。
+    if (this.tooTired('patrol')) return
     await this.turns.patrolTick(this.groupConversationKey, this.prompts.render('proactive/patrol', { flavor: ctx.flavor }))
   }
 

@@ -134,6 +134,40 @@
   }
 }
 {
+  "name": "qq_set_emotion",
+  "description": "【此刻的心情】一句话让咱心里变了味的时候，用这个记下「这一刻」的状态：心情 + 能量增减。它和 qq_set_affection 是两本账：那个记关系（走到哪一步、阶段），这个记当下（现在什么心情、还有多少力气）。被扎到、被夸到、被逗笑、聊到累——都该记；日常寒暄不用记。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "mood": {
+        "type": "string",
+        "enum": [
+          "开心",
+          "得意",
+          "委屈",
+          "生气",
+          "平静",
+          "兴奋",
+          "害羞"
+        ],
+        "description": "此刻的心情基调"
+      },
+      "energy": {
+        "type": "number",
+        "description": "能量增减：被点燃 +5~15，被耗到 -5~15，不填算 0（范围 -30~30）"
+      },
+      "reason": {
+        "type": "string",
+        "description": "为什么变了，一句话（会进提示行，20 字内）"
+      }
+    },
+    "required": [
+      "mood",
+      "reason"
+    ]
+  }
+}
+{
   "name": "retrieve_knowledge",
   "description": "检索咱的长期知识库（从日记和群聊沉淀的技能/事实/偏好/事件/人物）。回答不确定的问题前先搜这里。",
   "parameters": {

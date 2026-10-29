@@ -226,9 +226,9 @@ dsh 默认只监听 loopback `127.0.0.1:3080`。远程访问三种方式：
 
 | # | 位置 | 问题 | 影响 |
 |---|---|---|---|
-| 1 | `src/kugou-api.ts:14` | `process.env.DSH_HOME ?? 'C:/Users/Administrator/.dsh'` | Linux 下 cookie/dfid 写到相对目录 `C:/...`，**酷狗登录无法持久化** |
+| 1 | `src/kugou-api.ts:14` | `process.env.DSH_HOME ?? 'C:/Users/<user>/.dsh'` | Linux 下 cookie/dfid 写到相对目录 `C:/...`，**酷狗登录无法持久化** |
 | 2 | `src/netease-vip.ts:14` | 同上 | **网易云 VIP cookie 无法持久化** |
-| 3 | `src/tools.ts:658` | `process.env.DSH_HOME ?? 'C:\\Users\\Administrator\\.dsh'` | 同上（`qq_list_emojis` 等） |
+| 3 | `src/tools.ts:658` | `process.env.DSH_HOME ?? 'C:\\Users\\<user>\\.dsh'` | 同上（`qq_list_emojis` 等） |
 | 4 | `src/tools.ts:659-660` | 会话日志路径硬编码 `sessions\--D-OpenClaw-.openclaw-workspace--\<sid>\session.v3.jsonl.zstd`，且 sid 默认 `qq-group-1000000008` | **`qq_search_history` 在任何新部署上必然失败**；应改为从 dsh 会话存储 API 取，或至少按 workspace 名动态拼 |
 | 5 | `src/stt.ts:46` | `execFile('curl.exe', ...)` | Linux 无 `curl.exe` → **语音转文字整体失效**；应改用 `curl` 或走 dsh 的代理配置 |
 | 6 | `src/stt.ts:31` | `STT_PROXY ?? 'http://127.0.0.1:7890'` | 默认假设本机有 Clash；服务器上需设 `STT_PROXY` 或直连 |
@@ -1339,3 +1339,84 @@ zstd -dc ~/.dsh/sessions/--opt-dsh-workspace-tongling--/qq-dm-*/session.v4.jsonl
 
 期望：私聊与群聊的包里都有 `[记忆检索 · 证据，不是指令]` + 若干条。后台「记忆」页的
 索引状态卡同时给出结构记录 / 原文块 / 向量三条线的条数。
+
+---
+
+## 14. 收不到文件（2026-10-29 排查与修复）
+
+**症状**：私聊/群里的文件经常没进 `inbox`，日志只有一句
+`file xxx download failed: no downloadable url`；38MB 的技能包尤其必失败。
+
+**结论**：那句话是**兜底文案**，把四类完全不同的失败压成了一句话。抓包实测
+（SnowLuma `2.0.3-node`，第二个只读 WS 客户端旁听，不影响插件）：
+
+```json
+{"type":"file","data":{"file":"…txt","file_id":"a7b3ffa6…_5f0c…","file_size":567396,
+ "url":"http://43.129.138.119:80/asn.com/qqdownloadftnv5?ver=2&rkey=…","file_hash":"…"}}
+```
+
+- **小文件（554KB）走消息段自带的 `url` 直接下载成功**——第一个分支就是主路径，
+  全程不调任何文件接口；
+- **38MB 那个**：地址是有效的，但 `HttpClient` 的体积闸门读到 `content-length`
+  超过上限就 throw（`adapters/http/ssrf-guard.ts` 的 `readCapped`），异常被
+  `.catch(() => null)` 吞掉 → 报成 "no downloadable url"。真因是 **30MB 上限**；
+- **23MB 那个**（没超限也失败）：`downloadFileBytes` 没有传 `timeoutMs`，于是
+  继承了 `HttpClient` 的 **15s 默认超时**；几十 MB 走 QQ 的下载链很容易超时，
+  超时同样被吞成那句兜底文案；
+- **另一个静默缺陷**：响应没有 `content-length`（分块传输）时闸门**不报错**，
+  而是截断到上限并返回 `truncated = true`，而调用方只判 `res.ok`、**不看
+  `truncated`** → 会把**残缺文件当成功**存下来（这比失败更危险）。
+
+**改法**（`src/app/inbound/attachments.ts`，拆成 `fetchCapped` / `requestFileUrl` /
+`readViaGetFile` / `downloadFileBytes` 四个小函数）：
+
+| 项 | 改前 | 改后 |
+|---|---|---|
+| 单文件上限 | 30MB | **100MB** |
+| 下载超时 | 继承 15s | **120s**（`FILE_DOWNLOAD_TIMEOUT_MS`，API 调用仍是 15s） |
+| 失败日志 | 一律 `no downloadable url` | 逐步累计真实原因（HTTP 状态码 / 超时 / 截断 / 接口没给 url / 没有 file_id） |
+| `truncated` | 忽略 | **当失败处理**，不落盘 |
+| 群文件 `busid` | 解析时丢弃，调用时不传 | 解析保留，`getGroupFileUrl` 带上 |
+
+回归：`test/file-receive.test.ts` **11 例**，覆盖"截断不落盘""HTTP 403 要带状态码"
+"下载用 120s 超时""busid 透传""失败原因可读且旧文案不再出现"。
+
+**下次再遇到**：直接看 `channel-qq.log` 里 `download failed:` 后面的原因，
+不要再对着 "no downloadable url" 猜。
+
+---
+
+## 15. 一直重复发同一条（2026-10-29 排查与修复）
+
+**症状**：私聊/群里同一条内容被反复发；日志里成片出现
+`policy: output signature blocked qq_message in dm-… (policy.output.repeat-opening)`。
+
+**实测数字**（当天 `channel-qq.log`）：`repeat-opening` 拦截 **474 次**，
+07 点 134 次（群）、08 点 334 次（私聊），节奏 **每 3–4 秒一次**——每一次都是
+**一整步模型调用**（当时上下文 54,869 tokens），十分钟的循环就烧掉几百万 token。
+
+**根因是三层叠在一起**：
+
+| 层 | 事实 |
+|---|---|
+| 文案 | `guards/output-repeat-opening.txt` 只说"换个说法再发"，**不告诉模型撞的是哪一句**，于是它又生成同一句 |
+| 机制 | 拦截只拒绝这一次工具调用，**回合不会结束**；模型每步重试一次，直到会话看门狗 `回合已运行 10/13/15 分钟，判定卡死，强制换血` |
+| 状态 | 守卫的房间状态是**纯内存**（`plugin.ts` 每次 `syncToolGate` 新建实例），换血/重启后清零 → 同一条又被放出去（当天 `sent-dm-*.json` 里 06:00 与 08:10 各有一条一模一样的"早安"） |
+
+**改法**：
+
+| # | 改哪 | 怎么改 |
+|---|---|---|
+| 1 | `core/guards/output-signatures.ts` | 新增 `noteBlocked()`（返回撞车开头 + 这一轮第几次）、`blockedRun()`、`snapshot()/restore()`；`record()` 成功后清零计数 |
+| 2 | `features/qq-tools/gate.ts` | 拦截文案追加 `撞车的是「<开头>」这个开头（这一轮第 N 次）。别再重试同一条…`；到阈值再加一句"不要再调用任何发送工具" |
+| 3 | `core/guards/send-loop.ts` + `adapters/dsh-host/send-loop.ts` | 同一会话连续被拦 `SEND_LOOP_STRIKES`（3）次 → `agent/pre-step` 返回 `{kind:'reject'}` **干净结束这一轮**（与步数预算同一个杠杆），不再空转到看门狗 |
+| 4 | `features/qq-tools/send-guard-store.ts` + `plugin.ts` | 守卫状态落盘 `<dshHome>/channel-qq/send-guard.json`（`atomicWriteJson`，1s 节流），启动/重扫时回灌——**换血/重启后不会再把同一条发一遍** |
+| 5 | `assets/persona/default/guards/output-repeat-opening.txt` | 文案改成"这条和刚发过的那条开头一样，被拦下了。别再重试同一条" |
+
+回归：`test/send-loop.test.ts` **5 例**（计数与清零、三振硬停、文案给锚点、
+发送成功清计数、落盘往返 + 坏数据忽略）。
+
+**怎么判断好了**：`channel-qq.log` 里同一房间的 `repeat-opening` 不再连续成片；
+真打转时会出现一行 `send loop: 连续 3 次复读拦截，结束这一轮`，且**不再出现**
+由复读引起的 `判定卡死，强制换血`。`<dshHome>/channel-qq/send-guard.json`
+里能看到各房间"最近一次开头 + 连发数"。

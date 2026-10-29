@@ -28,6 +28,7 @@ import { PLANNER_GROUPS } from './sections/planner.js'
 import { ROOT_ENTRIES } from './sections/root.js'
 import { SESSION_RESET_GROUPS } from './sections/session-reset.js'
 import { KB_GROUPS } from './sections/kb.js'
+import { EMOTION_GROUPS } from './sections/emotion.js'
 
 export type {
   ConfigSchema, FieldGroup, FieldKind, FieldSpec, HotLevel, SectionFieldSpec,
@@ -52,6 +53,7 @@ export const SCHEMA: ConfigSchema = {
     ...PLANNER_GROUPS,
     ...SESSION_RESET_GROUPS,
     ...KB_GROUPS,
+    ...EMOTION_GROUPS,
   ],
 }
 
