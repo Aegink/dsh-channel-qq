@@ -186,6 +186,13 @@
     "occasionsEnabled": true,
     "captureEnabled": false,
     "captureDailyCap": 12,
+    "evalEnabled": true,
+    "evalRegressPercent": 10,
+    "promoteEnabled": false,
+    "promoteMinHits": 3,
+    "archiveIdleDays": 90,
+    "archiveMinImportance": 6,
+    "lessonsEnabled": true,
     "profiles": false,
     "extractorUrl": "",
     "extractorModel": "",
@@ -409,6 +416,108 @@
           "materials": [],
           "requires": [],
           "job": "knowledge.extract",
+          "script": null
+        },
+        {
+          "id": "memory-eval",
+          "enabled": true,
+          "kind": "job",
+          "trigger": {
+            "type": "window",
+            "from": "04:50",
+            "to": "05:20"
+          },
+          "quietHours": [],
+          "target": null,
+          "template": null,
+          "materials": [],
+          "requires": [],
+          "job": "memory.eval",
+          "script": null
+        },
+        {
+          "id": "memory-promote",
+          "enabled": true,
+          "kind": "job",
+          "trigger": {
+            "type": "window",
+            "from": "05:05",
+            "to": "05:35"
+          },
+          "quietHours": [],
+          "target": null,
+          "template": null,
+          "materials": [],
+          "requires": [],
+          "job": "memory.promote",
+          "script": null
+        },
+        {
+          "id": "memory-lessons",
+          "enabled": true,
+          "kind": "job",
+          "trigger": {
+            "type": "window",
+            "from": "05:20",
+            "to": "05:50"
+          },
+          "quietHours": [],
+          "target": null,
+          "template": null,
+          "materials": [],
+          "requires": [],
+          "job": "memory.lessons",
+          "script": null
+        },
+        {
+          "id": "memory-gaps",
+          "enabled": true,
+          "kind": "job",
+          "trigger": {
+            "type": "window",
+            "from": "05:30",
+            "to": "06:00"
+          },
+          "quietHours": [],
+          "target": null,
+          "template": null,
+          "materials": [],
+          "requires": [],
+          "job": "memory.gaps",
+          "script": null
+        },
+        {
+          "id": "metrics-strategy",
+          "enabled": true,
+          "kind": "job",
+          "trigger": {
+            "type": "window",
+            "from": "05:40",
+            "to": "06:10"
+          },
+          "quietHours": [],
+          "target": null,
+          "template": null,
+          "materials": [],
+          "requires": [],
+          "job": "metrics.strategy",
+          "script": null
+        },
+        {
+          "id": "memory-idle",
+          "enabled": true,
+          "kind": "job",
+          "trigger": {
+            "type": "window",
+            "from": "05:50",
+            "to": "06:20"
+          },
+          "quietHours": [],
+          "target": null,
+          "template": null,
+          "materials": [],
+          "requires": [],
+          "job": "memory.idle",
           "script": null
         },
         {

@@ -45,6 +45,7 @@ import { stickersTools } from '../stickers/tools.js'
 import { voiceTools } from '../voice/tools.js'
 import { musicTools } from '../music/tools.js'
 import { memoryTools } from '../memory/tools.js'
+import { memoryWriteTools } from '../memory/tools-write.js'
 import { affectionTools } from '../affection/tools.js'
 import { approvalEnabled } from '../approval/store.js'
 import { selfHarmHint, selfHarmReason } from '../../core/approval/self-harm.js'
@@ -199,6 +200,8 @@ const REGISTRATION_ORDER: readonly string[] = [
   'qq_recall_memory',
   'qq_memorize_fact',
   'qq_memory_search',
+  'qq_forget_memory',
+  'qq_correct_memory',
   'qq_send_sticker',
 ]
 
@@ -214,6 +217,7 @@ function allSpecs(deps: QQToolDeps): ToolSpec[] {
     ...voiceTools(deps),
     ...musicTools(deps),
     ...memoryTools(deps),
+    ...memoryWriteTools(deps),
     ...affectionTools(deps),
     ...emotionTools(deps),
     // B5：默认不注册（关着时工具面与旧版逐字节一致）。

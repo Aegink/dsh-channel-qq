@@ -56,6 +56,17 @@ export interface MemoryInjectV3Config {
   occasionsEnabled: boolean
   captureEnabled: boolean
   captureDailyCap: number
+  /** 夜间记忆评测（检索侧，不调模型）。 */
+  evalEnabled: boolean
+  evalRegressPercent: number
+  /** 自动把方法类记忆晋升成技能草稿（仍进待审区）。 */
+  promoteEnabled: boolean
+  promoteMinHits: number
+  /** 闲置归档：这么久没被召回就归档（0 = 关）。 */
+  archiveIdleDays: number
+  archiveMinImportance: number
+  /** 失败沉淀成教训。 */
+  lessonsEnabled: boolean
 }
 
 /** 人物档：按房间记录认人线索（手动笔记，默认关）。 */
@@ -99,6 +110,41 @@ export const MEMORY_GROUPS: FieldGroup[] = [
         help: '回合结束时按规则判据（被纠正/要求记住/自述/情绪上头）走带外抽取沉淀短事实。默认关：抽取要调模型，想清楚再开。',
       }),
       captureDailyCap: n('即时抽取每日上限', 12, { min: 1, max: 60, hot: 'live' }),
+      // ── 度量与固化（M1/M2）────────────────────────────────────────────────
+      evalEnabled: b('夜间记忆评测', true, {
+        hot: 'live',
+        help: '每天 04:50 跑一次 60 题检索基准（**不调模型**，没有 token 开销），结果写 '
+          + 'eval/history.jsonl；比基线掉超过阈值就私聊告警。缺语料时具名跳过，不假装跑过。',
+      }),
+      evalRegressPercent: n('退化阈值 %', 10, {
+        hot: 'live', min: 1, max: 100, step: 1,
+        help: 'recall@8 相对基线跌超过这个百分比算退化。',
+        hiddenIf: { field: 'memory.evalEnabled', equals: false },
+      }),
+      promoteEnabled: b('夜间自动挑技能候选', false, {
+        hot: 'live',
+        help: '把「被反复用上」的方法类记忆（procedure / skill）自动写成技能草稿进待审区；'
+          + '**绝不自动启用**，仍要你在后台确认。默认关：先看几轮草稿质量再开。',
+      }),
+      promoteMinHits: n('晋升所需召回次数', 3, {
+        hot: 'live', min: 1, max: 20,
+        help: '累计被召回这么多次，才值得从「一句话」变成「一套做法」。',
+        hiddenIf: { field: 'memory.promoteEnabled', equals: false },
+      }),
+      archiveIdleDays: n('闲置归档天数', 90, {
+        hot: 'live', min: 0, max: 730,
+        help: '这么久没被召回、且重要度低于阈值的记忆会归档（**不删**，可回查）。0 = 关闭闲置归档。',
+      }),
+      archiveMinImportance: n('闲置归档的重要度上限', 6, {
+        hot: 'live', min: 1, max: 10,
+        help: '重要度达到这个值的记忆不因闲置而归档。',
+        hiddenIf: { field: 'memory.archiveIdleDays', equals: 0 },
+      }),
+      lessonsEnabled: b('失败沉淀成教训', true, {
+        hot: 'live',
+        help: '把反复出现的工具/回合失败写成一条「教训」记忆（带指标出处），夜间去重。'
+          + '默认开：它只写自己的记录，不改任何行为。',
+      }),
       profiles: b('注入当前发言人侧写', false, {
         hot: 'live',
         help: '默认关。打开后每回合在证据前加一段「关于这个人」的 3–5 行侧写（5 分钟缓存）。',

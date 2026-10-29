@@ -11,7 +11,7 @@
  *     召回，等 e2 的嵌入到位再用模型补 keywords/context。
  */
 
-import { isChunkRecord, makeRecord, oneLine, withHit, type MemoryKind, type MemoryRecord } from '../../core/memory/model.js'
+import { isChunkRecord, makeRecord, oneLine, supersede, withHit, type MemoryKind, type MemoryRecord } from '../../core/memory/model.js'
 import { keywordRelevance, queryTerms, rankCandidates } from '../../core/memory/score.js'
 import type { MemoryService } from '../../ports/memory.js'
 import type { MemoryStore } from './store.js'
@@ -58,6 +58,8 @@ export function createMemoryService(deps: MemoryServiceDeps): MemoryService {
   return {
     memorize: (input) => memorize(deps, input),
     recall: (input) => recall(deps, input),
+    forget: (input) => forget(deps, input),
+    correct: (input) => correct(deps, input),
   }
 }
 
@@ -135,4 +137,66 @@ async function recall(deps: MemoryServiceDeps, input: RecallInput): Promise<Reca
     date: deps.renderTime(record.validFrom),
     hits: record.hits + 1,
   }))
+}
+
+/** 找要改的那条：优先 id；没有 id 就按关键词取命中最高的（与 recall 同一套打分）。 */
+async function pickTarget(
+  deps: MemoryServiceDeps,
+  input: { readonly id?: string | undefined; readonly query?: string | undefined },
+): Promise<MemoryRecord | null> {
+  const id = (input.id ?? '').trim()
+  if (id !== '') {
+    const record = deps.store.get(id)
+    return record !== undefined && record.status === 'active' ? record : null
+  }
+  const query = (input.query ?? '').trim()
+  if (query === '') return null
+  const terms = deps.store.keepKnown(queryTerms(query))
+  const candidates = deps.store.candidatesByTerms(terms)
+    .filter((r) => r.status === 'active' && !isChunkRecord(r))
+    .map((record) => ({ record, relevance: keywordRelevance(terms, record, (t) => deps.store.idfOf(t)) }))
+  return rankCandidates(candidates, deps.clock.now())[0]?.record ?? null
+}
+
+type ForgetInput = Parameters<MemoryService['forget']>[0]
+type ForgetResult = Awaited<ReturnType<MemoryService['forget']>>
+type CorrectInput = Parameters<MemoryService['correct']>[0]
+type CorrectResult = Awaited<ReturnType<MemoryService['correct']>>
+
+/** 忘掉：转 `archived`（**不删**），历史仍可回查。 */
+async function forget(deps: MemoryServiceDeps, input: ForgetInput): Promise<ForgetResult> {
+  await deps.store.refreshIfChanged().catch(() => {})
+  const target = await pickTarget(deps, input)
+  if (target === null) {
+    return { ok: false, note: '没找到要忘掉的那条（给 id，或者把关键词说具体一点）', archived: 0 }
+  }
+  await deps.store.put({ ...target, status: 'archived', validTo: deps.clock.now() })
+  return { ok: true, note: `已归档：${target.content.slice(0, 40)}（历史仍可回查，不是删除）`, archived: 1 }
+}
+
+/** 纠正：新记录 supersede 旧的（旧的转 `superseded` 并写 `validTo`）。 */
+async function correct(deps: MemoryServiceDeps, input: CorrectInput): Promise<CorrectResult> {
+  await deps.store.refreshIfChanged().catch(() => {})
+  const content = oneLine(input.content.trim())
+  if (content === '') return { ok: false, note: '新内容不能为空', id: '' }
+  const target = await pickTarget(deps, input)
+  const now = deps.clock.now()
+  const record = await deps.store.remember({
+    kind: target?.kind ?? 'fact',
+    subject: target?.subject ?? { type: 'world' },
+    content,
+    source: { kind: 'manual', ...(target === null ? {} : { file: `correct:${target.id}` }) },
+    tags: target === null ? [] : [...target.tags],
+    keywords: keywordsOf(content),
+    importance: target?.importance ?? 6,
+    confidence: 1,
+  }, now, deps.random ?? (() => 0.5))
+  if (target !== null) await deps.store.put(supersede(target, record.id, now))
+  return {
+    ok: true,
+    note: target === null
+      ? `没找到要纠正的那条，已新建一条：${record.id}`
+      : `已纠正：${target.id} → ${record.id}（旧的转 superseded，可回查）`,
+    id: record.id,
+  }
 }

@@ -753,7 +753,7 @@
 }
 {
   "name": "qq_memory",
-  "description": "长期记忆：主动召回（recall，带类型过滤，命中的条目会被强化）、把一条事实写进记忆（memorize）、检索知识库（retrieve）、从一段文字批量提取入库（extract）。回答\"你还记得…\"\"上次那个\"之前先 recall 或 retrieve；日常寒暄不要写记忆。\n动作（方括号是平台，括号里是必填字段）：recall（query）｜memorize（content）｜retrieve（query）｜extract（source、text）｜search（query）",
+  "description": "长期记忆：主动召回（recall，带类型过滤，命中的条目会被强化）、把一条事实写进记忆（memorize）、检索知识库（retrieve）、从一段文字批量提取入库（extract）。回答\"你还记得…\"\"上次那个\"之前先 recall 或 retrieve；日常寒暄不要写记忆。\n动作（方括号是平台，括号里是必填字段）：recall（query）｜memorize（content）｜retrieve（query）｜extract（source、text）｜search（query）｜forget（无必填）｜correct（content）",
   "parameters": {
     "type": "object",
     "properties": {
@@ -764,9 +764,11 @@
           "memorize",
           "retrieve",
           "extract",
-          "search"
+          "search",
+          "forget",
+          "correct"
         ],
-        "description": "要做的动作：recall / memorize / retrieve / extract / search"
+        "description": "要做的动作：recall / memorize / retrieve / extract / search / forget / correct"
       },
       "query": {
         "type": "string",
@@ -806,6 +808,10 @@
       "asOf": {
         "type": "string",
         "description": "时间旅行（可选）：只要某天（YYYY-MM-DD）之前已知道的记忆"
+      },
+      "id": {
+        "type": "string",
+        "description": "记录 id（从对应的 list / search 拿）"
       }
     },
     "required": [

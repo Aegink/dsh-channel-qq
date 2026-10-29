@@ -50,6 +50,25 @@ export interface MemoryService {
     readonly tags?: readonly string[]
     readonly source?: string | undefined
   }): Promise<{ readonly id: string; readonly total: number; readonly created: boolean }>
+  /**
+   * 忘掉一条（`qq_forget_memory`）：按 id 或按查询命中最高的一条，转 `archived`。
+   *
+   * 为什么要有它：她记错了却没法自己改，只能等人进后台翻文件——而记忆是她的，
+   * 纠正应该是她伸手就能做的事。**归档不是删除**：历史可回查，只是不再被检索。
+   */
+  forget(input: {
+    readonly id?: string | undefined
+    readonly query?: string | undefined
+  }): Promise<{ readonly ok: boolean; readonly note: string; readonly archived: number }>
+  /**
+   * 纠正一条（`qq_correct_memory`）：新内容 supersede 旧的（旧的转 `superseded` 并写
+   * `validTo`）。矛盾不删除，是这套记忆模型最硬的一条纪律。
+   */
+  correct(input: {
+    readonly id?: string | undefined
+    readonly query?: string | undefined
+    readonly content: string
+  }): Promise<{ readonly ok: boolean; readonly note: string; readonly id: string }>
 }
 
 /**

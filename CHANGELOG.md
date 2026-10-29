@@ -2,6 +2,7 @@
 
 ### 新增
 
+- 学习闭环（M1–M3，方案见 内部文档）：夜间 job memory.eval 跑 60 题检索基准（不调模型、无 token 开销），首次自动建基线，recall@8 跌超 10% 私聊告警；memory.promote 把被反复用上的方法类记忆写成技能草稿进待审区（默认关、绝不自动启用）；memory.idle 把 90 天没召回且不重要的记忆归档（不删）；新工具 qq_forget_memory / qq_correct_memory（纠正走 supersede）；memory.lessons 把反复失败写成教训记忆；metrics.strategy 算口癖命中率 / 主动被回复率 / 情绪-长度相关性；memory.gaps 写 memory/GAPS.md 待办（不自动联网）。工具面 90→92，合并动作组仍 18 张脸。
 - **情绪与能量（P7.1；机制来自 `DandanLLab/dsh-channel-qq`，做法见
   plugin-absorption.md）**：
   - **填上了 `emotionHint` 空槽**：`prompt-composer` 早就支持「情绪提示」并在空串时

@@ -17,6 +17,8 @@
 
 import * as path from 'node:path'
 import { JsonStore } from '../../adapters/fs-store/json-store.js'
+import { promises as fs } from 'node:fs'
+import { atomicWriteFile } from '../../adapters/fs-store/atomic.js'
 import type { EmotionSurface, Mood } from '../../ports/emotion.js'
 
 /** 能量的静息值：没有事情发生时，能量往这里回（不是 100——她不是永动机）。 */
@@ -189,6 +191,32 @@ export class EmotionStore implements EmotionSurface {
     this.materialize(Date.now())
     this.state.energy = clamp(this.state.energy - TURN_COST)
     this.save()
+    this.appendHistory()
+  }
+
+  /**
+   * 记一条「这一回合的能量」（M3.2 的数据源）。
+   *
+   * 为什么记在这里：`spend()` 每回合恰好调一次，是唯一自然的采样点。滚动保留最近
+   * 500 条，只写 `{t, energy, mood}`——**不放任何对话内容**，它只给相关性统计用。
+   */
+  private appendHistory(): void {
+    const line = JSON.stringify({
+      t: Date.now(),
+      energy: Math.round(this.state.energy),
+      mood: this.state.mood,
+    }) + '\n'
+    void (async () => {
+      try {
+        const file = path.join(path.dirname(this.store.path), 'emotion-history.jsonl')
+        await fs.appendFile(file, line, 'utf8')
+        const raw = await fs.readFile(file, 'utf8')
+        const rows = raw.split('\n').filter((row) => row.trim() !== '')
+        if (rows.length > 500) await atomicWriteFile(file, rows.slice(-500).join('\n') + '\n')
+      } catch (error) {
+        this.log(`emotion history failed: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    })()
   }
 
   /**

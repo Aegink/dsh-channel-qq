@@ -26,6 +26,7 @@ import { MemoryRetriever } from './retriever.js'
 import { migrateMemoryFile } from './migrate.js'
 import { promoteToSkill } from './promote.js'
 import { registerNightlyJobs } from './nightly.js'
+import { wireLearningJobs } from './jobs-wiring.js'
 import { MemoryStore } from './store.js'
 import { importLegacyEntries } from './import-legacy.js'
 import { buildProfile, renderProfile } from '../../core/memory/profile.js'
@@ -92,6 +93,8 @@ export const memoryPlugin: SubPlugin = {
       },
       random: Math.random,
     })
+    // M1–M3：评测 + 晋升 + 教训 + 缺口 + 闲置归档（装配细节见 jobs-wiring.ts）。
+    const offLearning = wireLearningJobs(host, () => nightlyState.store)
 
     if (host.config.memory.v2) {
       await attachMemoryV2(host, store, nightlyState, nightlyRoute)
@@ -103,7 +106,7 @@ export const memoryPlugin: SubPlugin = {
 
     // 卸载时把八个 job 从注册表摘掉（同名重挂是"后者生效"，留着会让旧实例的
     // handler 继续接活——那时它的 store 引用已经过期了）。
-    return () => { offNightly() }
+    return () => { offNightly(); offLearning() }
   },
 }
 

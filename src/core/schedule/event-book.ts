@@ -10,6 +10,7 @@
  */
 
 import { parseHhMm, type QuietRange, type Trigger } from './due.js'
+import { LEARNING_JOB_EVENTS } from './event-book-learning.js'
 
 export type EventKind = 'prompt' | 'job' | 'script'
 
@@ -324,6 +325,8 @@ const JOB_EVENTS: readonly BookEvent[] = [
     target: null, template: null, materials: [], requires: [],
     job: 'knowledge.extract', script: null,
   },
+  // ── 学习闭环（M1–M3）：六个 job 事件，开关在 `memory.*` 里，关着时 job 自己具名跳过 ──
+  ...LEARNING_JOB_EVENTS,
 ]
 
 /** 默认关的脚本例：用来验证脚本通路（不指向任何真实脚本）。 */

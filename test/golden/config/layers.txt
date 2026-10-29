@@ -189,6 +189,13 @@ override = {}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -412,6 +419,108 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -812,6 +921,13 @@ override = {}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -1035,6 +1151,108 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -1433,6 +1651,13 @@ override = {"batching":{"windowMs":20000}}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -1656,6 +1881,108 @@ override = {"batching":{"windowMs":20000}}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -2054,6 +2381,13 @@ override = {"admin":{"port":8790}}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -2277,6 +2611,108 @@ override = {"admin":{"port":8790}}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -2675,6 +3111,13 @@ override = {"imageGen":{"model":"flux"}}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -2898,6 +3341,108 @@ override = {"imageGen":{"model":"flux"}}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -3296,6 +3841,13 @@ override = {"tts":{"voice":"b"}}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -3519,6 +4071,108 @@ override = {"tts":{"voice":"b"}}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -3917,6 +4571,13 @@ override = {"flood":{"windowSec":30}}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -4140,6 +4801,108 @@ override = {"flood":{"windowSec":30}}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -4545,6 +5308,13 @@ override = {}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -4768,6 +5538,108 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -5166,6 +6038,13 @@ override = {"keywordTriggers":[]}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -5389,6 +6268,108 @@ override = {"keywordTriggers":[]}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -5794,6 +6775,13 @@ override = {"rss":{"pollIntervalMin":5}}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -6017,6 +7005,108 @@ override = {"rss":{"pollIntervalMin":5}}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -6415,6 +7505,13 @@ override = {"groupEnabled":false}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -6638,6 +7735,108 @@ override = {"groupEnabled":false}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -7036,6 +8235,13 @@ override = {}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -7259,6 +8465,108 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -7657,6 +8965,13 @@ override = {"groupEnabled":true}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -7880,6 +9195,108 @@ override = {"groupEnabled":true}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -8278,6 +9695,13 @@ override = {"admin":{"host":"127.0.0.1"}}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -8501,6 +9925,108 @@ override = {"admin":{"host":"127.0.0.1"}}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -8899,6 +10425,13 @@ override = {}
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -9122,6 +10655,108 @@ override = {}
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {
@@ -9520,6 +11155,13 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
   "occasionsEnabled": true,
   "captureEnabled": false,
   "captureDailyCap": 12,
+  "evalEnabled": true,
+  "evalRegressPercent": 10,
+  "promoteEnabled": false,
+  "promoteMinHits": 3,
+  "archiveIdleDays": 90,
+  "archiveMinImportance": 6,
+  "lessonsEnabled": true,
   "profiles": false,
   "extractorUrl": "",
   "extractorModel": "",
@@ -9743,6 +11385,108 @@ override = {"imageGen":{"model":"flux"},"batching":{"windowMs":20000},"admin":{"
      "materials": [],
      "requires": [],
      "job": "knowledge.extract",
+     "script": null
+    },
+    {
+     "id": "memory-eval",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "04:50",
+      "to": "05:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.eval",
+     "script": null
+    },
+    {
+     "id": "memory-promote",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:05",
+      "to": "05:35"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.promote",
+     "script": null
+    },
+    {
+     "id": "memory-lessons",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:20",
+      "to": "05:50"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.lessons",
+     "script": null
+    },
+    {
+     "id": "memory-gaps",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:30",
+      "to": "06:00"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.gaps",
+     "script": null
+    },
+    {
+     "id": "metrics-strategy",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:40",
+      "to": "06:10"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "metrics.strategy",
+     "script": null
+    },
+    {
+     "id": "memory-idle",
+     "enabled": true,
+     "kind": "job",
+     "trigger": {
+      "type": "window",
+      "from": "05:50",
+      "to": "06:20"
+     },
+     "quietHours": [],
+     "target": null,
+     "template": null,
+     "materials": [],
+     "requires": [],
+     "job": "memory.idle",
      "script": null
     },
     {

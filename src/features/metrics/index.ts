@@ -9,6 +9,7 @@ import { localDayKey } from '../../core/schedule/stamp.js'
 import { MetricsService } from './service.js'
 import { MetricsStore } from './store.js'
 import type { SubPlugin } from '../plugin-kit.js'
+import { readStrategyReport, registerStrategyJob } from './strategy-job.js'
 
 /** flush 间隔：回合频率低，30 秒合并一次足够。 */
 const FLUSH_MS = 30_000
@@ -45,7 +46,18 @@ export const metricsPlugin: SubPlugin = {
     })
     const timer = setInterval(() => { void store.flush() }, FLUSH_MS)
     timer.unref?.()
+    // M3.2：策略度量（口癖命中率 / 主动被回复率 / 情绪-长度相关性），产物 + 后台资源。
+    const offStrategy = registerStrategyJob({
+      dshHome: host.dshHome,
+      workspace: () => host.config.workspacePath,
+      log: host.log,
+    })
+    host.registerResource('strategy', {
+      label: '策略度量',
+      list: () => readStrategyReport(host.dshHome),
+    })
     return () => {
+      offStrategy()
       clearInterval(timer)
       void store.flush()
     }
