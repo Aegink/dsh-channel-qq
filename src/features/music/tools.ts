@@ -54,7 +54,7 @@ function qqResolveMusic(deps: QQToolDeps): ToolSpec {
         parameters: {
           type: 'object',
           properties: {
-            songId: { type: 'string', required: true, description: '网易云歌曲ID' },
+            songId: { type: 'string', description: '网易云歌曲ID' },
             name: { type: 'string', description: '歌名（可选，音源用它做元数据）' },
             artists: { type: 'string', description: '歌手（可选）' },
           },
@@ -176,7 +176,7 @@ function qqMusicLyrics(deps: QQToolDeps): ToolSpec {
         description: '拿一首歌的完整歌词（网易云 songId）。',
         parameters: {
           type: 'object',
-          properties: { songId: { type: 'string', required: true, description: '网易云歌曲ID' } },
+          properties: { songId: { type: 'string', description: '网易云歌曲ID' } },
           required: ['songId'],
         },
         run: async (args) => {

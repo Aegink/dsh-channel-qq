@@ -489,3 +489,29 @@ test('旧名改写：一次扫描，绝不二次替换自己产生的文本', ()
   assert.equal(rewriteLegacyToolNames('用 qq_remind_at 定'), '用 qq_remind（action=add_at） 定')
   assert.equal(rewriteLegacyToolNames('qq_remind 本身'), 'qq_remind（action=add） 本身')
 })
+
+// 回归护栏（issue #6）：`required` 只能是对象级的字符串数组。
+// v0.1.0 里 `qq_resolve_music` / `qq_music_lyrics` 在**属性定义内部**写了 `required: true`，
+// 而 DeepSeek 对工具 schema 严格校验——任一工具非法就拒掉携带它的整个请求，
+// 于是装上插件后每一轮都失败（Invalid schema for function 'qq_music_lyrics'）。
+// 我们的类型只约束到 Record<string, unknown>，这类错误只能靠这条断言挡。
+test('工具 schema：required 必须是字符串数组（属性内写 true 会被 DeepSeek 拒掉整个请求）', async () => {
+  const defs = await recordAllLegacy()
+  const bad: string[] = []
+  const walk = (tool: string, node: unknown, at: string): void => {
+    if (node === null || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      node.forEach((item, index) => walk(tool, item, `${at}[${index}]`))
+      return
+    }
+    for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+      if (key === 'required') {
+        const ok = Array.isArray(value) && value.every((item) => typeof item === 'string')
+        if (!ok) bad.push(`${tool} → ${at}.required = ${JSON.stringify(value)}`)
+      }
+      walk(tool, value, `${at}.${key}`)
+    }
+  }
+  for (const [name, def] of defs) walk(name, def.parameters, 'parameters')
+  assert.deepEqual(bad, [], `这些工具的 required 不是字符串数组：${bad.join('；')}`)
+})
