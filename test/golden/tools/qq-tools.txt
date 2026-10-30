@@ -1245,6 +1245,10 @@
       "query": {
         "type": "string",
         "description": "没有 id 时用一句话描述那条记忆，取命中最高的"
+      },
+      "purge": {
+        "type": "boolean",
+        "description": "true = 连正文一起清空、只留墓碑（隐私场景用；默认 false 只归档）"
       }
     },
     "required": []

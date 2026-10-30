@@ -57,7 +57,9 @@ export interface MemoryService {
    * 纠正应该是她伸手就能做的事。**归档不是删除**：历史可回查，只是不再被检索。
    */
   forget(input: {
+    /** `true` = 连正文一起清空，只留一条墓碑（默认 false = 只归档）。 */
     readonly id?: string | undefined
+    readonly purge?: boolean | undefined
     readonly query?: string | undefined
   }): Promise<{ readonly ok: boolean; readonly note: string; readonly archived: number }>
   /**

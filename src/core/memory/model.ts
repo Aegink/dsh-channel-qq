@@ -37,7 +37,7 @@ export interface MemorySource {
   readonly line?: number
 }
 
-export type MemoryStatus = 'candidate' | 'active' | 'superseded' | 'archived'
+export type MemoryStatus = 'candidate' | 'active' | 'superseded' | 'archived' | 'forgotten'
 
 export interface MemoryRecord {
   readonly id: string

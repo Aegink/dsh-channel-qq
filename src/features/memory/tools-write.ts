@@ -4,7 +4,7 @@
  * （其它工具只读或只新增）。把它们放在一起，"谁能改记忆"这个问题一眼就能回答。
  *
  * 两条纪律：
- *   - **归档不是删除**：`forget` 把记录转 `archived`，历史仍在 `records.jsonl` 里；
+ *   - **归档不是删除**：`forget` 默认把记录转 `archived`，历史仍在 `records.jsonl` 里；
  *   - **纠正不是覆盖**：`correct` 用新记录 supersede 旧的（旧的写 `validTo`），
  *     所以"上周我们以为是 X"永远查得回来。
  */
@@ -24,6 +24,7 @@ function qqForgetMemory(deps: QQToolDeps): ToolSpec {
       properties: {
         id: { type: 'string', description: '记录 id（从 qq_recall_memory 的返回里拿）' },
         query: { type: 'string', description: '没有 id 时用一句话描述那条记忆，取命中最高的' },
+        purge: { type: 'boolean', description: 'true = 连正文一起清空、只留墓碑（隐私场景用；默认 false 只归档）' },
       },
       required: [],
     },
@@ -32,6 +33,7 @@ function qqForgetMemory(deps: QQToolDeps): ToolSpec {
       return memory.forget({
         ...(typeof args.id === 'string' ? { id: args.id } : {}),
         ...(typeof args.query === 'string' ? { query: args.query } : {}),
+        ...(args.purge === true ? { purge: true } : {}),
       })
     },
   }

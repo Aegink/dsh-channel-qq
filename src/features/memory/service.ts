@@ -170,6 +170,20 @@ async function forget(deps: MemoryServiceDeps, input: ForgetInput): Promise<Forg
   if (target === null) {
     return { ok: false, note: '没找到要忘掉的那条（给 id，或者把关键词说具体一点）', archived: 0 }
   }
+  if (input.purge === true) {
+    // 墓碑：正文、关键词、标签、上下文全部清空，只留 id/时间/出处——"曾有过这条"
+    // 仍然可查，但内容不再存在于任何一处（这是隐私场景唯一该有的真删）。
+    await deps.store.put({
+      ...target,
+      status: 'forgotten',
+      content: '〔已遗忘〕',
+      keywords: [],
+      tags: [],
+      context: '',
+      validTo: deps.clock.now(),
+    })
+    return { ok: true, note: `已遗忘：正文已清空，只留墓碑（${target.id}）`, archived: 1 }
+  }
   await deps.store.put({ ...target, status: 'archived', validTo: deps.clock.now() })
   return { ok: true, note: `已归档：${target.content.slice(0, 40)}（历史仍可回查，不是删除）`, archived: 1 }
 }

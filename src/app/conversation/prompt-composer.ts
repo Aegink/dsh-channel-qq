@@ -137,6 +137,27 @@ export class PromptComposer {
     return this.r('packet/time', { period })
   }
 
+  /**
+   * 「只回最新那条」——一包里有多条消息时才出现。
+   *
+   * 为什么要有它：攒批把多条消息拼成一包，模型很容易捡起上面某句旧话去接（踩过：
+   * 回了半小时前的问题，最新那句被忽略）。**只在真有旧消息时加这一行**，单条消息
+   * 的包一个字都不变（golden 盯着这一点）。
+   */
+  attentionNote(): string {
+    return this.r('packet/attention')
+  }
+
+  /**
+   * 「说事实前先对出处」——只有这一包带了记忆/资料证据时才出现。
+   *
+   * 记忆证据是"我记得"，不是这轮谁说的；没有这一行，模型会把检索到的旧事实
+   * 当成刚听到的话复述（编造感主要来自这里）。
+   */
+  factNote(): string {
+    return this.r('packet/fact-discipline')
+  }
+
   /** `（图见附件）`。 */
   imageNote(): string {
     return this.r('packet/image-note')
@@ -157,7 +178,8 @@ export class PromptComposer {
       + `\n${input.room}`
       + `\n${this.timeNote(input.period)}`
       + (input.emotionHint !== '' ? `\n${input.emotionHint}` : '')
-      + (input.knowledgeHint !== '' ? `\n${input.knowledgeHint}` : '')
+      + (input.context.includes('\n') ? `\n${this.attentionNote()}` : '')
+      + (input.knowledgeHint !== '' ? `\n${this.factNote()}\n${input.knowledgeHint}` : '')
       + (input.sentBlock !== '' ? `\n${input.sentBlock}` : '')
       + `\n${this.r('packet/group-tail')}`
   }
@@ -186,6 +208,9 @@ export class PromptComposer {
       input.room,
       this.timeNote(input.period),
     ]
+    // 一包里有多条消息时，先在开头提醒"只回最新那条"：它管的是整包的阅读方式，
+    // 放在开头不会插进"待回块 → 当前块"的紧邻关系里（注入提示必须紧跟它涉及的块）。
+    if (input.pending !== '') out.push(this.attentionNote())
     if (input.emotionHint !== '') out.push(input.emotionHint)
     if (input.pending !== '') {
       out.push(PENDING_TITLE, untrustedEnvelope(input.roomKey, input.pending))
@@ -196,7 +221,7 @@ export class PromptComposer {
       for (const signal of routed.current) out.push(injectionWarningLine(signal.name))
     }
     if (input.sentBlock !== '') out.push(input.sentBlock)
-    if (input.knowledgeHint !== '') out.push(input.knowledgeHint)
+    if (input.knowledgeHint !== '') out.push(this.factNote(), input.knowledgeHint)
     return out.join('\n')
   }
 
@@ -209,7 +234,7 @@ export class PromptComposer {
       const routed = routeSignals(input.signals, input.line, '')
       for (const signal of routed.current) out.push(injectionWarningLine(signal.name))
     }
-    if (input.knowledgeHint !== '') out.push(input.knowledgeHint)
+    if (input.knowledgeHint !== '') out.push(this.factNote(), input.knowledgeHint)
     return out.join('\n')
   }
 

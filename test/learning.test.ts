@@ -218,3 +218,20 @@ test('忘掉/纠正：找不到目标时给可读的拒绝，不抛错', async (
   const empty = await svc.correct({ id: 'nope', content: '   ' })
   assert.equal(empty.ok, false)
 })
+
+test('遗忘（purge）：正文清空、只留墓碑，状态是 forgotten', async () => {
+  const store = new MemoryStore({ workspacePath: HOME, dshHome: HOME, log: () => {} })
+  await store.load()
+  const svc = createMemoryService({
+    store, log: () => {}, renderTime: (at: number) => new Date(at).toISOString(),
+    clock: { now: () => NOW }, legacy: null,
+  })
+  const created = await svc.memorize({ content: '一句不该留的隐私' })
+  const result = await svc.forget({ id: created.id, purge: true })
+  assert.equal(result.ok, true)
+  const record = store.get(created.id)
+  assert.equal(record?.status, 'forgotten')
+  assert.equal(record?.content, '〔已遗忘〕', '正文必须被清掉')
+  assert.deepEqual(record?.keywords, [])
+  assert.equal(record?.context, '')
+})

@@ -16,7 +16,7 @@ export const MEMORY_FACE: Face = {
     // 深召回：原文块（600 字）+ 出处，一次 5–8 条。不进自动注入预算，由 agent 主动调。
     { action: 'search', legacy: 'qq_memory_search', required: ['query'], optional: ['limit', 'asOf'] },
     // M2.3：唯一两个会改记忆状态的入口（归档不删、纠正只 supersede）。
-    { action: 'forget', legacy: 'qq_forget_memory', required: [], optional: ['id', 'query'] },
+    { action: 'forget', legacy: 'qq_forget_memory', required: [], optional: ['id', 'query', 'purge'] },
     { action: 'correct', legacy: 'qq_correct_memory', required: ['content'], optional: ['id', 'query'] },
   ],
 }

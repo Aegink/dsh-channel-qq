@@ -812,6 +812,10 @@
       "id": {
         "type": "string",
         "description": "记录 id（从对应的 list / search 拿）"
+      },
+      "purge": {
+        "type": "boolean",
+        "description": "true = 连正文一起清空、只留墓碑（默认 false 只归档）"
       }
     },
     "required": [
