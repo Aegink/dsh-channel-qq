@@ -112,7 +112,18 @@ export interface ProvidersSurface {
   save(input: SaveProviderInput): Promise<string>
   remove(name: string): Promise<string>
   /** 从供应商的 `/v1/models` 拉模型 id 列表（OpenAI 兼容端点）。 */
-  discover(name: string): Promise<{ models: string[]; note: string }>
+  /**
+   * 拉网关的模型列表。传名字 = 用已保存的那份配置；传 `{ baseURL, apiKey }` =
+   * 用手上这份表单直接探测（新供应商还没保存时也能用，否则会卡在"先保存才能探测、
+   * 保存又要求先有模型"的死循环里）。
+   */
+  discover(input: string | {
+    readonly name?: string
+    readonly baseURL?: string
+    readonly apiKey?: string
+    readonly api?: string
+    readonly headers?: Record<string, string>
+  }): Promise<{ models: string[]; note: string }>
 }
 
 /** 供应商在 settings 文档里的原始形状（只取我们读写的字段）。 */
@@ -243,36 +254,9 @@ function makeSetDefault(host: ProvidersHost): ProvidersSurface['setDefault'] {
   }
 }
 
-/**
- * 供应商名（llm-pi-ai 的路由名）只能是 `[a-z0-9-]`，而用户只想填个能看懂的名字。
- * 所以这里**先清洗，清洗不出东西就退回用域名推导**：
- *
- *   1. 原样清洗：转小写、非法字符变 `-`、合并连字符、去首尾；
- *   2. 清洗后为空（例如名字写成中文）→ 用 baseURL 的域名推导：
- *      `https://maas-api.unisound.com/v1` → `maas-api-unisound`；
- *   3. 还是空 → 返回空串，由调用方报错并带上用户原值。
- *
- * 为什么不在前端做：`/api/providers/save` 是可以直接调的，规则必须在服务端成立。
- */
-export function slugifyProviderName(raw: string, baseURL: string): string {
-  const clean = (text: string): string => text
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40)
-  const fromRaw = clean((raw ?? '').trim())
-  if (fromRaw !== '') return fromRaw
-  let host = ''
-  try {
-    host = new URL(normalizeBaseURL(baseURL)).hostname
-  } catch {
-    host = ''
-  }
-  // 顺手去掉常见顶级域：`maas-api.unisound.com` → `maas-api-unisound`，名字短一点好记。
-  return clean(host.replace(/^www\./, '').replace(/\./g, '-'))
-    .replace(/-(com|net|org|cn|io|ai|dev|app|cc)$/, '')
-}
+// 路由名清洗搬去了 provider-names.ts（纯字符串规则，也让本文件留在 400 行内）。
+import { slugifyProviderName } from './provider-names.js'
+export { slugifyProviderName }
 function validateSave(input: SaveProviderInput): void {
   if (normalizeBaseURL(input.baseURL) === '') throw new Error('baseURL 不能为空')
   const hasList = Array.isArray(input.models) && input.models.some((model) => model.id.trim() !== '')
@@ -341,21 +325,37 @@ function makeSave(host: ProvidersHost): ProvidersSurface['save'] {
 }
 
 function makeDiscover(host: ProvidersHost): ProvidersSurface['discover'] {
-  return async (name: string) => {
-    const raw = requireProvider(host, name)
-    const baseURL = normalizeBaseURL(raw.baseURL ?? '')
-    if (baseURL === '') throw new Error(`${name} 没配 baseURL`)
-    const key = await resolveKey(host, raw.apiKeyEnv ?? '')
-    if (key === undefined) throw new Error(`${name} 的密钥未配置（${raw.apiKeyEnv ?? '未写 apiKeyEnv'}）`)
+  return async (input) => {
+    // 新供应商还没保存时也要能探测：直接用手上这份表单的值，不必先存一遍。
+    const req = typeof input === 'string' ? { name: input } : input
+    const name = (req.name ?? '').trim()
+    let saved: RawProvider | null = null
+    if (name !== '') {
+      try {
+        saved = requireProvider(host, name)
+      } catch {
+        saved = null // 还没保存过：不算错，下面用表单值
+      }
+    }
+    const baseURL = normalizeBaseURL((req.baseURL ?? '').trim() !== '' ? req.baseURL! : saved?.baseURL ?? '')
+    if (baseURL === '') throw new Error('没填 baseURL：先填地址（新供应商可以直接探测，不必先保存）')
+    const typedKey = (req.apiKey ?? '').trim()
+    const key = typedKey !== '' ? typedKey : await resolveKey(host, saved?.apiKeyEnv ?? '')
+    if (key === undefined) throw new Error('密钥未配置：填一个密钥，或先保存供应商（保存后按 apiKeyEnv 读凭据缝）')
     const url = `${baseURL}/models`
     // 运维显式填的地址：允许私网（8317 这类本机网关就是私网）。
     const response = await systemHttp.request(url, {
-      headers: { authorization: `Bearer ${key}`, accept: 'application/json', ...raw.headers ?? {} },
+      headers: {
+        authorization: `Bearer ${key}`,
+        accept: 'application/json',
+        ...saved?.headers ?? {},
+        ...req.headers ?? {},
+      },
       timeoutMs: 20_000,
       limit: 2 * 1024 * 1024,
       allowPrivateHosts: true,
     })
-    if (!response.ok) throw new Error(`拉取模型列表失败 HTTP ${response.status}`)
+    if (!response.ok) throw new Error(`拉取模型列表失败 HTTP ${response.status}（${url}）`)
     const body = response.json<{ data?: Array<{ id?: unknown }> } | Array<{ id?: unknown }>>()
     const list = Array.isArray(body) ? body : Array.isArray(body.data) ? body.data : []
     const models = list.map((entry) => String(entry.id ?? '')).filter((id) => id !== '')

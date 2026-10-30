@@ -124,7 +124,15 @@ async function discoverRoute(env: ProvidersRouteEnv, req: http.IncomingMessage, 
   const name = String(body.name ?? '')
   const ip = env.clientIp(req)
   try {
-    const data = await env.deps.providers!.discover(name)
+    const data = await env.deps.providers!.discover({
+      name,
+      ...(typeof body.baseURL === 'string' ? { baseURL: body.baseURL } : {}),
+      ...(typeof body.apiKey === 'string' ? { apiKey: body.apiKey } : {}),
+      ...(typeof body.api === 'string' ? { api: body.api } : {}),
+      ...(body.headers !== null && typeof body.headers === 'object' && !Array.isArray(body.headers)
+        ? { headers: body.headers as Record<string, string> }
+        : {}),
+    })
     await env.audit(ip, 'POST', '/api/providers/discover', 'providers.discover', `拉取 ${name} 的模型列表：${data.models.length} 个`)
     env.json(res, 200, { ok: true, ...data })
   } catch (error) {
