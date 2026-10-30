@@ -243,8 +243,37 @@ function makeSetDefault(host: ProvidersHost): ProvidersSurface['setDefault'] {
   }
 }
 
+/**
+ * 供应商名（llm-pi-ai 的路由名）只能是 `[a-z0-9-]`，而用户只想填个能看懂的名字。
+ * 所以这里**先清洗，清洗不出东西就退回用域名推导**：
+ *
+ *   1. 原样清洗：转小写、非法字符变 `-`、合并连字符、去首尾；
+ *   2. 清洗后为空（例如名字写成中文）→ 用 baseURL 的域名推导：
+ *      `https://maas-api.unisound.com/v1` → `maas-api-unisound`；
+ *   3. 还是空 → 返回空串，由调用方报错并带上用户原值。
+ *
+ * 为什么不在前端做：`/api/providers/save` 是可以直接调的，规则必须在服务端成立。
+ */
+export function slugifyProviderName(raw: string, baseURL: string): string {
+  const clean = (text: string): string => text
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+  const fromRaw = clean((raw ?? '').trim())
+  if (fromRaw !== '') return fromRaw
+  let host = ''
+  try {
+    host = new URL(normalizeBaseURL(baseURL)).hostname
+  } catch {
+    host = ''
+  }
+  // 顺手去掉常见顶级域：`maas-api.unisound.com` → `maas-api-unisound`，名字短一点好记。
+  return clean(host.replace(/^www\./, '').replace(/\./g, '-'))
+    .replace(/-(com|net|org|cn|io|ai|dev|app|cc)$/, '')
+}
 function validateSave(input: SaveProviderInput): void {
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(input.name)) throw new Error('供应商名必须是小写字母/数字/连字符（llm-pi-ai 的路由名规则）')
   if (normalizeBaseURL(input.baseURL) === '') throw new Error('baseURL 不能为空')
   const hasList = Array.isArray(input.models) && input.models.some((model) => model.id.trim() !== '')
   if (!hasList && input.model.trim() === '') throw new Error('模型 id 不能为空')
@@ -256,11 +285,15 @@ function validateSave(input: SaveProviderInput): void {
 function makeSave(host: ProvidersHost): ProvidersSurface['save'] {
   return async (input: SaveProviderInput) => {
     if (host.settings === undefined) throw new Error('宿主未提供 settings 服务')
+    const name = slugifyProviderName(input.name, input.baseURL)
+    if (name === '') {
+      throw new Error(`供应商名「${input.name}」既不是小写字母/数字/连字符，也无法从 ${input.baseURL} 推导出名字——请填个英文短名（例如 unisound）`)
+    }
     validateSave(input)
     const found = findPiAiEntry(host.settings)
     if (found === null) throw new Error('未在 settings 文档里找到 llm-pi-ai 条目')
     const headers = normalizeHeaders(input.headers ?? {})
-    const apiKeyEnv = (input.apiKeyEnv ?? '').trim() || `${input.name.toUpperCase().replace(/-/g, '_')}_API_KEY`
+    const apiKeyEnv = (input.apiKeyEnv ?? '').trim() || `${name.toUpperCase().replace(/-/g, '_')}_API_KEY`
     const incoming: ProviderModel[] = Array.isArray(input.models) && input.models.length > 0
       ? input.models
       : [{ id: input.model, ...input.vision === true ? { vision: true } : {} }]
@@ -289,21 +322,21 @@ function makeSave(host: ProvidersHost): ProvidersSurface['save'] {
       }))
     if (models.length === 0) throw new Error('至少要有一个模型 id')
     const provider: RawProvider = {
-      displayName: input.displayName?.trim() || input.name,
+      displayName: input.displayName?.trim() || name,
       api: input.api?.trim() || 'openai-completions',
       baseURL: normalizeBaseURL(input.baseURL),
       apiKeyEnv,
       models,
       ...Object.keys(headers).length === 0 ? {} : { headers },
     }
-    await host.settings.update(found.ns, { providers: { [input.name]: provider } }, found.revision)
+    await host.settings.update(found.ns, { providers: { [name]: provider } }, found.revision)
     let keyNote = ''
     if (input.apiKey !== undefined && input.apiKey.trim() !== '') {
       if (host.credentials === undefined) throw new Error('宿主未提供 credentials 服务，无法保存密钥')
       await host.credentials.set(apiKeyEnv, input.apiKey.trim())
       keyNote = `；密钥已写入凭据缝（${apiKeyEnv}）`
     }
-    return `已保存供应商 ${input.name}${keyNote}；下一次模型调用生效`
+    return `已保存供应商 ${name}${keyNote}；下一次模型调用生效`
   }
 }
 

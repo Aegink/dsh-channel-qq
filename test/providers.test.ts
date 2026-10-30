@@ -114,7 +114,8 @@ test('setDefault：未知供应商、未知模型都拒绝；合法则调 saveSe
 test('save：路由名校验、写 settings 的形状（含凭据引用）与版本号', async () => {
   const { host, writes } = fakeHost()
   const surface = createProvidersSurface(host)!
-  await assert.rejects(() => surface.save({ name: 'Bad_Name', baseURL: 'https://x/v1', model: 'm' }), /小写字母/)
+  // 名字非法不再直接失败（会先清洗），只有"名字和域名都推不出来"才报错。
+  await assert.rejects(() => surface.save({ name: '中文名', baseURL: 'not a url', model: 'm' }), /推导/)
   await assert.rejects(() => surface.save({ name: 'ok', baseURL: '  ', model: 'm' }), /baseURL/)
   await assert.rejects(() => surface.save({ name: 'ok', baseURL: 'https://x/v1', model: '  ' }), /模型/)
   assert.equal(writes.length, 0)
