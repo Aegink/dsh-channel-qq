@@ -1,5 +1,51 @@
 ## [Unreleased]
 
+### 修复（2026-10-31·QQ 掉线没人知道）
+
+- **掉线 16 小时没人知道**：QQ 从 04:24 机器正常重启后卡在扫码页，插件只会一句接一句
+  打 `reconnecting in 60000ms`，看不出是「协议端没起来」还是「QQ 没登录」。现在：
+  - 连续离线 ≥5 分钟，日志写一条人话（同一条 30 分钟一次，不刷屏）：
+    `QQ 已离线 312s（重连 6 次）：协议端端口有人接但没有应答——多半是 QQ 未登录`
+    ——`ECONNREFUSED` 则说「协议端没有在监听（容器或进程没起来）」；
+  - 后台概览页顶部亮**红色横幅**，写明离线时长与可能原因（`status.qqOffline`）。
+- **日志措辞**：`dialling NapCat at …` → `dialling 协议端 at …`。线上协议端是
+  SnowLuma，写死 NapCat 会把人带偏（这次排查就被带偏过一轮）。
+
+  - 顺带修掉一个更隐蔽的问题：**假的「QQ 链路就绪」**。未登录时 docker-proxy 会替
+    协议端接受 TCP，`open` 每次都触发，于是"离线计时"每次被清零（告警永远不响）、
+    `QQ link ready` 也照打。现在以**收到帧**为准：`socket open` 只是传输层打开，
+    `QQ link ready` 只在真正收到数据后打一次。
+### 修复（2026-10-30 夜·「她一句话都不回」）
+
+- **弱模型只写文本、不调发送工具 → 对方什么都收不到**：`u2-flash` 在长上下文里把
+  「要发言必须用 `qq_message`」当成聊天，直接把回复写成文本；这一轮只有 1 步、零工具
+  调用，于是回合"正常跑完"而消息从未发出（该会话 31 条回复里带 tool_calls 的为 0）。
+  实测工具与指令都没问题（同一批工具+同一个 packet 在新上下文里必调工具，63 个工具
+  也一样）。现在 `TurnTracker` 在**用户/通知/后台指令发起**的回合里，若结束时零工具
+  调用，就补一句「你上一条只写了文本，对方什么都没收到，用 `qq_message` 发出去」，
+  让模型自己调用工具（一轮最多催一次，主动回合不催）。**不代发文本**：发送仍走工具，
+  守卫、分段、sent-log 全在链上。文案在 `assets/persona/default/retry/must-send*.txt`。
+
+### 修复
+
+- **换了供应商/模型之后旧会话不跟着换**：会话请求头是持久化的，里面写着上一次运行的
+  provider/model。原来只有"首次 `agents.get()` 命中"那条路径会重压路由，而重启后恢复
+  会话走的 `agents.resume()` 分支**没装覆盖**，于是它们永远按旧路由发请求——2026-10-30
+  群会话锁死 `windhub/grok-4.7`（额度已耗尽）、每轮 `403 insufficient_user_quota`
+  累计 537 次，同一时刻私聊已经换成 `maas-api-unisound`。现在由 `finish()` 统一重压
+  （`adapters/dsh-host/route-override.ts`），且同一个 agent 上下文只挂一个可改的槽：
+  重复接上不叠加、后台换模型立即生效、**不需要重建会话，历史一行不丢**。
+- **「刚才那条没处理完，再发一次试试」不该对配额/鉴权类失败说**：`core/retry-policy.ts`
+  新增 `isFutileToResend()`，"重发也不会有不同结果"的失败（额度耗尽、key 失效、账号
+  欠费、模型被下线）不再走用户提示，改为给管理员一条日志告警（同房间 30 分钟一次）。
+  网络抖动/超时类照旧提示——重发对它们是有意义的。分类结论经 `TurnHooks.error` 的
+  `info.resendFutile` 传到告知层，旧调用方不传也合法。
+- **「模型没调工具」现在能在日志里看见**：宿主把这一轮的步边界数随 `idle` 一起报出来
+  （`agent/pre-step` 次数），1 步收工即记为 `turn done for <房间> (no tool call: 1 step)`。
+  此前"回合正常跑完但一句话没发"与正常回合的日志**完全一样**，只能靠翻 sent-log 猜；
+  多步与未知步数时日志与原来逐字相同（golden 逐字节不变）。见 `test/tool-call.test.ts`。
+- 计数类冷却的边界：`?? 0` 会把"从未发生过"当成"1970 年发生过"，于是第一次也被冷却挡掉；
+  改为 `Number.NEGATIVE_INFINITY`（`features/reliability/service.ts`）。
 ### 新增
 
 - 学习闭环（M1–M3，方案见 内部文档）：夜间 job memory.eval 跑 60 题检索基准（不调模型、无 token 开销），首次自动建基线，recall@8 跌超 10% 私聊告警；memory.promote 把被反复用上的方法类记忆写成技能草稿进待审区（默认关、绝不自动启用）；memory.idle 把 90 天没召回且不重要的记忆归档（不删）；新工具 qq_forget_memory / qq_correct_memory（纠正走 supersede）；memory.lessons 把反复失败写成教训记忆；metrics.strategy 算口癖命中率 / 主动被回复率 / 情绪-长度相关性；memory.gaps 写 memory/GAPS.md 待办（不自动联网）。工具面 90→92，合并动作组仍 18 张脸。

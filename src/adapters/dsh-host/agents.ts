@@ -10,10 +10,11 @@
  * 都没挪。唯一的改动是把 `Context` 换成显式的接缝，以及把日志里对"房间键"的
  * 引用去掉（这里只知道会话 id，房间是 `app/` 的概念）。
  *
- * **注意一处刻意保留的不对称**：`agents.get()` 命中时（不论首次还是重试循环里
- * 命中）只有首次那条路径装了 `installModelOverride`，重试循环里的 `liveAgain`
- * 没有装。这看起来像漏了，但它决定了"恢复的会话用哪条路由"，改它会改行为，
- * 因此留给 P6 的 `policy.v2` 一起处理，见 `内部文档阶段完成记录.md`。
+ * **2026-10-30 修掉了一处不对称**：原来只有"首次 `agents.get()` 命中"这条路径
+ * 装路由覆盖，重试循环里的 `liveAgain` 与 `agents.resume()` 都没装——而重启后
+ * 恢复会话走的**正是** resume 分支，于是它们永远按上一次运行的 provider/model
+ * 发请求（群会话锁死 `windhub/grok-4.7`、每轮 403 累计 537 次）。现在由收尾的
+ * `finish()` 统一重压，见 `route-override.ts`。
  */
 
 import { promises as fs } from 'node:fs'
@@ -32,6 +33,9 @@ import {
   agentStatusOf, buildUserMessage, errorChain, injectAgent, onAgentEvent, steerAgent,
 } from './agent.js'
 import { installSendLoopGuard } from './send-loop.js'
+import { installModelOverride } from './route-override.js'
+import { installTurnSteps, takeTurnSteps } from './turn-steps.js'
+import { installTurnStopping } from './turn-stopping.js'
 
 /** 恢复一个"已存在"的会话时，最多试几次、每次等多久。 */
 const RESUME_ATTEMPTS = 3
@@ -160,13 +164,13 @@ class DshAgentGateway implements AgentGateway {
         installModelOverride(raw.ctx, route)
       }
       this.log(`resumed session ${sessionId} (route ${route.provider}/${route.model})`)
-      const resumed = await this.finish({ agent: raw }, sessionId, workspace, spec)
+      const resumed = await this.finish({ agent: raw }, sessionId, workspace, spec, route)
       await this.consumeSeed(String(sessionId), resumed)
       return resumed
     }
 
     const handle = await this.createOrResume(sessionId, createOptions, spec, route)
-    const created = await this.finish(handle, sessionId, workspace, spec)
+    const created = await this.finish(handle, sessionId, workspace, spec, route)
     await this.consumeSeed(String(sessionId), created)
     return created
   }
@@ -253,6 +257,7 @@ class DshAgentGateway implements AgentGateway {
     sessionId: ReturnType<typeof asSessionId>,
     workspace: WorkspaceEntry,
     spec: SessionSpec,
+    route: { readonly provider: string; readonly model: string },
   ): Promise<AgentSession> {
     try {
       await workspace.attachSession(sessionId)
@@ -263,6 +268,10 @@ class DshAgentGateway implements AgentGateway {
     }
     this.seam.permissions.set(raw.agent.session, spec.permissionPreset)
     this.seam.titles.rename(raw.agent.session, spec.title)
+    // 每一次接上都要重压路由，**包括 resume**：会话头里写的是上一次运行的
+    // provider/model，不重压就会一直按那条（可能已经欠费/下线的）路由发请求。
+    const agentCtx = raw.agent.ctx
+    if (agentCtx !== undefined) installModelOverride(agentCtx, route)
     return wrap(raw, String(sessionId))
   }
 
@@ -310,9 +319,12 @@ function wrap(raw: RawHandle, id: string): AgentSession {
 function watchTurns(agentCtx: Context, spec: SessionSpec): void {
   installStepBudget(agentCtx, spec)
   installSendLoopGuard(agentCtx, spec)
+  installTurnSteps(agentCtx)
+  installTurnStopping(agentCtx, spec)
   // Emit-mode 事件只递一个 payload，监听器的返回值被忽略。
   onAgentEvent(agentCtx, 'agent/status', (payload) => {
-    if (payload?.status === 'idle') spec.listener.onIdle()
+    // 取走即清零：同一个上下文可能挂着不止一个 idle 监听器，诊断只能报一次。
+    if (payload?.status === 'idle') spec.listener.onIdle(takeTurnSteps(agentCtx))
   })
   onAgentEvent(agentCtx, 'agent/error', (payload) => {
     const err = payload?.error
@@ -322,20 +334,6 @@ function watchTurns(agentCtx: Context, spec: SessionSpec): void {
     const detail = err instanceof Error ? `${err.name}: ${err.message}` : raw
     spec.log(`agent error: ${detail.slice(0, 400)}`)
     spec.listener.onError({ raw, detail })
-  })
-}
-
-/**
- * 强制把当前默认路由压到接回来的会话上：它持久化的请求头里还写着上一轮运行的
- * provider/model（可能已经下线了），所以每个请求都要在这里重新指一次。
- * Web UI 仍然可以在没有回合运行时改默认值来单独覆盖某个会话。
- */
-function installModelOverride(agentCtx: Context, selection: { provider: string; model: string }): void {
-  onAgentEvent(agentCtx, 'agent/request', (_payload, next) => {
-    return next().then((resolved) => {
-      if (resolved.provider === selection.provider && resolved.model === selection.model) return resolved
-      return { ...resolved, provider: selection.provider, model: selection.model }
-    })
   })
 }
 

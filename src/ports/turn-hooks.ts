@@ -16,6 +16,22 @@ export interface TurnHooks {
   begin(room: string, event: OneBotEvent): void
   /** 回合结束（成功、失败或会话被释放都会走到）；没开始过的房间应当是空操作。 */
   end(room: string): void
-  /** 宿主报错；`kind` 说明还会不会重试，真正的收尾仍走 `end`。 */
-  error?(room: string, kind: 'retry' | 'permanent'): void
+  /**
+   * 宿主报错；`kind` 说明还会不会重试，真正的收尾仍走 `end`。
+   *
+   * `info` 是分类结论（旧调用方不传也合法）：告知层据它决定该不该说
+   * "再发一次试试"。
+   */
+  error?(room: string, kind: 'retry' | 'permanent', info?: TurnErrorInfo): void
+}
+
+/**
+ * 一次失败的补充事实（失败分类的结论，供告知层分流用）。
+ *
+ * 有它之后，告知层才能区分"重发有用"（超时/网关抖动）与"重发无用"（额度/
+ * 鉴权/模型不存在）：前者说一句"再试一次"是善意，后者只会让人白试。
+ */
+export interface TurnErrorInfo {
+  /** 重发也不会有不同结果（额度耗尽、鉴权失败、账号欠费、模型被下线）。 */
+  readonly resendFutile: boolean
 }

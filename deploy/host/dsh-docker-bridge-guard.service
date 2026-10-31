@@ -1,0 +1,10 @@
+[Unit]
+Description=dsh：确保 docker 网桥网关地址存在（宿主机到容器网段的路由）
+Documentation=file:///usr/local/bin/dsh-docker-bridge-guard.sh
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/dsh-docker-bridge-guard.sh
+Nice=10

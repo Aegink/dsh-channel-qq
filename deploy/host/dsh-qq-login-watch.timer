@@ -1,0 +1,11 @@
+[Unit]
+Description=dsh：检查协议端是否已登录（开机 90 秒后，之后每 10 分钟）
+
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=10min
+AccuracySec=30s
+Unit=dsh-qq-login-watch.service
+
+[Install]
+WantedBy=timers.target

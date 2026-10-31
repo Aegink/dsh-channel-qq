@@ -52,3 +52,31 @@ export function classifyFailure(
   const retriable = RETRIABLE_CODES.some((code) => raw.includes(`"${code}"`))
   return retriable ? { kind: 'retry' } : { kind: 'permanent' }
 }
+/**
+ * 「重发不会有任何不同结果」的失败：额度耗尽、鉴权失败、账号欠费、模型被下线。
+ *
+ * 这类失败与网络抖动相反——用户照着提示再发一百次，收到的还是同一个 403，
+ * 于是「再发一次试试」既是错误建议，又会看起来像机器人在反复刷屏（2026-10-30
+ * 群里连续 537 次 `403 insufficient_user_quota` 就是这个形状）。真正要做的是
+ * 让管理员去续费/换 key/换模型，所以判据单独抽出来，供告知层分流。
+ *
+ * 判据同样是子串匹配（与 `classifyFailure` 同一个理由，见文件头）。
+ */
+const FUTILE_MARKERS = [
+  'insufficient_user_quota',
+  'insufficient_quota',
+  'exceeded your current quota',
+  'invalid_api_key',
+  'incorrect_api_key',
+  'invalid_authentication',
+  'authentication_error',
+  'account_overdue',
+  'arrearage',
+  'model_not_found',
+] as const
+
+/** 这次失败是不是「重发也没用」的那一类。 */
+export function isFutileToResend(raw: string): boolean {
+  const lower = raw.toLowerCase()
+  return FUTILE_MARKERS.some((marker) => lower.includes(marker))
+}

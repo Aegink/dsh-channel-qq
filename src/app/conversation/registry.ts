@@ -19,7 +19,7 @@ import type { TurnOrigin } from './origins.js'
 import type { AgentGateway, AgentSession } from '../../ports/agent-gateway.js'
 import type { Clock, Random, TimerHandle } from '../../ports/clock.js'
 import { TurnTracker } from './turn-tracker.js'
-import type { TurnHooks } from '../../ports/turn-hooks.js'
+import type { TurnErrorInfo, TurnHooks } from '../../ports/turn-hooks.js'
 import type { GatewayHealth } from './gateway-health.js'
 
 /**
@@ -102,6 +102,10 @@ export interface RegistryDeps {
   readonly nudge: () => string
   /** 每次模型错误都投递一次（换血看门狗据此识别连续 400）。 */
   readonly onGatewayError?: (room: string, detail: string) => void
+  /**
+   * 「你只写了文本，对方什么都没收到」那一句（人格包）。缺省 = 不催发。
+   */
+  readonly mustSend?: () => string
   /** 回合结束钩子（A1 交互提示撤销）。 */
   readonly turnHooks?: TurnHooks
 }
@@ -294,9 +298,11 @@ export class ConversationRegistry {
         injectMode: () => this.deps.config().injectMode,
         roll: () => this.deps.random.next(),
         ...this.deps.onGatewayError === undefined ? {} : { onGatewayError: this.deps.onGatewayError },
+        ...this.deps.mustSend === undefined ? {} : { mustSendNudge: this.deps.mustSend },
         ...this.deps.turnHooks === undefined ? {} : {
           onTurnEnd: (room: string) => this.deps.turnHooks?.end(room),
-          onTurnError: (room: string, kind: 'retry' | 'permanent') => this.deps.turnHooks?.error?.(room, kind),
+          onTurnError: (room: string, kind: 'retry' | 'permanent', info?: TurnErrorInfo) =>
+            this.deps.turnHooks?.error?.(room, kind, info),
         },
       }),
       queue: [],

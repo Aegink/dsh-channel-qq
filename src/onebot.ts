@@ -8,6 +8,11 @@ import type { OneBotActionPayload, OneBotApiResponse, OneBotEvent } from './type
 
 const MAX_RECONNECT_DELAY_MS = 60_000
 
+/** 连续离线多久之后开始告警（几秒的抖动不报）。 */
+const OFFLINE_ALERT_AFTER_MS = 5 * 60_000
+/** 同一条离线告警的最小重复间隔。 */
+const OFFLINE_ALERT_EVERY_MS = 30 * 60_000
+
 interface PendingRequest {
   resolve: (value: unknown) => void
   reject: (error: Error) => void
@@ -29,6 +34,14 @@ export class OneBotClient extends EventEmitter {
   private pending = new Map<string, PendingRequest>()
   private echoSeq = 0
   private reconnectAttempts = 0
+  /** 断线从什么时候开始（Unix ms）；连上就清空。 */
+  private outageSince: number | null = null
+  /** 上一次「离线告警」写日志的时间（同一条 30 分钟只说一次）。 */
+  private lastOutageLogAt = 0
+  /** 最近一次连接失败的原因：用来把「没启动」和「未登录」分开。 */
+  private lastLinkError: string | null = null
+  /** 是否真的收到过帧（"链路就绪"以它为准，而不是 socket OPEN）。 */
+  private live = false
   private reconnectTimer: NodeJS.Timeout | null = null
   private heartbeatTimer: NodeJS.Timeout | null = null
   private lastPongAt = Date.now()
@@ -143,24 +156,29 @@ export class OneBotClient extends EventEmitter {
   private bindSocket(ws: WebSocket, label: string): void {
     this.ws = ws
     this.reconnectAttempts = 0
-    this.log(`${label} connected`)
-    this.emit('connect')
+    // **不要**在这里清离线计时：docker-proxy 会替未登录的协议端接受 TCP，于是
+    // 'open' 每次都触发、socket 随即被关。以"打开"为准会让离线计时永远归零，
+    // 告警就永远不触发（2026-10-31 实测）。以**收到帧**为准，见 noteAlive()。
+    this.log(`${label} socket open`)
     ws.on('pong', () => {
       this.lastPongAt = Date.now()
+      this.noteAlive()
     })
     ws.on('message', (data: RawData) => {
       this.lastPongAt = Date.now()
+      this.noteAlive()
       this.handleFrame(data.toString())
     })
     ws.on('close', (code, reason) => {
       this.log(`${label} closed: code=${code} reason=${reason.toString() || 'none'}`)
       // A replaced socket's close must not clear the live replacement.
       if (this.ws !== ws) return
+      this.live = false
       if (this.connection.mode === 'reverse') {
         this.ws = null
         this.clearPending(new Error('QQ socket closed'))
         this.emit('disconnect')
-        this.log('waiting for NapCat to reconnect…')
+        this.log('等待协议端重新连进来…')
       } else {
         this.scheduleReconnect()
       }
@@ -174,13 +192,16 @@ export class OneBotClient extends EventEmitter {
     if (this.closed) return
     const headers: Record<string, string> = {}
     if (this.accessToken) headers.Authorization = `Bearer ${this.accessToken}`
-    this.log(`dialling NapCat at ${this.connection.url}`)
+    this.log(`dialling 协议端 at ${this.connection.url}`)
     const ws = new WebSocket(this.connection.url, { headers })
     ws.on('open', () => {
       this.bindSocket(ws, 'forward WS')
       this.startHeartbeat()
     })
-    ws.on('error', () => this.scheduleReconnect())
+    ws.on('error', (err: Error) => {
+      this.lastLinkError = err.message
+      this.scheduleReconnect()
+    })
   }
 
   private startReverseServer(port: number): void {
@@ -218,7 +239,7 @@ export class OneBotClient extends EventEmitter {
     // resolve to ::1 or 127.0.0.1 depending on DNS order; both must answer.
     server.listen(port)
     this.reverseServer = server
-    this.log(`reverse WS server listening on [::]:${port} + 127.0.0.1:${port} (NapCat should dial this)`)
+    this.log(`reverse WS server listening on [::]:${port} + 127.0.0.1:${port} (协议端应拨这个地址)`)
   }
 
   private startHeartbeat(): void {
@@ -238,8 +259,47 @@ export class OneBotClient extends EventEmitter {
     }, 30_000)
   }
 
+  /**
+   * 当前离线状态：给后台面板与日志用（连上就返回 null）。
+   *
+   * `hint` 把两种完全不同的故障分开——2026-10-31 的教训：协议端端口有人接、
+   * 但里面没登录，和协议端根本没起来，从外面看都只是"连不上"。
+   */
+  outage(): { sinceMs: number; attempts: number; hint: string } | null {
+    // 不看 `isConnected()`：假连接（TCP 通、协议端没登录）也是一瞬间的 OPEN。
+    if (this.outageSince === null) return null
+    return {
+      sinceMs: Math.max(0, Date.now() - this.outageSince),
+      attempts: this.reconnectAttempts,
+      hint: outageHint(this.lastLinkError),
+    }
+  }
+
+  /** 真的收到东西了：此刻才算"连上"，清掉离线计时与失败原因。 */
+  private noteAlive(): void {
+    this.outageSince = null
+    this.lastLinkError = null
+    // 只有**真的收到帧**才算"QQ 链路就绪"。TCP 打开不算：未登录的协议端会被
+    // docker-proxy 代接，open 完立刻断，那种"连上了"是假的（会打出假的 QQ link ready）。
+    if (this.live) return
+    this.live = true
+    this.emit('connect')
+  }
+
+  /** 记下离线起点；离线够久就说一句人话（同一条 30 分钟只说一次，不刷屏）。 */
+  private markOffline(): void {
+    const now = Date.now()
+    this.outageSince ??= now
+    if (now - this.outageSince < OFFLINE_ALERT_AFTER_MS) return
+    if (now - this.lastOutageLogAt < OFFLINE_ALERT_EVERY_MS) return
+    this.lastOutageLogAt = now
+    const seconds = Math.round((now - this.outageSince) / 1000)
+    this.log(`QQ 已离线 ${seconds}s（重连 ${this.reconnectAttempts} 次）：${outageHint(this.lastLinkError)}`)
+  }
+
   private scheduleReconnect(): void {
     if (this.closed || this.reconnectTimer) return
+    this.markOffline()
     const delay = Math.min(1_000 * 2 ** this.reconnectAttempts++, MAX_RECONNECT_DELAY_MS)
     this.log(`reconnecting in ${delay}ms`)
     this.reconnectTimer = setTimeout(() => {
@@ -256,3 +316,21 @@ export class OneBotClient extends EventEmitter {
     this.pending.clear()
   }
 }
+
+/**
+ * 把连接失败翻译成一句人话。
+ *
+ * - `ECONNREFUSED` = 没人监听：协议端/容器没起来；
+ * - 能连上却马上被关 = 端口有人接但里面没有登录态：SnowLuma 停在登录页时不会
+ *   启动 OneBot 端口，而 docker-proxy 仍占着宿主端口，于是表现为"连上就断"
+ *   （2026-10-31：QQ 掉线 16 小时，日志只有 reconnecting，看不出是这个原因）。
+ */
+function outageHint(error: string | null): string {
+  if (error !== null && /ECONNREFUSED|EHOSTUNREACH|ENOTFOUND|ETIMEDOUT/i.test(error)) {
+    return '协议端没有在监听（NapCat/SnowLuma 的容器或进程没起来）'
+  }
+  return '协议端端口有人接但没有应答——多半是 QQ 未登录（扫码登录后会自动恢复）'
+}
+
+/** 供测试使用：把连接失败翻译成人话（见上面的说明）。 */
+export { outageHint }

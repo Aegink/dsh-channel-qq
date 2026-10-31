@@ -198,6 +198,23 @@ function scratch(): Dir {
   return { dir, cleanup: () => rmSync(dir, { recursive: true, force: true }) }
 }
 
+/**
+ * 等到条件成立（最多 1s）。
+ *
+ * 原来这里是固定 `setTimeout(30)`：抽取是异步写盘，机器一忙（发布时刚跑完构建、
+ * 容器在重启）30ms 就不够，于是这两个用例在服务器上偶发失败、把发布门禁卡住
+ * （2026-10-31 实测：同一版本在旧目录里也失败，不是代码回归）。
+ */
+async function waitFor(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  while (!predicate() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 5))
+}
+
+/** 等一小会儿再断言"没发生"（负向断言没有可轮询的信号）。 */
+function settle(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 80))
+}
+
 function captureHarness(opts: { extract?: (s: string, t: string) => Promise<Array<{ type: string; content: string; tags: string[]; source: string }>>; cap?: number } = {}) {
   const s = scratch()
   const store = new MemoryStore({ workspacePath: s.dir, dshHome: s.dir, log: () => {} })
@@ -219,7 +236,7 @@ test('即时抽取：触发才抽、蒸馏后入库、低置信带 instant 标�
     await h.store.load()
     h.c.begin('group-123', { text: '你说错了，我不吃香菜' })
     h.c.end('group-123')
-    await new Promise((r) => setTimeout(r, 30))
+    await waitFor(() => h.store.all().length > 0)
     const all = h.store.all()
     assert.equal(all.length, 1)
     assert.equal(all[0]!.content, '学弟不吃香菜，点菜要备注一下的', '蒸馏过的短事实（≤80 字）')
@@ -239,22 +256,22 @@ test('即时抽取：不触发不调抽取器；配额用完就停；同房间�
     await h.store.load()
     h.c.begin('group-1', { text: '今天天气不错' })
     h.c.end('group-1')
-    await new Promise((r) => setTimeout(r, 20))
+    await settle()
     assert.equal(calls, 0, '寒暄不触发')
 
     h.c.begin('group-1', { text: '帮我记住一件事很重要' })
     h.c.end('group-1')
-    await new Promise((r) => setTimeout(r, 30))
+    await waitFor(() => calls >= 1)
     assert.equal(calls, 1, '触发的抽一次')
 
     h.c.begin('group-1', { text: '再帮我记住另一件事' })
     h.c.end('group-1')
-    await new Promise((r) => setTimeout(r, 30))
+    await settle()
     assert.equal(calls, 1, '冷却期内不再抽')
 
     h.c.begin('group-2', { text: '另一间房也帮我记住' })
     h.c.end('group-2')
-    await new Promise((r) => setTimeout(r, 30))
+    await settle()
     assert.equal(calls, 1, '每日配额 1 条用完即停')
     assert.ok(CAPTURE_DAILY_CAP >= 1)
   } finally { h.cleanup() }

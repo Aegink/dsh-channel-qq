@@ -94,3 +94,36 @@ test('回合告知：同一房间 10 分钟内只报一次「没处理完」', (
   h.service.end('group-107')
   assert.equal(h.sent.length, 2)
 })
+
+test('回合告知：额度/鉴权类失败不发「再发一次」，只给管理员一条告警', () => {
+  const h = harness({ slowNotice: false, slowAfterMs: 10, failureNotice: true })
+  h.service.begin('group-107')
+  h.service.error('group-107', 'permanent', { resendFutile: true })
+  h.service.end('group-107')
+  assert.equal(h.sent.length, 0, '重发也不会有不同结果，不该让对方白试')
+  assert.equal(h.logs.filter((line) => line.includes('重发也无用')).length, 1)
+})
+
+test('回合告知：管理员告警同一房间 30 分钟只记一次', () => {
+  const h = harness({ slowNotice: false, slowAfterMs: 10, failureNotice: true })
+  const alert = (): number => h.logs.filter((line) => line.includes('重发也无用')).length
+  for (let round = 0; round < 3; round++) {
+    h.service.begin('group-107')
+    h.service.error('group-107', 'permanent', { resendFutile: true })
+    h.service.end('group-107')
+  }
+  assert.equal(alert(), 1, '配额耗尽时每轮都失败，人只需要看到一次')
+  h.advance(30 * 60_000)
+  h.service.begin('group-107')
+  h.service.error('group-107', 'permanent', { resendFutile: true })
+  h.service.end('group-107')
+  assert.equal(alert(), 2)
+})
+
+test('回合告知：慢回合提示照旧不受失败分类影响', async () => {
+  const h = harness({ slowNotice: true, slowAfterMs: 10, failureNotice: true })
+  h.service.begin('group-107')
+  await wait(25)
+  assert.deepEqual(h.sent.map((s) => s.text), ['[notice/slow-turn]'])
+  h.service.end('group-107')
+})

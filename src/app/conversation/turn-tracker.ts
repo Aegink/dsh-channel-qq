@@ -15,7 +15,8 @@
 
 import type { AgentSession, PromptContent, TurnListener } from '../../ports/agent-gateway.js'
 import type { Clock } from '../../ports/clock.js'
-import { GATEWAY_RETRY_MAX, classifyFailure, gatewayBackoffMs } from '../../core/retry-policy.js'
+import type { TurnErrorInfo } from '../../ports/turn-hooks.js'
+import { GATEWAY_RETRY_MAX, classifyFailure, gatewayBackoffMs, isFutileToResend } from '../../core/retry-policy.js'
 import type { GatewayHealth } from './gateway-health.js'
 
 export interface TurnTrackerDeps {
@@ -26,6 +27,12 @@ export interface TurnTrackerDeps {
   readonly log: (line: string) => void
   /** 重试时补给模型的那句话；取自人格包，所以是取值函数（改文件不用重启）。 */
   readonly nudge: () => string
+  /**
+   * 「你只写了文本，对方什么都没收到」那一句（人格包）。
+   *
+   * 缺省时整条催发路径不产生任何动作——老装配与测试里不传它，行为与从前一致。
+   */
+  readonly mustSendNudge?: () => string
   /** 实时读取注入模式（后台改了立即生效，所以是取值函数而不是快照）。 */
   readonly injectMode: () => { readonly enabled: boolean; readonly wakeIdle: boolean }
   /** 取随机数（退避抖动）——注入是为了让退避曲线可重放。 */
@@ -35,7 +42,7 @@ export interface TurnTrackerDeps {
   /** 回合结束（A1 交互提示撤销）；没开始过的回合调到它应当是空操作。 */
   readonly onTurnEnd?: (room: string) => void
   /** 回合出错（C2 指标标记 / A2 失败告知）。 */
-  readonly onTurnError?: (room: string, kind: 'retry' | 'permanent') => void
+  readonly onTurnError?: (room: string, kind: 'retry' | 'permanent', info?: TurnErrorInfo) => void
 }
 
 export class TurnTracker implements TurnListener {
@@ -56,6 +63,10 @@ export class TurnTracker implements TurnListener {
   private retryCount = 0
   private retryTimer: { cancel(): void } | null = null
   private textOnlyRetryDone = false
+  /** 这一轮对方在等回复（用户/通知/后台指令发起）；主动回合可以为空。 */
+  private expectSend = false
+  /** 已经为这一轮催过「用工具发出去」；一轮最多一次。 */
+  private mustSendNudged = false
 
   constructor(private readonly deps: TurnTrackerDeps) {}
 
@@ -84,7 +95,7 @@ export class TurnTracker implements TurnListener {
    *
    * 新的一包**顶掉**旧的网关重试（旧包的问题已经被新内容取代了）。
    */
-  begin(prompt: string, hadImages: boolean): void {
+  begin(prompt: string, hadImages: boolean, expectSend = false): void {
     this.clearRetry()
     this.pending = true
     this.startedAt = this.deps.clock.now()
@@ -93,6 +104,8 @@ export class TurnTracker implements TurnListener {
     this.textOnlyRetryDone = false
     this.retryCount = 0
     this.turnErrored = false
+    this.expectSend = expectSend
+    this.mustSendNudged = false
   }
 
   /**
@@ -119,15 +132,20 @@ export class TurnTracker implements TurnListener {
   }
 
   /** 宿主报 idle：这一轮结束了。 */
-  onIdle(): void {
+  onIdle(steps?: number): void {
     const wasRunning = this.pending || this.liveSubmitted
     if (wasRunning) {
       this.pending = false
       this.liveSubmitted = false
       this.startedAt = 0
-      this.deps.log(`turn done for ${this.deps.room}`)
+      // 一步就收工 = 模型没调任何工具。这一轮会"跑完但一句话没发"，从外面看就是
+      // 她没反应；不写进日志，就只能靠翻 sent-log 猜（2026-10-30 u2-flash 事故）。
+      this.deps.log(steps === 1
+        ? `turn done for ${this.deps.room} (no tool call: 1 step)`
+        : `turn done for ${this.deps.room}`)
       // A1：先撤销提示，再走重试判断——失败重试期间不该继续显示"正在输入"。
       this.deps.onTurnEnd?.(this.deps.room)
+      this.retryMustSend(steps)
     }
     if (!this.turnErrored) {
       // 干净地跑完了：这一包到位了，重试链不再需要。
@@ -145,7 +163,9 @@ export class TurnTracker implements TurnListener {
       hadImages: this.lastPromptHadImages,
       textOnlyRetryDone: this.textOnlyRetryDone,
     })
-    this.deps.onTurnError?.(this.deps.room, action.kind === 'permanent' ? 'permanent' : 'retry')
+    this.deps.onTurnError?.(this.deps.room, action.kind === 'permanent' ? 'permanent' : 'retry', {
+      resendFutile: isFutileToResend(error.raw),
+    })
     if (action.kind === 'retry-text-only') {
       this.retryTextOnly()
       return
@@ -174,6 +194,47 @@ export class TurnTracker implements TurnListener {
     this.clearRetry()
     // 会话被释放时也要撤销提示，否则「正在输入」会一直挂在对方窗口上。
     this.deps.onTurnEnd?.(this.deps.room)
+  }
+
+  /**
+   * 回合**即将关闭**时的机会：这一轮零工具调用、而对方在等回复，就请宿主在
+   * **同一个回合内**再走一步（`agent.steer`），把话用工具发出去。
+   *
+   * 与下面的 `retryMustSend`（回合结束后的兜底）共用同一个"已催过"标记：谁先到
+   * 谁生效，绝不会催两次。宿主的边界事件是首选——它不多开一个回合，日志里也不会
+   * 多出一条 `turn done`。
+   */
+  sendCorrection(steps: number): string | null {
+    if (!this.expectSend || this.mustSendNudged) return null
+    if (steps !== 1) return null
+    const text = this.deps.mustSendNudge?.() ?? ''
+    if (text.trim() === '') return null
+    this.mustSendNudged = true
+    this.deps.log(`no tool call this turn; steering ${this.deps.room} to send it via the tool (same turn)`)
+    return text
+  }
+
+  /**
+   * 一轮下来一次工具都没调 → 催模型自己把话**用工具**发出去。
+   *
+   * 为什么不是由我们代发文本：发送必须留在工具里，守卫、分段、sent-log 才都还在；
+   * 代发等于绕过整条链。而"模型只写了文本"是**模型自己的选择**，让它改主意比替它
+   * 做事更对（2026-10-30 实测：补这一句后 u2-flash 立刻调用 qq_message，参数正确）。
+   *
+   * 判据是步数：`steps === 1` 表示这一轮只有一次模型调用、零工具调用。一轮最多催
+   * 一次——它要是还只写文本，就到此为止，别把会话拉成无限来回。
+   */
+  private retryMustSend(steps: number | undefined): void {
+    if (!this.expectSend || this.mustSendNudged) return
+    if (steps !== 1) return
+    const session = this.session
+    const text = this.deps.mustSendNudge?.() ?? ''
+    if (session === null || text.trim() === '') return
+    this.mustSendNudged = true
+    this.pending = true
+    this.startedAt = this.deps.clock.now()
+    this.deps.log(`no tool call this turn; asking ${this.deps.room} to send it via the tool`)
+    session.deliver([{ type: 'text', text }], 'followup')
   }
 
   /** 带图的请求被整个拒了：正文还在，改发一次纯文本，而不是丢掉这一轮。 */

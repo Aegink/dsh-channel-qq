@@ -270,4 +270,15 @@ export class PromptComposer {
   gatewayNudge(): string {
     return this.r('retry/gateway-nudge')
   }
+
+  /**
+   * 「你只写了文本，对方什么都没收到」——一轮下来零工具调用时补的那句。
+   *
+   * 与 `gatewayNudge` 分开：那句是网关出错后"接着做"，这句是模型自己选了纯文本
+   * 回答、话根本没发出去。工具名跟着 tools.v2 走（老名字模型会找不到工具，2026-10-18
+   * 踩过一次）。
+   */
+  mustSendNudge(): string {
+    return this.r(this.toolsV2() ? 'retry/must-send-v2' : 'retry/must-send')
+  }
 }

@@ -81,6 +81,8 @@ export interface AgentEventMap {
   'agent/status': { payload: { status?: string }; result: void }
   'agent/error': { payload: { error?: unknown }; result: void }
   'agent/pre-step': { payload: unknown; result: unknown }
+  /** 回合即将关闭（serial 瀑布）：听者可以 `agent.steer` 让本回合再走一步。 */
+  'agent/turn-stopping': { payload: { agent: unknown }; result: void }
   'agent/request': { payload: unknown; result: { provider: string; model: string } }
 }
 

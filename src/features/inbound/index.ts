@@ -101,6 +101,7 @@ function createRegistry(deps: RuntimeDeps, gateway: ReturnType<typeof createAgen
     log: deps.log,
     config: () => deps.config,
     nudge: () => deps.prompts.gatewayNudge(),
+    mustSend: () => deps.prompts.mustSendNudge(),
     ...deps.onGatewayError === undefined ? {} : { onGatewayError: deps.onGatewayError },
     ...deps.turnHooks === undefined ? {} : { turnHooks: deps.turnHooks },
   })

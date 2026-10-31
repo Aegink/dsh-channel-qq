@@ -33,8 +33,24 @@ export type DeliverMode =
 
 /** 一个回合的生命周期事件。 */
 export interface TurnListener {
-  /** 这一轮跑完了。 */
-  onIdle(): void
+  /**
+   * 这一轮跑完了。
+   *
+   * `steps` 是宿主在这一轮里走过的步边界数（`agent/pre-step` 次数）：一次模型
+   * 调用算一步。**1 步意味着模型没有调用任何工具**——那正是"她收到了消息却没
+   * 发出去"的形状，所以它随事件一起带出来，供账本留诊断日志。宿主没报时为
+   * `undefined`（未知 ≠ 零步）。
+   */
+  onIdle(steps?: number): void
+  /**
+   * 回合**即将关闭**时问账本：这一轮要不要再催一次发送？
+   *
+   * 返回一句话 = 请宿主在**同一个回合内**再走一步（`agent.steer`）把话发出去；
+   * 返回 null = 不用管。缺省实现 = 不催（老装配与测试原样）。
+   *
+   * `steps` 是本回合已走的步边界数（1 = 零工具调用）。
+   */
+  sendCorrection?(steps: number): string | null
   /**
    * 本轮报错。
    *

@@ -55,6 +55,8 @@ export async function buildStatus(host: SubHost, startedAt: number): Promise<Rec
   const learn = host.get('learn')
   return {
     qqConnected: connected,
+    /** 未连接时的离线细节（多久、试了几次、可能的原因）；连着时为 null。 */
+    qqOffline: connected ? null : (client?.outage() ?? null),
     selfId: client?.selfId ?? config.selfId,
     connection: `${config.connection.mode} · ${config.connection.url}`,
     groups: connected ? groups.length : '未连接',

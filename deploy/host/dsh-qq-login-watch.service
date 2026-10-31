@@ -1,0 +1,12 @@
+[Unit]
+Description=dsh：开机后 QQ 未登录则自动重启一次协议端
+After=docker.service dsh-docker-bridge-guard.service
+Wants=docker.service
+# 等网桥地址修好再判断（否则 3001 永远连不上，误判成"没登录"）
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/dsh-qq-login-watch.sh
+TimeoutStartSec=300
+Nice=10

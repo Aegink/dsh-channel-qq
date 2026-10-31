@@ -76,7 +76,9 @@ ${prompt}`
     // 新的一包顶掉旧的网关重试：旧包的问题已经被新内容取代了。
     // A1：只有用户消息引起的回合才有"对方正在等"——主动/定时/后台不提示。
     if (origin.kind === 'user') this.deps.hooks?.begin(conversation.key, conversation.lastEvent)
-    conversation.tracker.begin(text, imageRefs.length > 0)
+    // 「谁在等回复」决定要不要催发送：用户/通知/后台指令发起的回合，对方在等一句
+    // 话；主动回合（巡逻/做梦）本来就可以选择沉默（2026-10-30 u2-flash 事故）。
+    conversation.tracker.begin(text, imageRefs.length > 0, origin.kind !== 'proactive')
     // 记下是谁引起的这一轮（P6 的信任分级会读它；现在只记录）。
     conversation.lastOrigin = origin
     const content: PromptPart[] = [{ type: 'text', text }]

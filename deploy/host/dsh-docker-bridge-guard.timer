@@ -1,0 +1,11 @@
+[Unit]
+Description=dsh：定期检查 docker 网桥地址（重启后必跑一次）
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=5min
+AccuracySec=10s
+Unit=dsh-docker-bridge-guard.service
+
+[Install]
+WantedBy=timers.target

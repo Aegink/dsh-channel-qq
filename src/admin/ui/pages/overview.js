@@ -32,6 +32,17 @@ function paint() {
   const connected = status.qqConnected === true
   const known = status.qqConnected === true || status.qqConnected === false
   pills.appendChild(pill(connected ? 'QQ 已连接' : (known ? 'QQ 未连接' : '状态未知'), connected ? 'ok' : (known ? 'bad' : undefined)))
+
+  // 掉线不是"小胶囊"级别的事：QQ 断了整条通道就废了，原因必须一眼看到。
+  const offline = status.qqOffline
+  if (offline !== null && offline !== undefined) {
+    const minutes = Math.max(1, Math.round((Number(offline.sinceMs) || 0) / 60000))
+    view.appendChild(el('div', {
+      role: 'alert',
+      style: 'margin:0 0 12px;padding:10px 12px;border-radius:8px;'
+        + 'background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.45);color:#dc2626;font-weight:600',
+    }, `⚠ QQ 已离线约 ${minutes} 分钟 · ${offline.hint ?? '协议端无应答'}`))
+  }
   if (status.tools !== undefined) pills.appendChild(pill(`${status.tools} 个工具`, 'info'))
   if (status.uptimeSec !== undefined) pills.appendChild(pill(`已运行 ${fmtDuration(status.uptimeSec)}`))
   conn.body.appendChild(pills)
